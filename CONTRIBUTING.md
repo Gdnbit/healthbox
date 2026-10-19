@@ -39,3 +39,21 @@ Keep PRs focused. State:
 ## Security
 
 Follow [`SECURITY.md`](SECURITY.md) for vulnerabilities, accidental health-data exposure or credential leakage. Do not place sensitive details in public issues or PRs.
+ 
+## CI scope and security gates
+
+HealthBox supports a **narrow presentation-only fast path** for changes to
+existing `README.md`, `README_EN.md` and `README.zh-CN.md`. Such a PR
+still runs mandatory public source privacy, attribution/notice and catalog
+checks; it skips unrelated full frontend/backend/browser tests, Docker image
+builds and dependency audits.
+
+All other changes (including added/deleted files, code, dependencies, medical
+catalogs, privacy and authorization policies, packaging, CI and release docs)
+run complete checks. Unknown commit ancestry/events and manual runs default
+to the full route; `source-privacy` is never optional.
+
+This is an update-speed optimization, not production or real-health-data
+authorization. Outstanding coverage/security findings remain recorded in
+[known issues](docs/healthbox/KNOWN_ISSUES.md) and must be resolved before
+a production release.

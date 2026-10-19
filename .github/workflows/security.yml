@@ -3,6 +3,7 @@ name: HealthBox Security
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -14,6 +15,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  scope:
+    name: Classify safe documentation changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      docs_only: ${{ steps.detect.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Verify the fail-closed change classifier
+        run: python -m unittest discover -s tests/security -p test_healthbox_ci_scope.py -v
+      - name: Classify changes (unknown is full)
+        id: detect
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          CI_SHA: ${{ github.sha }}
+          CI_BEFORE: ${{ github.event.before }}
+          CI_PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python scripts/healthbox-ci-scope.py --event "$CI_EVENT" --head "$CI_SHA" \
+            --before "$CI_BEFORE" --pr-base "$CI_PR_BASE" --github-output "$GITHUB_OUTPUT"
+
   source-privacy:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -36,6 +64,8 @@ jobs:
       # Do not upload source/owner-patterns/privacy reports as CI artifacts.
 
   bandit:
+    needs: scope
+    if: needs.scope.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -57,6 +87,8 @@ jobs:
           retention-days: 7
 
   python-audit:
+    needs: scope
+    if: needs.scope.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -78,6 +110,8 @@ jobs:
           retention-days: 7
 
   npm-audit:
+    needs: scope
+    if: needs.scope.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
