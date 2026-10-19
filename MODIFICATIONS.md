@@ -530,7 +530,7 @@ commit history, Git author identity, filesystem locations or runtime data.
 - tests/unit/test_lab_test_component_schema.py
 - tests/utils/data.py
 
-## Added distribution files (472)
+## Added distribution files (474)
 
 - .env.example
 - ACKNOWLEDGEMENTS.md
@@ -942,6 +942,7 @@ commit history, Git author identity, filesystem locations or runtime data.
 - frontend/src/utils/vitalTrendExport.ts
 - requirements-e2e.txt
 - scripts/healthbox-ci-docker-smoke.sh
+- scripts/healthbox-ci-scope.py
 - scripts/healthbox-notices.py
 - scripts/healthbox-package.py
 - scripts/healthbox-privacy-check.py
@@ -982,6 +983,7 @@ commit history, Git author identity, filesystem locations or runtime data.
 - tests/scripts/test_household_admin_recovery.py
 - tests/security/test_backup_path_boundary.py
 - tests/security/test_distribution_notices.py
+- tests/security/test_healthbox_ci_scope.py
 - tests/security/test_legacy_directional_sharing_gate.py
 - tests/security/test_open_source_catalogs.py
 - tests/security/test_public_source_privacy.py
