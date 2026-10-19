@@ -1,0 +1,889 @@
+{
+  "familyHomeTitle": "Familjehälsa",
+  "title": "Health insights",
+  "heading": "Health data overview",
+  "description": "Review stored measurements, compare checkups and trace every value back to its source record.",
+  "safetyNotice": "This page organizes records and source-report flags only. It does not provide a diagnosis or treatment advice.",
+  "summary": {
+    "metrics": "Metrics",
+    "observations": "Observations",
+    "attention": "Latest records to review",
+    "longTerm": "Long-term trends available",
+    "latestDate": "Most recent record"
+  },
+  "errors": {
+    "catalog": "Unable to load the health metric catalog.",
+    "detail": "Unable to load this metric’s recorded values."
+  },
+  "actions": {
+    "refresh": "Refresh",
+    "retry": "Try again",
+    "openLabResults": "Open lab records"
+  },
+  "filters": {
+    "searchLabel": "Search metrics",
+    "searchPlaceholder": "Name or abbreviation",
+    "status": "Latest status",
+    "all": "All",
+    "attention": "Needs review",
+    "category": "Category"
+  },
+  "statuses": {
+    "normal": "Normal",
+    "high": "High",
+    "low": "Low",
+    "critical": "Critical",
+    "abnormal": "Abnormal",
+    "borderline": "Borderline",
+    "unknown": "Unknown"
+  },
+  "modes": {
+    "empty": "No data",
+    "snapshot": "Latest snapshot",
+    "comparison": "Discrete comparison",
+    "trend": "Long-term trend",
+    "qualitative": "Result sequence"
+  },
+  "catalog": {
+    "title": "Metric catalog",
+    "count": "{{count}} matching metrics",
+    "loading": "Loading metric catalog",
+    "readings": "{{count}} records"
+  },
+  "empty": {
+    "noPatient": "Select a family member to view health data.",
+    "noData": "No structured lab measurements have been stored yet.",
+    "noMatches": "No metrics match the current filters."
+  },
+  "labels": {
+    "uncategorized": "Uncategorized",
+    "unknownMember": "Unknown household member"
+  },
+  "views": {
+    "metrics": "Metrics and trends",
+    "coverage": "Checkup coverage",
+    "exams": "Exam comparison",
+    "quality": "Data quality",
+    "sources": "Entry and sources",
+    "alerts": "Rule-based alerts",
+    "background": "Health background",
+    "vitals": "Vital signs"
+  },
+  "vitals": {
+    "title": "Vital signs",
+    "description": "Review stored vital-sign coverage and open the existing chart and data table for each measurement type.",
+    "loading": "Loading vital signs",
+    "loadError": "Unable to load vital signs.",
+    "manage": "Manage vital signs",
+    "summary": {
+      "types": "Types with data",
+      "records": "Stored records",
+      "trends": "Types with history",
+      "latest": "Most recent record"
+    },
+    "partialCoverage": "The server contains {{total}} records, but this directory loaded {{loaded}}. Counts by type are partial.",
+    "coverageUnknown": "The total-count check is unavailable. The directory is based on the records loaded in this view.",
+    "empty": "No structured vital-sign measurements have been stored for this family member.",
+    "addFirst": "Add a vital-sign record",
+    "openTrend": "Open {{type}} trend and data table",
+    "recordCount": "{{count}} records",
+    "types": {
+      "blood_pressure": "Blood pressure",
+      "heart_rate": "Heart rate",
+      "temperature": "Temperature",
+      "weight": "Weight",
+      "oxygen_saturation": "Oxygen saturation",
+      "respiratory_rate": "Respiratory rate",
+      "blood_glucose": "Blood glucose",
+      "a1c": "Hemoglobin A1C"
+    }
+  },
+  "household": {
+    "title": "Household overview",
+    "description": "Compare record coverage and data quality across family members.",
+    "memberCount": "{{count}} members",
+    "loading": "Loading household overview",
+    "empty": "No accessible family members were found.",
+    "current": "Current",
+    "memberError": "This member’s summary could not be loaded.",
+    "records": "{{count}} records",
+    "vitalRecords": "{{count}} vital records",
+    "metrics": "{{count}} metrics",
+    "qualityIssues": "{{count}} quality issues",
+    "refreshing": "Refreshing household summaries…"
+  },
+  "coverage": {
+    "title": "Checkup coverage",
+    "description": "A blank cell means no formal record is stored for that date. It does not prove the test was not performed.",
+    "loading": "Loading checkup coverage",
+    "error": "Unable to load checkup coverage.",
+    "periodMode": "Coverage period grouping",
+    "byDate": "By date",
+    "byYear": "By year",
+    "dateCount": "{{count}} dates",
+    "yearCount": "{{count}} years",
+    "excludedWithoutDate": "{{count}} records without a clinical date are excluded from this matrix.",
+    "empty": "No dated structured measurements are available for a coverage matrix.",
+    "metric": "Metric",
+    "noStoredRecord": "No formal structured record is stored for this period",
+    "noUnit": "No unit"
+  },
+  "coverageEvidence": {
+    "title": "Coverage evidence",
+    "description": "Combine recorded measurements with explicit statements that an item was not performed, not applicable, or unknown. Every statement remains versioned and traceable.",
+    "add": "Add absence statement",
+    "noPercentageNotice": "Counts are shown as evidence only. No completion percentage is calculated because no expected-item set has been defined.",
+    "householdAbsences": "{{count}} explicit absence statements",
+    "householdReview": "{{review}} to review · {{conflicts}} conflicts",
+    "summary": {
+      "recorded": "Recorded observations",
+      "notPerformed": "Confirmed not performed",
+      "notApplicable": "Not applicable",
+      "unknown": "Unknown",
+      "needsReview": "Needs review",
+      "questionable": "Questionable",
+      "conflicts": "Conflicts",
+      "undated": "Undated observations"
+    },
+    "states": {
+      "recorded": "Recorded",
+      "not-performed": "Not performed",
+      "not-applicable": "Not applicable",
+      "unknown": "Unknown",
+      "needs-review": "Needs review",
+      "questionable": "Questionable",
+      "conflict": "Conflict"
+    },
+    "cellCounts": "{{observations}} observations · {{statements}} statements",
+    "openLabRecord": "Open lab record",
+    "openSource": "Open source document",
+    "statementsTitle": "Explicit coverage statements",
+    "statementsDescription": "Revisions create immutable versions; voiding hides the current statement while preserving its audit history.",
+    "showHistory": "Show superseded and voided versions",
+    "loading": "Loading coverage evidence",
+    "loadError": "Unable to load coverage statements.",
+    "empty": "No explicit absence statements have been stored for this family member.",
+    "reasons": {
+      "not-performed": "Not performed",
+      "not-applicable": "Not applicable",
+      "unknown": "Unknown"
+    },
+    "verification": {
+      "confirmed": "Confirmed",
+      "needs_review": "Needs review",
+      "questionable": "Questionable"
+    },
+    "version": "Version {{version}}",
+    "statuses": {
+      "voided": "Voided"
+    },
+    "source": "Source #{{id}}, page {{page}}",
+    "revise": "Create revision",
+    "void": "Void",
+    "cancel": "Cancel",
+    "form": {
+      "createTitle": "Add an absence statement",
+      "reviseTitle": "Create a new statement version",
+      "explicitNotice": "Only use this form when there is explicit evidence about this exact item and date. A blank matrix cell is not evidence that an item was not performed.",
+      "examDate": "Exam date",
+      "metricName": "Metric or item name",
+      "metricHelp": "Choose an existing metric when possible so evidence aligns in the matrix.",
+      "metricCode": "Metric code",
+      "reason": "Coverage state",
+      "verification": "Verification status",
+      "source": "Source document",
+      "sourcePage": "Source page",
+      "sourceLocator": "Source location",
+      "note": "Note",
+      "changeNote": "Reason for revision",
+      "save": "Save version"
+    },
+    "saveSuccess": "The coverage statement version was saved.",
+    "saveError": "Unable to save this coverage statement.",
+    "conflict": "This statement changed elsewhere or duplicates a current statement. Reload before saving.",
+    "voidTitle": "Void this coverage statement?",
+    "voidNotice": "The current statement will disappear from the default matrix, while every version remains in history and export.",
+    "voidReason": "Reason for voiding",
+    "voidConfirm": "Confirm void",
+    "voidSuccess": "The coverage statement was voided and its history was preserved."
+  },
+  "examComparison": {
+    "title": "Exam comparison",
+    "description": "Compare two stored exam episodes using source documents first and lab records as a fallback.",
+    "loading": "Loading exam comparison",
+    "error": "Unable to load exam comparison.",
+    "episodeCount": "{{count}} episodes",
+    "missingBoundary": "A missing metric means no formal structured record is stored for that episode. It does not prove the test was not performed.",
+    "partial": "Only the latest {{limit}} components are loaded, so older episodes may be incomplete.",
+    "undatedExcluded": "{{count}} episodes without a clinical date are excluded from comparison.",
+    "empty": "At least two dated exam episodes are required for comparison.",
+    "target": "Target exam",
+    "baseline": "Earlier baseline exam",
+    "change": "Comparison",
+    "noStructuredRecord": "No structured record",
+    "noInterpretation": "Absolute difference only; no clinical direction is inferred.",
+    "openSource": "Open source document",
+    "openSourceAria": "Open source document {{id}}",
+    "openRecord": "Open lab record",
+    "openEpisodeRecordAria": "Open episode lab record {{id}}",
+    "openRecordAria": "Open lab record {{id}}",
+    "selectionErrors": {
+      "target_not_found": "The requested target episode is unavailable; the newest pair is shown.",
+      "baseline_not_found": "The requested baseline episode is unavailable; the newest pair is shown.",
+      "same_episode": "Target and baseline cannot be the same episode; the newest pair is shown.",
+      "baseline_not_earlier": "The baseline must be earlier than the target; the newest pair is shown."
+    },
+    "states": {
+      "comparable_numeric": "Comparable numeric values",
+      "comparable_text": "Before and after text",
+      "baseline_missing": "No baseline structured record",
+      "target_missing": "No target structured record",
+      "multiple_records": "Multiple records; review required",
+      "incompatible_unit": "Units are incompatible or missing",
+      "incompatible_result": "Result types are incompatible"
+    },
+    "episode": {
+      "source": "Source document #{{id}}",
+      "lab": "Lab record #{{id}}",
+      "records": "{{components}} components · {{records}} lab records",
+      "dateConflict": "This episode contains multiple clinical dates: {{dates}}"
+    }
+  },
+  "quality": {
+    "title": "Data quality",
+    "description": "These checks identify records to review. They never edit or delete health data automatically.",
+    "loading": "Loading data quality",
+    "error": "Unable to evaluate data quality.",
+    "issueCount": "{{count}} issues",
+    "filter": "Issue type",
+    "issue": "Issue",
+    "empty": "No issues were found by the current deterministic checks.",
+    "noMatches": "No issues match this filter.",
+    "rules": {
+      "missing_date": "Missing clinical date",
+      "missing_unit": "Quantitative value missing unit",
+      "missing_result": "Missing result",
+      "missing_reference": "Missing reference range",
+      "missing_category": "Missing category",
+      "uncanonicalized_name": "Name not standardized",
+      "possible_duplicate": "Possible duplicate",
+      "low_confidence": "Low parsing confidence; manual verification required"
+    }
+  },
+  "sourceWorkspace": {
+    "safetyNotice": "Original documents are stored separately from official measurements. Uploading a file does not parse it or write values into the health record.",
+    "entryWorkspace": {
+      "title": "Entry and source workspace",
+      "description": "Use the currently selected family member. Store originals, prepare candidates, review them, and commit only after a separate confirmation.",
+      "summary": {
+        "documents": "Stored originals",
+        "pending": "Pending review",
+        "reviewed": "Ready to commit",
+        "committed": "Committed batches",
+        "quality": "Quality flags"
+      },
+      "actionsTitle": "Existing direct-entry forms",
+      "actions": {
+        "lab": "Enter lab results",
+        "vitals": "Enter vital signs",
+        "background": "Enter health background"
+      },
+      "actionDescriptions": {
+        "lab": "Add an official lab record with one or more test components.",
+        "vitals": "Add measurements such as blood pressure, weight, temperature or oxygen saturation.",
+        "background": "Store versioned narrative context separately from numeric measurements."
+      },
+      "workflowTitle": "Source-to-record boundary",
+      "workflow": {
+        "original": {
+          "title": "Store original",
+          "description": "Keep the source file and verification fingerprint."
+        },
+        "candidate": {
+          "title": "Prepare candidates",
+          "description": "Use manual entry or the fixed CSV template."
+        },
+        "review": {
+          "title": "Review every item",
+          "description": "Resolve errors, duplicates and quality flags."
+        },
+        "commit": {
+          "title": "Confirm and commit",
+          "description": "Write official measurements only after a separate confirmation."
+        }
+      }
+    },
+    "loading": "Loading sources and review batches",
+    "loadError": "Unable to load source documents or review batches.",
+    "documentsTitle": "Source documents",
+    "documentsDescription": "Keep the original report, its fingerprint and context before creating structured data.",
+    "documentsEmpty": "No source documents are stored for this family member.",
+    "uploadAction": "Store original",
+    "batchesTitle": "Review batches",
+    "batchesDescription": "Parser output stays here until each candidate is reviewed. This summary does not commit any values.",
+    "batchesEmpty": "No review batches have been created.",
+    "uploadTitle": "Store an original health document",
+    "uploadNotice": "This action stores the original file only. It does not extract, analyze or import health values.",
+    "fileLabel": "PDF or image",
+    "filePlaceholder": "Choose a report",
+    "nameLabel": "Display name",
+    "namePlaceholder": "Defaults to the filename",
+    "typeLabel": "Document type",
+    "reportDateLabel": "Report date",
+    "facilityLabel": "Facility",
+    "saveOriginal": "Store original",
+    "cancel": "Cancel",
+    "uploadSuccessTitle": "Original stored",
+    "uploadSuccessMessage": "The file and its verification fingerprint were saved. No health values were imported.",
+    "uploadErrorTitle": "Upload failed",
+    "uploadErrorMessage": "The original document could not be stored.",
+    "duplicateWarning": "An identical file is already stored for this family member. Keep another copy only when the duplicate is intentional.",
+    "keepDuplicate": "Keep another copy",
+    "duplicate": "Duplicate copy",
+    "openOriginal": "Open original",
+    "lifecycle": {
+      "withdraw": "Withdraw",
+      "restore": "Restore",
+      "withdrawTitle": "Withdraw this original?",
+      "restoreTitle": "Restore this original?",
+      "withdrawNotice": "The original will be hidden from the default list and blocked from new import batches. Its file, history and existing measurements will remain intact.",
+      "restoreNotice": "The original will return to the default list and may be used for new review batches.",
+      "loadingDependencies": "Checking existing references…",
+      "dependenciesTitle": "Existing references",
+      "dependencies": {
+        "batches": "Import batches",
+        "formal": "Official measurements",
+        "background": "Health background versions",
+        "coverage": "Coverage statements"
+      },
+      "preserveDependencies": "All linked records will remain intact. Withdrawal only stops future use; it does not rewrite existing trends or history.",
+      "reasonLabel": "Reason for withdrawal (optional)",
+      "reasonPlaceholder": "For example: uploaded to the wrong member",
+      "confirmWithdraw": "Confirm withdrawal",
+      "confirmRestore": "Confirm restore",
+      "withdrawSuccessTitle": "Original withdrawn",
+      "withdrawSuccessMessage": "The original is hidden from the default list while its file and history remain intact.",
+      "restoreSuccessTitle": "Original restored",
+      "restoreSuccessMessage": "The original is available again.",
+      "loadErrorTitle": "Unable to check references",
+      "loadErrorMessage": "The linked records for this original could not be loaded. Try again.",
+      "actionErrorTitle": "Action failed",
+      "actionErrorMessage": "The original's status could not be updated. Try again."
+    },
+    "reviewSummary": "Accepted {{accepted}} · Pending {{pending}} · Duplicates {{duplicate}}",
+    "columns": {
+      "document": "Document",
+      "type": "Type",
+      "reportDate": "Report date",
+      "size": "Size",
+      "fingerprint": "SHA-256",
+      "status": "Status",
+      "actions": "Actions",
+      "batch": "Batch",
+      "parser": "Parser",
+      "candidates": "Candidates",
+      "review": "Review",
+      "createdAt": "Created"
+    },
+    "types": {
+      "checkup": "Checkup",
+      "laboratory": "Laboratory",
+      "imaging": "Imaging",
+      "prescription": "Prescription",
+      "visit": "Visit",
+      "other": "Other"
+    },
+    "statuses": {
+      "uploaded": "Stored",
+      "verified": "Verified",
+      "archived": "Withdrawn (recoverable)"
+    },
+    "batchStatuses": {
+      "pending_review": "Pending review",
+      "reviewed": "Reviewed",
+      "committed": "Committed",
+      "rolled_back": "Rolled back"
+    }
+  },
+  "sourceReview": {
+    "decisions": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Ignored",
+      "duplicate": "Duplicate"
+    },
+    "resultTypes": {
+      "quantitative": "Quantitative",
+      "qualitative": "Qualitative",
+      "textual": "Text"
+    },
+    "qualitativeValues": {
+      "positive": "Positive",
+      "negative": "Negative",
+      "detected": "Detected",
+      "undetected": "Not detected"
+    },
+    "categories": {
+      "chemistry": "Chemistry",
+      "hematology": "Hematology",
+      "hepatology": "Hepatology",
+      "immunology": "Immunology",
+      "microbiology": "Microbiology",
+      "endocrinology": "Endocrinology",
+      "cardiology": "Cardiology",
+      "toxicology": "Toxicology",
+      "genetics": "Genetics",
+      "molecular": "Molecular",
+      "pathology": "Pathology",
+      "lipids": "Lipids",
+      "hearing": "Hearing",
+      "stomatology": "Stomatology",
+      "imaging": "Imaging",
+      "other": "Other"
+    },
+    "open": "Open review",
+    "title": "Review batch #{{batch}}",
+    "titleEmpty": "Review batch",
+    "notice": "Saving review decisions does not write to the official health record. Committing requires a separate confirmation.",
+    "unresolved": "{{count}} candidates still need a decision",
+    "noDate": "No clinical date",
+    "selectDecision": "Accept or ignore at least one candidate.",
+    "overrideRequired": "Explain why this identified duplicate should still be accepted.",
+    "savedTitle": "Review saved",
+    "savedMessage": "Candidate decisions were saved. Nothing was written to the official record.",
+    "saveError": "Unable to save the review.",
+    "save": "Save review",
+    "close": "Close",
+    "commit": "Commit accepted candidates",
+    "rollback": "Roll back this batch",
+    "commitConfirmTitle": "Commit reviewed candidates?",
+    "commitConfirmMessage": "Only accepted candidates will be written to the official record. This action is audited and can be rolled back as a batch while the imported records remain unchanged.",
+    "rollbackConfirmTitle": "Roll back this batch?",
+    "rollbackConfirmMessage": "Only records created by this batch will be removed. Rollback stops if an imported record was changed or is referenced elsewhere.",
+    "confirmCommit": "Confirm commit",
+    "confirmRollback": "Confirm rollback",
+    "commitSuccess": "Accepted candidates were written to the official record.",
+    "rollbackSuccess": "Official records created by this batch were rolled back.",
+    "commitError": "Unable to commit this batch.",
+    "subjectMismatchWarningTitle": "The detected name may not match this record",
+    "subjectMismatchWarningMessage": "Check that the report belongs to the current record. The system will not move it to another person automatically.",
+    "observedSubjectName": "Name detected in the report",
+    "subjectMismatchMayBeOcrError": "Text recognition can be wrong. This is a review warning, not an identity conclusion.",
+    "subjectMismatchConfirmTitle": "Still commit to the current record?",
+    "subjectMismatchConfirmMessage": "The detected name may differ from the current record. Accepted candidates are written only after this confirmation.",
+    "subjectMismatchAcknowledge": "I checked the original and confirm committing to the current record",
+    "confirmCommitToCurrentSubject": "Commit to current record",
+    "rollbackError": "Unable to roll back this batch.",
+    "fields": {
+      "testName": "Metric name",
+      "date": "Clinical date",
+      "resultType": "Result type",
+      "value": "Result",
+      "unit": "Unit",
+      "refMin": "Reference minimum",
+      "refMax": "Reference maximum",
+      "refText": "Reference text",
+      "category": "Category",
+      "status": "Report status",
+      "sourcePage": "Source page",
+      "sourceLocator": "Source location",
+      "decision": "Review decision",
+      "overrideReason": "Duplicate override reason",
+      "reviewNotes": "Review notes"
+    },
+    "evidenceTitle": "Source evidence (read-only)",
+    "noEvidenceText": "No extracted source text is available for this candidate.",
+    "confidence": "{{value}}% confidence"
+  },
+  "sourceEntry": {
+    "modes": {
+      "manual": "Manual entry",
+      "csv": "CSV template"
+    },
+    "csv": {
+      "title": "Import a lab CSV into review",
+      "description": "Use the fixed template and preview every row before creating a review batch.",
+      "downloadTemplate": "Download CSV template",
+      "notice": "Previewing checks the file in memory only. It does not create official measurements or save the uploaded CSV.",
+      "fileLabel": "CSV file",
+      "filePlaceholder": "Choose a .csv file",
+      "preview": "Preview and validate",
+      "loadError": "Unable to preview this CSV.",
+      "totalRows": "Rows: {{count}}",
+      "validRows": "Valid: {{count}}",
+      "invalidRows": "Invalid: {{count}}",
+      "blocked": "Fix every invalid row before creating the review batch.",
+      "errorAtRow": "Row {{row}} · {{field}}: {{reason}}",
+      "reviewNotice": "All rows passed the deterministic checks. Review and edit the candidates below before creating the batch.",
+      "errors": {
+        "invalid_date": "Use a supported calendar date format.",
+        "unsafe_formula": "Spreadsheet formulas are not allowed in text fields.",
+        "unsupported_qualitative": "Use a supported qualitative result.",
+        "missing_required": "A required field is empty.",
+        "unsupported_result_type": "Use a supported result type.",
+        "invalid_number": "Use a finite decimal number.",
+        "invalid_page": "Use a positive whole-number source page.",
+        "unsupported_status": "Use a supported result status.",
+        "unsupported_category": "Use a supported result category.",
+        "invalid_reference_range": "Reference minimum must be lower than maximum.",
+        "invalid_candidate": "The row does not satisfy the candidate contract.",
+        "duplicate_header": "Each template field may appear only once.",
+        "missing_header": "A required template column is missing.",
+        "unexpected_columns": "The row contains more cells than the header.",
+        "row_limit": "The CSV contains more than 500 non-empty data rows."
+      }
+    },
+    "start": "Enter candidates",
+    "title": "Create a manual review batch",
+    "notice": "These entries stay in a review batch. They do not become official health measurements until they are reviewed and committed separately.",
+    "source": "Source document",
+    "candidate": "Candidate {{index}}",
+    "add": "Add candidate",
+    "remove": "Remove",
+    "create": "Create review batch",
+    "cancel": "Cancel",
+    "missingRequired": "Complete each metric name and result before creating the review batch.",
+    "invalidRange": "A reference minimum must be lower than its maximum.",
+    "successTitle": "Review batch created",
+    "successMessage": "The candidates are ready for review. No official health measurements were created.",
+    "error": "Unable to create the review batch."
+  },
+  "healthAlerts": {
+    "title": "Alerts",
+    "description": "Every alert shows its evidence, source, rule version and limitations.",
+    "safetyTitle": "Rule-based reminders",
+    "safetyNotice": "These alerts only organize stored records using visible, deterministic rules. They are not a diagnosis, risk score or treatment recommendation.",
+    "loading": "Recalculating alerts…",
+    "error": "Unable to calculate alerts.",
+    "retry": "Try again",
+    "activeCount": "Active alerts",
+    "mutedCount": "Muted alerts",
+    "calculatedAt": "Calculated at",
+    "empty": "No current rule-based alerts.",
+    "showMuted": "Show muted",
+    "value": "Stored value",
+    "observedDate": "Observed date",
+    "source": "Source",
+    "sourceLocation": "Document {{document}}, page {{page}}",
+    "recordSource": "Lab record {{record}}",
+    "rule": "Rule",
+    "limitations": "Limitations",
+    "mute": "Mute",
+    "unmute": "Restore",
+    "muteDays": "{{count}} days",
+    "mutedUntil": "Muted until {{date}}",
+    "muteSuccess": "Alert muted.",
+    "unmuteSuccess": "Alert restored.",
+    "actionError": "Unable to update this alert.",
+    "rulesTitle": "Custom rules",
+    "rulesDescription": "Rules use exact metric names and units from stored records.",
+    "rulesEmpty": "No custom rules yet.",
+    "addRule": "Add rule",
+    "ruleName": "Rule name",
+    "ruleType": "Rule type",
+    "testName": "Exact metric name",
+    "testNameHelp": "Use the exact name shown in the metric catalog.",
+    "unit": "Exact unit",
+    "operator": "Operator",
+    "thresholdValue": "Threshold value",
+    "overdueDays": "Days since latest stored record",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "version": "v{{version}}",
+    "saveRule": "Save rule",
+    "cancel": "Cancel",
+    "ruleSuccess": "Rule saved and recalculated.",
+    "ruleError": "Unable to save this rule.",
+    "disable": "Disable",
+    "enable": "Enable",
+    "thresholdEvidence": "Rule: latest value {{operator}} {{value}} {{unit}}",
+    "overdueEvidence": "Rule: more than {{days}} days; currently {{elapsed}} days since the latest stored record.",
+    "types": {
+      "source_status": "Source-report status",
+      "threshold": "Numeric threshold",
+      "overdue": "Record interval"
+    },
+    "severity": {
+      "critical": "Critical label",
+      "warning": "Review",
+      "info": "Reminder"
+    },
+    "operators": {
+      "gt": "greater than",
+      "gte": "greater than or equal to",
+      "lt": "less than",
+      "lte": "less than or equal to"
+    },
+    "explanations": {
+      "source_status": "The latest stored result carries an attention label supplied by its source report.",
+      "threshold": "The latest stored numeric value matched this user-configured comparison.",
+      "overdue": "The elapsed time since the latest stored result exceeded this user-configured interval."
+    },
+    "limitationsText": {
+      "source_status": "This repeats a source-report label; it does not independently interpret or diagnose the result.",
+      "threshold": "This is a user-configured numeric comparison, not a clinical reference range, diagnosis or risk score.",
+      "overdue": "This only measures time since the latest stored record. It cannot show whether a test was clinically due or performed elsewhere."
+    }
+  },
+  "healthBackground": {
+    "title": "Health background",
+    "description": "Keep time-versioned narrative context separate from numeric measurements and trace each version to its source.",
+    "add": "Add background entry",
+    "versionNotice": "Revisions create a new version instead of overwriting history. Voided versions remain available in the audit history.",
+    "showHistory": "Show superseded and voided versions",
+    "loading": "Loading health background",
+    "loadError": "Unable to load health background.",
+    "empty": "No narrative health background has been stored for this family member.",
+    "saveSuccess": "The health background version was saved.",
+    "saveError": "Unable to save this health background version.",
+    "conflict": "This entry changed elsewhere. Reload it before saving.",
+    "voidSuccess": "The entry was voided while its history was preserved.",
+    "version": "Version {{version}}",
+    "noEffectiveDate": "No effective date",
+    "noSource": "No source document",
+    "source": "Source document {{document}}, page {{page}}",
+    "changeNote": "Change note",
+    "revise": "Create revision",
+    "void": "Void entry",
+    "createTitle": "Add health background",
+    "reviseTitle": "Create a new version",
+    "voidTitle": "Void this entry?",
+    "voidNotice": "Voiding hides this entry from the default timeline but preserves every version for audit and export.",
+    "confirmVoid": "Confirm void",
+    "save": "Save version",
+    "cancel": "Cancel",
+    "categories": {
+      "general": "General",
+      "medical_history": "Medical history",
+      "lifestyle": "Lifestyle",
+      "family_history": "Family history",
+      "social_context": "Social context",
+      "other": "Other"
+    },
+    "verification": {
+      "needs_review": "Needs review",
+      "confirmed": "Confirmed",
+      "questionable": "Questionable"
+    },
+    "statuses": {
+      "voided": "Voided"
+    },
+    "fields": {
+      "category": "Category",
+      "title": "Title",
+      "narrative": "Narrative summary",
+      "effectiveDate": "Effective date",
+      "verification": "Verification status",
+      "sourceDocument": "Source document ID",
+      "sourcePage": "Source page",
+      "sourceLocator": "Source location",
+      "changeNote": "Reason for revision",
+      "voidReason": "Reason for voiding"
+    }
+  },
+  "export": {
+    "actions": {
+      "open": "Export and print",
+      "description": "Portable metric report",
+      "svg": "Download SVG",
+      "csv": "Download CSV",
+      "print": "Print / save PDF"
+    },
+    "fields": {
+      "metric": "Metric",
+      "member": "Household member",
+      "generatedAt": "Generated at",
+      "mode": "Visualization mode",
+      "category": "Category",
+      "observations": "Recorded observations",
+      "unit": "Unit",
+      "sourceId": "Source record ID"
+    },
+    "noData": "No observations are available to export.",
+    "unitMismatch": "Multiple units are present, so no combined series is drawn.",
+    "disclaimer": "This export organizes stored records and is not a diagnosis."
+  },
+  "vitalExport": {
+    "description": "Portable vital-sign report",
+    "fields": {
+      "vitalType": "Vital sign",
+      "timeRange": "Time range",
+      "primaryValue": "Primary value",
+      "secondaryValue": "Secondary value",
+      "context": "Context",
+      "recordId": "Vital record ID"
+    },
+    "series": {
+      "secondary": "Secondary"
+    },
+    "noContext": "Not recorded",
+    "visualLimit": "SVG and print are limited to {{limit}} observations; CSV remains complete."
+  },
+  "visualizationContext": {
+    "date": {
+      "title": "Date window",
+      "description": "Apply an exact date window to the selected series. Start and end dates are included.",
+      "presetLabel": "Quick range",
+      "from": "Start date",
+      "to": "End date",
+      "apply": "Apply window",
+      "clear": "Show all dates",
+      "presets": {
+        "all": "All dates",
+        "3months": "Past 3 months",
+        "6months": "Past 6 months",
+        "year": "Past year",
+        "2years": "Past 2 years",
+        "5years": "Past 5 years",
+        "custom": "Custom dates"
+      },
+      "applied": {
+        "all": "All dates",
+        "both": "{{dateFrom}} to {{dateTo}}",
+        "from": "From {{dateFrom}}",
+        "to": "Through {{dateTo}}"
+      },
+      "errors": {
+        "invalid_format": "Enter a valid calendar date.",
+        "reversed": "The start date cannot be after the end date."
+      }
+    },
+    "baseline": {
+      "title": "Baseline comparison",
+      "description": "Compare the latest record in this window with one exact earlier record.",
+      "select": "Baseline record",
+      "selectPlaceholder": "Select an earlier record",
+      "baseline": "Baseline",
+      "target": "Latest target",
+      "recordMeta": "{{date}} · #{{id}}",
+      "absoluteChange": "Absolute change",
+      "noInterpretation": "Arithmetic difference only; no clinical direction is inferred.",
+      "systolic": "Systolic",
+      "diastolic": "Diastolic",
+      "reasons": {
+        "insufficient_points": "At least two stored records are required for a baseline comparison.",
+        "missing_value": "These records do not contain compatible values for a comparison.",
+        "invalid_baseline": "The selected baseline is not an earlier record in the current window.",
+        "incompatible_unit": "The baseline and target units do not match."
+      }
+    },
+    "source": {
+      "record": "Source record",
+      "openRecord": "Open record",
+      "openSource": "Open source",
+      "location": "Source document {{document}}, page {{page}}",
+      "focused": "Linked source",
+      "notFound": "Source document {{document}} is not available for the current family member."
+    },
+    "export": {
+      "dateRange": "Date range",
+      "baselineRecord": "Baseline record",
+      "targetRecord": "Target record",
+      "absoluteChange": "Absolute change"
+    },
+    "limitReached": "This view loaded the newest {{limit}} records. Earlier records may exist; narrow the date window before choosing a baseline."
+  },
+  "detail": {
+    "loading": "Loading metric details",
+    "loadError": "Unable to load metric details.",
+    "selectMetric": "Select a metric to inspect its records.",
+    "unitMismatch": "Multiple units were returned. Values are not shown as one comparable series.",
+    "referenceChanged": "Reference ranges changed between records.",
+    "observationCount": "{{count}} observations",
+    "noObservations": "No observations available for this metric.",
+    "comparisonAria": "Discrete comparison of recorded values by date",
+    "trendAria": "Long-term line chart of recorded values by date",
+    "sourceTable": "Recorded values and sources"
+  },
+  "columns": {
+    "date": "Date",
+    "value": "Value",
+    "status": "Status",
+    "reference": "Reference range",
+    "source": "Source record"
+  },
+  "sourceParse": {
+    "title": "Parse report locally",
+    "notice": "Parsing runs on this server and creates review candidates only. Values reach official trends only after item review and a separate commit.",
+    "start": "Parse locally",
+    "viewTask": "View parsing",
+    "taskNumber": "Parsing task #{{task}}",
+    "parser": "{{name}} · version {{version}}",
+    "readiness": {
+      "title": "Files currently supported",
+      "partialHint": "Unavailable formats stop safely and keep the original. Digital PDFs are unaffected by missing image OCR components.",
+      "statuses": {
+        "ready": "Ready",
+        "partial": "Partly ready",
+        "unavailable": "Unavailable"
+      },
+      "capabilities": {
+        "digital_pdf": "Digital PDF",
+        "image_ocr": "JPG, PNG and similar images",
+        "scanned_pdf_ocr": "Scanned PDF",
+        "heic_image_ocr": "HEIC and HEIF images"
+      },
+      "worker": {
+        "running": "Background tasks continue automatically, including recovery after a service restart.",
+        "fallback": "The continuous worker is not running; this request still uses the safe fallback processor."
+      }
+    },
+    "processing": "Extracting text and recognizing core laboratory metrics",
+    "processingHint": "You may close this window. Task state is retained and the original is never rewritten.",
+    "successNotice": "Parsing finished. This is a candidate summary; official health data still has 0 writes.",
+    "failedTitle": "This report could not be parsed automatically",
+    "originalPreserved": "The original file remains intact. Retry or use manual entry.",
+    "cancelledNotice": "The parsing task was cancelled. The original and all other data are unchanged.",
+    "staleNotice": "This task has not finished for 30 minutes and may have been interrupted by a service restart. It can be safely rescheduled.",
+    "cancelTask": "Cancel task",
+    "retry": "Retry parsing",
+    "resume": "Reschedule",
+    "manualEntry": "Use manual entry",
+    "openReview": "Open candidate review",
+    "startErrorTitle": "Unable to start parsing",
+    "startErrorMessage": "The parsing task could not be created. Try again.",
+    "retryError": "Unable to restart the parsing task.",
+    "cancelError": "This task cannot be cancelled.",
+    "openBatchError": "Unable to open the generated review batch.",
+    "statuses": {
+      "queued": "Queued",
+      "running": "Parsing",
+      "succeeded": "Parsed · needs review",
+      "failed": "Parsing failed",
+      "cancelled": "Cancelled"
+    },
+    "summary": {
+      "candidate_count": "Candidates",
+      "low_confidence_count": "Low confidence",
+      "unparsed_count": "Unparsed",
+      "formal_write_count": "Official writes"
+    },
+    "methods": {
+      "native": "Native PDF text",
+      "ocr": "Local OCR",
+      "labcorp_parser": "Local format parser",
+      "quest_parser": "Local format parser",
+      "epic_mychart_parser": "Local format parser",
+      "unknown": "Local extraction"
+    },
+    "extraction": "Extraction: {{method}} · {{pages}} pages",
+    "errors": {
+      "source_missing": "The source record is missing.",
+      "source_archived": "The original is withdrawn. Restore it before parsing.",
+      "source_file_missing": "The stored original file is missing.",
+      "source_hash_mismatch": "The original fingerprint changed, so processing stopped.",
+      "ocr_unavailable": "Local OCR is not installed on the server. Digital PDFs can still be parsed.",
+      "ocr_language_unavailable": "OCR is missing Chinese or English language data.",
+      "unsupported_image_codec": "This image encoding is not readable. Convert it to JPG, PNG or PDF and retry.",
+      "unsupported_source_type": "This file type is outside the current local parser scope.",
+      "source_page_limit_exceeded": "The report exceeds the local parsing page limit.",
+      "image_pixel_limit_exceeded": "The image is too large to process safely.",
+      "extracted_text_limit_exceeded": "Extracted text exceeds the safety limit.",
+      "text_extraction_failed": "No usable text could be extracted from the report.",
+      "no_supported_candidates": "The report was read, but no first-release core metrics were recognized. Use manual entry.",
+      "task_owner_missing": "The task owner account is missing.",
+      "parse_internal_error": "An internal parsing error occurred. No official data was written.",
+      "unknown": "Parsing did not finish. No official data was written."
+    }
+  }
+}

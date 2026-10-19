@@ -1,0 +1,160 @@
+/**
+ * Family Condition form field configuration
+ */
+
+export const familyConditionFormFields = [
+  {
+    name: 'condition_name',
+    type: 'text',
+    labelKey: 'shared:fields.conditionName',
+    placeholderKey:
+      'medical:familyHistory.form.condition.conditionName.placeholder',
+    required: true,
+    descriptionKey:
+      'medical:familyHistory.form.condition.conditionName.description',
+    gridColumn: 6,
+  },
+  {
+    name: 'condition_type',
+    type: 'select',
+    labelKey: 'medical:familyHistory.form.condition.conditionType.label',
+    placeholderKey:
+      'medical:familyHistory.form.condition.conditionType.placeholder',
+    descriptionKey:
+      'medical:familyHistory.form.condition.conditionType.description',
+    gridColumn: 6,
+    searchable: true,
+    clearable: true,
+    options: [
+      {
+        value: 'cardiovascular',
+        labelKey:
+          'medical:familyHistory.form.condition.typeOptions.cardiovascular',
+      },
+      {
+        value: 'diabetes',
+        labelKey: 'medical:familyHistory.form.condition.typeOptions.diabetes',
+      },
+      {
+        value: 'cancer',
+        labelKey: 'medical:familyHistory.form.condition.typeOptions.cancer',
+      },
+      {
+        value: 'mental_health',
+        labelKey:
+          'medical:familyHistory.form.condition.typeOptions.mentalHealth',
+      },
+      {
+        value: 'neurological',
+        labelKey:
+          'medical:familyHistory.form.condition.typeOptions.neurological',
+      },
+      {
+        value: 'autoimmune',
+        labelKey: 'medical:familyHistory.form.condition.typeOptions.autoimmune',
+      },
+      {
+        value: 'genetic',
+        labelKey: 'medical:familyHistory.form.condition.typeOptions.genetic',
+      },
+      {
+        value: 'respiratory',
+        labelKey:
+          'medical:familyHistory.form.condition.typeOptions.respiratory',
+      },
+      {
+        value: 'endocrine',
+        labelKey: 'medical:familyHistory.form.condition.typeOptions.endocrine',
+      },
+      {
+        value: 'other',
+        labelKey: 'medical:familyHistory.form.condition.typeOptions.other',
+      },
+    ],
+  },
+  {
+    name: 'severity',
+    type: 'select',
+    labelKey: 'medical:familyHistory.form.condition.severity.label',
+    placeholderKey: 'shared:labels.selectSeverityLevel',
+    descriptionKey: 'medical:familyHistory.form.condition.severity.description',
+    gridColumn: 4,
+    clearable: true,
+    options: [
+      {
+        value: 'mild',
+        labelKey: 'medical:familyHistory.form.condition.severityOptions.mild',
+      },
+      {
+        value: 'moderate',
+        labelKey:
+          'medical:familyHistory.form.condition.severityOptions.moderate',
+      },
+      {
+        value: 'severe',
+        labelKey: 'medical:familyHistory.form.condition.severityOptions.severe',
+      },
+      {
+        value: 'critical',
+        labelKey:
+          'medical:familyHistory.form.condition.severityOptions.critical',
+      },
+    ],
+  },
+  {
+    name: 'diagnosis_age',
+    type: 'number',
+    labelKey: 'medical:familyHistory.form.condition.diagnosisAge.label',
+    placeholderKey:
+      'medical:familyHistory.form.condition.diagnosisAge.placeholder',
+    descriptionKey:
+      'medical:familyHistory.form.condition.diagnosisAge.description',
+    gridColumn: 4,
+    min: 0,
+    max: 120,
+  },
+  {
+    name: 'status',
+    type: 'select',
+    labelKey: 'medical:familyHistory.form.condition.status.label',
+    placeholderKey: 'medical:familyHistory.form.condition.status.placeholder',
+    descriptionKey: 'medical:familyHistory.form.condition.status.description',
+    gridColumn: 4,
+    clearable: true,
+    options: [
+      {
+        value: 'active',
+        labelKey: 'medical:familyHistory.form.condition.statusOptions.active',
+      },
+      {
+        value: 'resolved',
+        labelKey: 'medical:familyHistory.form.condition.statusOptions.resolved',
+      },
+      {
+        value: 'chronic',
+        labelKey: 'medical:familyHistory.form.condition.statusOptions.chronic',
+      },
+    ],
+  },
+  {
+    name: 'icd10_code',
+    type: 'text',
+    labelKey: 'shared:fields.icd10Code',
+    placeholderKey:
+      'medical:familyHistory.form.condition.icd10Code.placeholder',
+    descriptionKey:
+      'medical:familyHistory.form.condition.icd10Code.description',
+    gridColumn: 6,
+    maxLength: 10,
+  },
+  {
+    name: 'notes',
+    type: 'textarea',
+    labelKey: 'shared:tabs.notes',
+    placeholderKey: 'medical:familyHistory.form.condition.notes.placeholder',
+    descriptionKey: 'medical:familyHistory.form.condition.notes.description',
+    gridColumn: 12,
+    minRows: 3,
+    maxRows: 6,
+  },
+];

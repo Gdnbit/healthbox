@@ -1,0 +1,43 @@
+{
+  "schema_version": "admin-delegated-upload-v1",
+  "capability": "delegated_upload",
+  "default_enabled": false,
+  "sole_active_administrator_required": true,
+  "ordinary_member_subject_selection": false,
+  "reason": {
+    "required": true,
+    "min_length": 3,
+    "max_length": 200,
+    "single_line": true
+  },
+  "allowed_operations": [
+    "create_upload_batch",
+    "list_upload_batches",
+    "get_upload_batch",
+    "upload_source_document",
+    "complete_upload_batch",
+    "cancel_upload_batch",
+    "get_source_dependencies",
+    "withdraw_uploaded_source",
+    "restore_uploaded_source"
+  ],
+  "required_persistence": [
+    "target_patient_id",
+    "actor_user_id",
+    "capability",
+    "reason"
+  ],
+  "scope_restrictions": [
+    "only_batches_created_by_the_current_administrator",
+    "only_sources_created_by_the_current_administrator",
+    "no_parse_review_commit_or_general_cross_subject_write",
+    "disable_does_not_delete_existing_sources"
+  ],
+  "audit_excludes": [
+    "health_values",
+    "file_content",
+    "passwords",
+    "tokens",
+    "server_paths"
+  ]
+}

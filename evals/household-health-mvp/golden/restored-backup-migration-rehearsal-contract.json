@@ -1,0 +1,84 @@
+{
+  "contract_version": "1.0.0",
+  "contract_id": "household-restored-backup-migration-rehearsal",
+  "case_id": "CASE-MVP-RESTORED-BACKUP-MIGRATION",
+  "required_inputs": [
+    "full_backup_zip_inside_deployment_backup_root",
+    "exact_application_image",
+    "exact_postgres_image",
+    "expected_baseline_revision",
+    "expected_head_revision",
+    "expected_migration_count"
+  ],
+  "required_isolation": [
+    "ephemeral_internal_docker_network",
+    "no_host_ports",
+    "ephemeral_database_container",
+    "ephemeral_application_container",
+    "system_temporary_extraction_directory",
+    "no_live_database_connection",
+    "no_external_network"
+  ],
+  "required_sequence": [
+    "safe_archive_validation",
+    "isolated_sql_restore",
+    "baseline_revision_assertion",
+    "baseline_table_set_and_row_count_digest",
+    "upgrade_all_revisions_to_head",
+    "application_health_after_first_upgrade",
+    "database_restart_at_head",
+    "downgrade_all_revisions_to_baseline",
+    "baseline_table_set_and_row_count_digest_restored",
+    "second_upgrade_all_revisions_to_head",
+    "application_health_after_second_upgrade",
+    "application_restart_at_head",
+    "exact_resource_cleanup"
+  ],
+  "result_allowed_fields": [
+    "status",
+    "observed_at",
+    "backup_filename",
+    "archive_sha256",
+    "postgres_image",
+    "application_image",
+    "baseline_version",
+    "final_version",
+    "migration_count",
+    "baseline_table_count",
+    "head_table_count",
+    "baseline_row_count_digest",
+    "upload_file_count",
+    "isolation_method",
+    "stable_service_mutated",
+    "checks_run"
+  ],
+  "result_forbidden_fields": [
+    "database_url",
+    "database_password",
+    "secret_key",
+    "record_values",
+    "patient_names",
+    "usernames",
+    "source_filenames",
+    "report_text",
+    "table_row_counts"
+  ],
+  "success_invariants": {
+    "stable_service_mutated": false,
+    "final_version_equals_expected_head": true,
+    "migration_count_equals_expected": true,
+    "baseline_table_set_restored_after_downgrade": true,
+    "baseline_row_count_digest_stable_across_round_trip": true,
+    "application_healthy_before_and_after_round_trip": true,
+    "leftover_containers": 0,
+    "leftover_networks": 0,
+    "leftover_temp_directories": 0
+  },
+  "non_claims": [
+    "not_a_live_deployment",
+    "not_a_fresh_predeployment_backup",
+    "not_field_level_medical_validation",
+    "not_off_host_backup_evidence",
+    "not_public_release_evidence"
+  ]
+}

@@ -1,0 +1,353 @@
+.privacy-access-page {
+  min-height: 100vh;
+  padding: 32px 20px 64px;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 12% 0%, rgb(76 148 130 / 14%), transparent 30%),
+    #f4f7f6;
+  color: #183d34;
+}
+
+.privacy-access-page *,
+.privacy-access-page *::before,
+.privacy-access-page *::after {
+  box-sizing: border-box;
+}
+
+.privacy-access-shell {
+  width: 100%;
+  max-width: 900px;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.privacy-access-header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.privacy-access-header p,
+.privacy-access-section-heading p {
+  margin: 0 0 3px;
+  color: #648079;
+  font-size: 0.84rem;
+}
+
+.privacy-access-header h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 4vw, 2.35rem);
+  line-height: 1.18;
+}
+
+.privacy-access-back {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #d1e0dc;
+  border-radius: 14px;
+  background: #fff;
+  color: #1d6857;
+  cursor: pointer;
+}
+
+.privacy-access-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-bottom: 18px;
+  padding: 24px;
+  border: 1px solid #dce7e4;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgb(37 76 67 / 7%);
+}
+
+.privacy-access-section-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.privacy-access-section-heading h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.privacy-access-section-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+  background: #e5f3ef;
+  color: #1f725f;
+}
+
+.privacy-access-visibility-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.privacy-access-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 17px;
+  border-radius: 16px;
+  background: #f7faf9;
+  overflow: hidden;
+}
+
+.privacy-access-card > svg {
+  flex: 0 0 auto;
+  color: #2d7766;
+}
+
+.privacy-access-card > div {
+  min-width: 0;
+}
+
+.privacy-access-card strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.privacy-access-card p {
+  margin: 0;
+  color: #5a706a;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.privacy-access-viewers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.privacy-access-viewers span {
+  display: grid;
+  gap: 1px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d4e5e0;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.privacy-access-viewers b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.privacy-access-viewers small {
+  color: #6a807a;
+}
+
+.privacy-access-exclusions {
+  margin-top: 14px;
+  padding: 15px 17px;
+  border: 1px solid #cfe0dc;
+  border-radius: 15px;
+  background: #f1f7f5;
+}
+
+.privacy-access-exclusions > strong {
+  display: block;
+  margin-bottom: 9px;
+}
+
+.privacy-access-exclusions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.privacy-access-exclusions span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #fff;
+  color: #48645d;
+  font-size: 0.82rem;
+}
+
+.privacy-access-events {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.privacy-access-events li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #e8efed;
+}
+
+.privacy-access-events li:last-child {
+  border-bottom: 0;
+}
+
+.privacy-access-actor {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e4efec;
+  color: #37655a;
+  font-weight: 800;
+}
+
+.privacy-access-actor--administrator {
+  background: #e9e7f7;
+  color: #564c8e;
+}
+
+.privacy-access-actor--self {
+  background: #dff0e9;
+  color: #1f6b58;
+}
+
+.privacy-access-events strong {
+  display: block;
+  padding-top: 1px;
+}
+
+.privacy-access-events p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 10px;
+  margin: 5px 0 0;
+  color: #71857f;
+  font-size: 0.82rem;
+}
+
+.privacy-access-events p span {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #edf4f2;
+}
+
+.privacy-access-history-notice {
+  margin: 15px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid #e5edeb;
+  color: #6a7f79;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.privacy-access-empty,
+.privacy-access-status {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 210px;
+  padding: 28px;
+  border: 1px solid #dce7e4;
+  border-radius: 22px;
+  background: #fff;
+  text-align: center;
+}
+
+.privacy-access-empty {
+  min-height: 120px;
+  border: 0;
+  background: #f7faf9;
+  color: #617972;
+}
+
+.privacy-access-status h2,
+.privacy-access-status p {
+  margin: 0;
+}
+
+.privacy-access-status button,
+.privacy-access-load-more {
+  min-height: 46px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #267562;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.privacy-access-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #d6e5e1;
+  border-top-color: #267562;
+  border-radius: 50%;
+  animation: privacy-access-spin 0.75s linear infinite;
+}
+
+.privacy-access-load-more {
+  display: block;
+  margin: 14px auto 0;
+}
+
+.privacy-access-load-more:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.privacy-access-inline-error {
+  padding: 11px 13px;
+  border-radius: 11px;
+  background: #fff1f0;
+  color: #9c3e36;
+}
+
+@keyframes privacy-access-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .privacy-access-page {
+    padding: 18px 14px 40px;
+    background: #f7faf9;
+  }
+
+  .privacy-access-header {
+    margin-bottom: 18px;
+  }
+
+  .privacy-access-section {
+    padding: 18px;
+    border-radius: 18px;
+    box-shadow: none;
+  }
+
+  .privacy-access-visibility-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .privacy-access-card {
+    padding: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .privacy-access-spinner {
+    animation: none;
+  }
+}

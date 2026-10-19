@@ -1,0 +1,62 @@
+{
+  "contract_id": "household-source-upload-interruption-recovery@1.0.0",
+  "case_id": "CASE-MVP-UPLOAD-BATCH-LIFECYCLE",
+  "scope": "owner_or_explicit_delegated_uploader_durable_manifest",
+  "limits": {
+    "max_files_per_batch": 30,
+    "max_batch_bytes": 314572800,
+    "max_image_bytes": 20971520,
+    "max_pdf_bytes": 52428800
+  },
+  "source_of_truth": {
+    "batch_manifest": "postgresql",
+    "browser_file_objects_persisted": false,
+    "uploaded_originals_persisted": true,
+    "successful_items_never_require_reupload": true
+  },
+  "reopen": {
+    "unfinished_statuses": ["open", "partial"],
+    "loads_newest_unfinished_batch": true,
+    "shows_preserved_pending_and_total_counts": true,
+    "shows_pending_file_names": true,
+    "locks_batch_metadata": true,
+    "blocks_new_batch_when_history_check_fails": true
+  },
+  "reselection": {
+    "match_fields": [
+      "client_sha256",
+      "original_filename",
+      "mime_type",
+      "size_bytes"
+    ],
+    "already_uploaded_is_positive_skip": true,
+    "pending_or_failed_is_queued_once": true,
+    "unknown_file_is_rejected": true,
+    "missing_client_sha256_fails_closed": true,
+    "allows_reselecting_all_original_files": true
+  },
+  "completion": {
+    "uploads_only_pending_or_failed_items": true,
+    "reconciles_client_rows_from_server_response": true,
+    "shows_preserved_and_newly_completed_counts": true,
+    "completes_without_duplicate_source_documents": true,
+    "keeps_earlier_unfinished_batches_discoverable": true
+  },
+  "ui": {
+    "surface": "household_upload_modal",
+    "chinese_first": true,
+    "minimum_mobile_target_px": 44,
+    "recovery_summary_precedes_file_queue": true,
+    "thirty_file_list_is_collapsible": true,
+    "no_page_level_horizontal_overflow": true
+  },
+  "forbidden": [
+    "persist_browser_file_bytes",
+    "silently_create_new_batch_while_unfinished_batch_exists",
+    "reupload_successful_item",
+    "accept_name_only_match",
+    "delete_successful_original_on_cancel",
+    "report_completed_before_server_confirmation",
+    "copy_file_content_or_server_path_into_audit"
+  ]
+}

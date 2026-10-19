@@ -1,0 +1,94 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+name: HealthBox Security
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-privacy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Exercise privacy-boundary contracts without application data
+        run: |
+          python -m unittest discover -s tests/security -p test_public_source_privacy.py -v
+          python -m unittest discover -s tests/security -p test_open_source_catalogs.py -v
+          python -m unittest discover -s tests/security -p test_distribution_notices.py -v
+      - name: Package and inspect the source-only public boundary
+        run: |
+          python scripts/healthbox-package.py "$RUNNER_TEMP/source-candidate" --manifest "$RUNNER_TEMP/source-manifest.json"
+          python scripts/healthbox-privacy-check.py "$RUNNER_TEMP/source-candidate" --report "$RUNNER_TEMP/source-privacy.json"
+      # Do not upload source/owner-patterns/privacy reports as CI artifacts.
+
+  bandit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'bandit[toml]==1.9.4'
+      - name: Block medium or higher severity and confidence
+        run: bandit -c pyproject.toml -r app/ -ll -ii -f json -o bandit-results.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-results.json
+          if-no-files-found: error
+          retention-days: 7
+
+  python-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pip-audit==2.10.0
+      - name: Audit current dependencies without historical CVE exemptions
+        run: pip-audit -r requirements.txt --progress-spinner off -f json -o pip-audit-report.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+          if-no-files-found: error
+          retention-days: 7
+
+  npm-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.22.0'
+      - name: Audit production and development dependencies
+        run: npx --yes --package=npm@11.21.1 npm audit --audit-level=high

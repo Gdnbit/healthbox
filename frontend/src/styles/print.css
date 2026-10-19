@@ -1,0 +1,608 @@
+/* Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md. */
+/* Print Styles for Medical Records Application */
+.health-metric-print-report,
+.vital-trend-print-report {
+  display: none;
+}
+
+@page {
+  size: landscape;
+  margin: 0.5in;
+}
+
+@media print {
+  body.health-metric-printing *,
+  body.vital-trend-printing * {
+    visibility: hidden !important;
+  }
+
+  body.health-metric-printing .health-metric-print-report,
+  body.health-metric-printing .health-metric-print-report *,
+  body.vital-trend-printing .vital-trend-print-report,
+  body.vital-trend-printing .vital-trend-print-report * {
+    visibility: visible !important;
+  }
+
+  body.health-metric-printing .health-metric-print-report,
+  body.vital-trend-printing .vital-trend-print-report {
+    display: block !important;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  body.health-metric-printing .health-metric-print-svg svg,
+  body.vital-trend-printing .vital-trend-print-svg svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-bottom: 0.25in;
+  }
+
+  body.health-metric-printing .health-metric-print-report table,
+  body.vital-trend-printing .vital-trend-print-report table {
+    width: 100%;
+    border-collapse: collapse;
+    page-break-inside: auto;
+    font-size: 9pt;
+  }
+
+  body.health-metric-printing .health-metric-print-report caption,
+  body.vital-trend-printing .vital-trend-print-report caption {
+    margin-bottom: 0.08in;
+    text-align: left;
+    font-weight: 700;
+  }
+
+  body.health-metric-printing .health-metric-print-report th,
+  body.health-metric-printing .health-metric-print-report td,
+  body.vital-trend-printing .vital-trend-print-report th,
+  body.vital-trend-printing .vital-trend-print-report td {
+    padding: 0.05in;
+    border: 1px solid #777;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+
+  body.health-metric-printing .health-metric-print-report th,
+  body.vital-trend-printing .vital-trend-print-report th {
+    background: #eef2f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.health-metric-printing .health-metric-print-report thead,
+  body.vital-trend-printing .vital-trend-print-report thead {
+    display: table-header-group;
+  }
+
+  body.health-metric-printing .health-metric-print-report tr,
+  body.vital-trend-printing .vital-trend-print-report tr {
+    break-inside: avoid;
+  }
+
+  body.health-metric-printing .health-metric-print-disclaimer,
+  body.vital-trend-printing .vital-trend-print-disclaimer {
+    margin-top: 0.12in;
+    color: #444 !important;
+    font-size: 8.5pt;
+  }
+
+  /* Hide all interactive and navigation elements */
+  .medical-page-header,
+  .medical-page-controls,
+  .medical-page-filters,
+  .filter-summary,
+  .clear-filters-btn,
+  .no-print,
+  .view-toggle,
+  .view-toggle-container,
+  .print-button,
+  .controls-left,
+  .controls-center,
+  .controls-right,
+  .settings-button,
+  .theme-toggle-btn,
+  .theme-toggle,
+  .logout-btn,
+  .logout-button,
+  .header-actions,
+  .global-actions,
+  .admin-header,
+  .page-header,
+  .header-left,
+  .header-right,
+  .header-center,
+  nav,
+  header,
+  .back-button,
+  /* Hide any elements with settings or theme in class names */
+  [class*="settings"],
+  [class*="theme"],
+  [class*="logout"],
+  [class*="header-action"],
+  [class*="nav-"] {
+    display: none !important;
+  }
+
+  /* Hide Mantine UI components but allow containers and tables */
+  [class*='mantine-TextInput'],
+  [class*='mantine-Select'],
+  [class*='mantine-Button']:not(.print-button),
+  [class*='mantine-ActionIcon'],
+  [class*='mantine-Group']:has([class*='mantine-TextInput']),
+  [class*='mantine-Group']:has([class*='mantine-ActionIcon']),
+  [class*='mantine-Alert'],
+  [class*='PageHeader'] {
+    display: none !important;
+  }
+
+  /* Show Mantine containers that wrap the table */
+  [class*='mantine-Container']:has(.medications-table-container),
+  [class*='mantine-Stack']:has(.medications-table-container) {
+    display: block !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure the main container takes full width */
+  .medical-page-container {
+    background: white !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .medical-page-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  /* Table specific styles */
+  .medications-table-container,
+  .medical-table-container {
+    box-shadow: none !important;
+    border: 1px solid #333 !important;
+    break-inside: avoid;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .print-header {
+    background: white !important;
+    border-bottom: 2px solid #333 !important;
+    padding: 1rem !important;
+    text-align: center;
+  }
+
+  .print-header h2 {
+    color: #333 !important;
+    margin: 0 0 0.5rem 0 !important;
+    font-size: 1.2rem !important;
+  }
+
+  .print-header p {
+    color: #666 !important;
+    margin: 0 !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Table styles */
+  .medications-table,
+  .medical-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+    font-size: 10px !important;
+  }
+
+  .medications-table th,
+  .medical-table th {
+    background: #f0f0f0 !important;
+    color: #333 !important;
+    border: 1px solid #333 !important;
+    font-size: 10px !important;
+    padding: 0.4rem 0.2rem !important;
+    font-weight: bold !important;
+  }
+
+  .medications-table td,
+  .medical-table td {
+    border: 1px solid #333 !important;
+    font-size: 9px !important;
+    padding: 0.3rem 0.2rem !important;
+    vertical-align: top !important;
+  }
+
+  .medications-table tr,
+  .medical-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .medications-table thead,
+  .medical-table thead {
+    display: table-header-group;
+  }
+
+  /* Additional rules for Mantine Table headers in ResponsiveTable component */
+  /* These target the specific Mantine Table classes without breaking other elements */
+  table.mantine-Table-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  table.mantine-Table-table thead {
+    display: table-header-group !important;
+  }
+
+  table.mantine-Table-table th {
+    background: #f0f0f0 !important;
+    color: #333 !important;
+    border: 1px solid #333 !important;
+    font-size: 10px !important;
+    padding: 0.4rem 0.2rem !important;
+    font-weight: bold !important;
+  }
+
+  table.mantine-Table-table td {
+    border: 1px solid #333 !important;
+    font-size: 9px !important;
+    padding: 0.3rem 0.2rem !important;
+  }
+
+  /* Show Mantine Group and Text elements ONLY inside table headers */
+  table.mantine-Table-table th [class*='mantine-Group'],
+  table.mantine-Table-table th [class*='mantine-Text'] {
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  /* Hide sort icons in print but keep the text */
+  table.mantine-Table-table th [class*='mantine-ActionIcon'] {
+    display: none !important;
+  }
+
+  /* Ensure header text is visible */
+  table.mantine-Table-table th [class*='mantine-Text'] {
+    display: inline !important;
+    color: #333 !important;
+    font-weight: bold !important;
+    font-size: 10px !important;
+  }
+
+  /* Hide action columns */
+  .table-actions,
+  .medical-item-actions,
+  .edit-button-small,
+  .delete-button-small,
+  .view-button-small {
+    display: none !important;
+  }
+
+  /* Style status badges for print - preserve colors */
+  .status-badge-small,
+  .status-badge {
+    display: inline-block !important;
+    border: 1px solid #333 !important;
+    font-size: 8px !important;
+    padding: 2px 4px !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  /* Mantine badges - minimal styling to preserve colors */
+  [class*='mantine-Badge'] {
+    box-shadow: none !important;
+    outline: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    /* These properties force browsers to print exact colors */
+  }
+
+  /* Remove any nested elements inside badges that might cause double borders */
+  [class*='mantine-Badge'] > *,
+  [class*='mantine-Badge']::before,
+  [class*='mantine-Badge']::after,
+  .status-badge > *,
+  .status-badge::before,
+  .status-badge::after,
+  .status-badge-small > *,
+  .status-badge-small::before,
+  .status-badge-small::after {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    content: none !important;
+  }
+
+  /* Ensure clean badge rendering */
+  [class*='mantine-Badge'] {
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+  /* Style severity badges for print */
+  .severity-badge {
+    border: 1px solid #333 !important;
+    background: white !important;
+    color: #333 !important;
+    font-size: 8px !important;
+    padding: 2px 4px !important;
+    display: inline-block !important;
+  }
+
+  /* Primary field styling (procedure names, etc.) */
+  .medication-name,
+  .item-title,
+  .primary-field {
+    font-weight: bold !important;
+    color: #000 !important;
+  }
+
+  /* Hide cards view completely in print */
+  .medical-items-grid,
+  .medical-item-card,
+  .medical-responsive-cards,
+  .screen-only {
+    display: none !important;
+  }
+
+  /* Hide screen table view in print and show only print-optimized table */
+  .screen-and-print {
+    display: none !important;
+  }
+
+  /* Show print-optimized tables and legacy table containers in print */
+  .print-only,
+  .medications-table-container,
+  .medical-table-container {
+    display: table !important;
+  }
+
+  /* Remove hover effects and transitions */
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Remove shadows and effects */
+  .medical-item-card,
+  .medications-table-container,
+  .print-header,
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Ensure black text for better printing, but preserve badge colors */
+  body,
+  .medical-page-content {
+    color: #000 !important;
+  }
+
+  /* Apply black text to table headers only */
+  .medications-table th,
+  .medical-table th {
+    color: #000 !important;
+  }
+
+  /* Apply black text to table cell text but override for badges */
+  .medications-table td,
+  .medical-table td {
+    color: #000 !important;
+  }
+
+  /* Force badges to keep their original colors */
+  .medications-table [class*='mantine-Badge'],
+  .medical-table [class*='mantine-Badge'] {
+    color: inherit !important;
+    background: inherit !important;
+  }
+
+  /* Force all badges to use print colors by overriding CSS custom properties */
+  .medications-table [class*='mantine-Badge'],
+  .medical-table [class*='mantine-Badge'],
+  .medications-table-container [class*='mantine-Badge'],
+  .medical-table-container [class*='mantine-Badge'] {
+    --mantine-color-red-6: #fa5252 !important;
+    --mantine-color-red-1: #ffe0e1 !important;
+    --mantine-color-red-9: #c92a2a !important;
+    --mantine-color-orange-6: #fd7e14 !important;
+    --mantine-color-orange-1: #ffe8cc !important;
+    --mantine-color-orange-9: #d9480f !important;
+    --mantine-color-yellow-6: #fab005 !important;
+    --mantine-color-yellow-1: #fff3bf !important;
+    --mantine-color-yellow-9: #e67700 !important;
+    --mantine-color-blue-6: #228be6 !important;
+    --mantine-color-blue-1: #e7f5ff !important;
+    --mantine-color-blue-9: #1971c2 !important;
+    --mantine-color-green-6: #51cf66 !important;
+    --mantine-color-green-1: #d3f9d8 !important;
+    --mantine-color-green-9: #2f9e44 !important;
+    --mantine-color-gray-6: #868e96 !important;
+    --mantine-color-gray-1: #f1f3f4 !important;
+    --mantine-color-gray-9: #495057 !important;
+  }
+
+  /* Specific color overrides for different severity levels */
+
+  /* Red badges (life-threatening, active) */
+  .medications-table [class*='mantine-Badge'][class*='mantine-red'],
+  .medical-table [class*='mantine-Badge'][class*='mantine-red'],
+  .medications-table-container [class*='mantine-Badge'][class*='mantine-red'],
+  .medical-table-container [class*='mantine-Badge'][class*='mantine-red'] {
+    background: #fa5252 !important;
+    color: white !important;
+    border: 1px solid #fa5252 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    display: inline-block !important;
+  }
+
+  /* Orange badges (severe) */
+  .medications-table [class*='mantine-Badge'][class*='mantine-orange'],
+  .medical-table [class*='mantine-Badge'][class*='mantine-orange'],
+  .medications-table-container
+    [class*='mantine-Badge'][class*='mantine-orange'],
+  .medical-table-container [class*='mantine-Badge'][class*='mantine-orange'] {
+    background: #fd7e14 !important;
+    color: white !important;
+    border: 1px solid #fd7e14 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    display: inline-block !important;
+  }
+
+  /* Yellow badges (moderate) */
+  .medications-table [class*='mantine-Badge'][class*='mantine-yellow'],
+  .medical-table [class*='mantine-Badge'][class*='mantine-yellow'],
+  .medications-table-container
+    [class*='mantine-Badge'][class*='mantine-yellow'],
+  .medical-table-container [class*='mantine-Badge'][class*='mantine-yellow'] {
+    background: #fab005 !important;
+    color: #212529 !important;
+    border: 1px solid #fab005 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    display: inline-block !important;
+  }
+
+  /* Blue badges (mild) */
+  .medications-table [class*='mantine-Badge'][class*='mantine-blue'],
+  .medical-table [class*='mantine-Badge'][class*='mantine-blue'],
+  .medications-table-container [class*='mantine-Badge'][class*='mantine-blue'],
+  .medical-table-container [class*='mantine-Badge'][class*='mantine-blue'] {
+    background: #228be6 !important;
+    color: white !important;
+    border: 1px solid #228be6 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    display: inline-block !important;
+  }
+
+  /* Green badges (resolved) */
+  .medications-table [class*='mantine-Badge'][class*='mantine-green'],
+  .medical-table [class*='mantine-Badge'][class*='mantine-green'],
+  .medications-table-container [class*='mantine-Badge'][class*='mantine-green'],
+  .medical-table-container [class*='mantine-Badge'][class*='mantine-green'] {
+    background: #51cf66 !important;
+    color: white !important;
+    border: 1px solid #51cf66 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    display: inline-block !important;
+  }
+
+  /* Gray badges (inactive, unknown) */
+  .medications-table [class*='mantine-Badge'][class*='mantine-gray'],
+  .medical-table [class*='mantine-Badge'][class*='mantine-gray'],
+  .medications-table-container [class*='mantine-Badge'][class*='mantine-gray'],
+  .medical-table-container [class*='mantine-Badge'][class*='mantine-gray'] {
+    background: #868e96 !important;
+    color: white !important;
+    border: 1px solid #868e96 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    display: inline-block !important;
+  }
+
+  /* Force all Mantine badges to have proper styling in print */
+  .medications-table [class*='mantine-Badge'],
+  .medical-table [class*='mantine-Badge'],
+  .medications-table-container [class*='mantine-Badge'],
+  .medical-table-container [class*='mantine-Badge'] {
+    box-shadow: none !important;
+    outline: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    display: inline-block !important;
+    text-align: center !important;
+    min-width: 60px !important;
+  }
+
+  /* Status badges - preserve their specific colors */
+  .medications-table .status-badge,
+  .medications-table .status-badge-small,
+  .medical-table .status-badge,
+  .medical-table .status-badge-small {
+    color: inherit !important;
+    background: inherit !important;
+  }
+
+  /* Specific status colors for print */
+  .medications-table .status-completed,
+  .medical-table .status-completed {
+    background-color: #d1ecf1 !important;
+    color: #0c5460 !important;
+    border-color: #bee5eb !important;
+  }
+
+  .medications-table .status-active,
+  .medical-table .status-active {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    border-color: #c3e6cb !important;
+  }
+
+  .medications-table .status-pending,
+  .medications-table .status-scheduled,
+  .medications-table .status-planned,
+  .medical-table .status-pending,
+  .medical-table .status-scheduled,
+  .medical-table .status-planned {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+    border-color: #ffeaa7 !important;
+  }
+
+  .medications-table .status-cancelled,
+  .medical-table .status-cancelled {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    border-color: #f5c6cb !important;
+  }
+
+  .medications-table .status-inactive,
+  .medications-table .status-stopped,
+  .medical-table .status-inactive,
+  .medical-table .status-stopped {
+    background-color: #e2e3e5 !important;
+    color: #383d41 !important;
+    border-color: #d6d8db !important;
+  }
+
+  /* Page break controls */
+  .medications-table-container,
+  .medical-table-container {
+    page-break-before: auto;
+    page-break-after: auto;
+    page-break-inside: avoid;
+  }
+}

@@ -1,0 +1,178 @@
+/**
+ * Pharmacy form field configuration
+ */
+
+export const pharmacyFormFields = [
+  {
+    name: 'brand',
+    type: 'select',
+    labelKey: 'medical:pharmacies.form.brand.label',
+    placeholderKey: 'medical:pharmacies.form.brand.placeholder',
+    descriptionKey: 'medical:pharmacies.form.brand.description',
+    gridColumn: 12,
+    searchable: true,
+    clearable: true,
+    options: [
+      {
+        value: 'Amazon Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.amazonPharmacy',
+      },
+      { value: 'CVS', labelKey: 'medical:pharmacies.form.brand.options.cvs' },
+      {
+        value: 'Walgreens',
+        labelKey: 'medical:pharmacies.form.brand.options.walgreens',
+      },
+      {
+        value: 'Rite Aid',
+        labelKey: 'medical:pharmacies.form.brand.options.riteAid',
+      },
+      {
+        value: 'Walmart Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.walmartPharmacy',
+      },
+      {
+        value: 'Target Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.targetPharmacy',
+      },
+      {
+        value: 'Costco Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.costcoPharmacy',
+      },
+      {
+        value: 'Kroger Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.krogerPharmacy',
+      },
+      {
+        value: 'Safeway Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.safewayPharmacy',
+      },
+      {
+        value: 'Publix Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.publixPharmacy',
+      },
+      {
+        value: 'Meijer Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.meijerPharmacy',
+      },
+      {
+        value: 'H-E-B Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.hebPharmacy',
+      },
+      {
+        value: 'Kaiser Permanente',
+        labelKey: 'medical:pharmacies.form.brand.options.kaiserPermanente',
+      },
+      {
+        value: 'Hospital Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.hospitalPharmacy',
+      },
+      {
+        value: 'Independent',
+        labelKey: 'medical:pharmacies.form.brand.options.independent',
+      },
+      {
+        value: 'Specialty Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.specialtyPharmacy',
+      },
+      {
+        value: 'Compounding Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.compoundingPharmacy',
+      },
+      {
+        value: 'Online Pharmacy',
+        labelKey: 'medical:pharmacies.form.brand.options.onlinePharmacy',
+      },
+      { value: 'Other', labelKey: 'shared:fields.other' },
+    ],
+  },
+  {
+    name: 'name',
+    type: 'text',
+    labelKey: 'medical:pharmacies.form.name.label',
+    placeholderKey: 'medical:pharmacies.form.name.placeholder',
+    required: true,
+    descriptionKey: 'medical:pharmacies.form.name.description',
+    gridColumn: 12,
+  },
+  {
+    name: '_divider_location',
+    type: 'divider',
+    labelKey: 'medical:pharmacies.form.locationDivider',
+    gridColumn: 12,
+  },
+  {
+    name: 'street_address',
+    type: 'text',
+    labelKey: 'medical:pharmacies.form.streetAddress.label',
+    placeholderKey: 'medical:pharmacies.form.streetAddress.placeholder',
+    descriptionKey: 'medical:pharmacies.form.streetAddress.description',
+    gridColumn: 8,
+  },
+  {
+    name: 'city',
+    type: 'text',
+    labelKey: 'shared:labels.city',
+    placeholderKey: 'medical:pharmacies.form.city.placeholder',
+    descriptionKey: 'medical:pharmacies.form.city.description',
+    gridColumn: 12,
+  },
+  {
+    name: 'state',
+    type: 'text',
+    labelKey: 'shared:labels.stateProvince',
+    placeholderKey: 'medical:pharmacies.form.stateProvince.placeholder',
+    descriptionKey: 'medical:pharmacies.form.stateProvince.description',
+    gridColumn: 4,
+  },
+  {
+    name: 'zip_code',
+    type: 'text',
+    labelKey: 'shared:labels.postalCode',
+    placeholderKey: 'medical:pharmacies.form.postalCode.placeholder',
+    descriptionKey: 'medical:pharmacies.form.postalCode.description',
+    gridColumn: 4,
+  },
+  {
+    name: 'country',
+    type: 'text',
+    labelKey: 'shared:labels.country',
+    placeholderKey: 'medical:pharmacies.form.country.placeholder',
+    descriptionKey: 'medical:pharmacies.form.country.description',
+    gridColumn: 4,
+  },
+  {
+    name: 'store_number',
+    type: 'text',
+    labelKey: 'medical:pharmacies.form.storeNumber.label',
+    placeholderKey: 'medical:pharmacies.form.storeNumber.placeholder',
+    descriptionKey: 'medical:pharmacies.form.storeNumber.description',
+    gridColumn: 6,
+    maxLength: 20,
+  },
+  {
+    name: 'phone_number',
+    type: 'tel',
+    labelKey: 'shared:labels.phoneNumber',
+    placeholderKey: 'shared:fields.15551234567',
+    descriptionKey: 'medical:pharmacies.form.phone.description',
+    gridColumn: 6,
+    maxLength: 20,
+  },
+  {
+    name: 'website',
+    type: 'text',
+    labelKey: 'shared:labels.website',
+    placeholderKey: 'medical:pharmacies.form.website.placeholder',
+    descriptionKey: 'medical:pharmacies.form.website.description',
+    gridColumn: 12,
+  },
+  {
+    name: 'specialty_services',
+    type: 'textarea',
+    labelKey: 'shared:labels.specialties',
+    placeholderKey: 'medical:pharmacies.form.specialtyServices.placeholder',
+    descriptionKey: 'medical:pharmacies.form.specialtyServices.description',
+    gridColumn: 12,
+    maxLength: 500,
+  },
+];

@@ -1,0 +1,98 @@
+.admin-health-ai-page {
+  display: grid;
+  gap: 20px;
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  padding-bottom: 44px;
+}
+
+.admin-health-ai-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.admin-health-ai-heading > div {
+  max-width: 740px;
+}
+
+.admin-health-ai-eyebrow {
+  margin-bottom: 4px;
+  color: var(--mantine-color-violet-7);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.admin-health-ai-loading {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  min-height: 280px;
+}
+
+.admin-health-ai-status-card {
+  min-height: 142px;
+}
+
+.admin-health-ai-local-fields,
+.admin-health-ai-guard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-health-ai-guard-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.admin-health-ai-guard-grid > div {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 7px;
+  min-height: 82px;
+  padding: 14px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+}
+
+.admin-health-ai-test-output {
+  border-color: var(--mantine-color-violet-3);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--mantine-color-violet-0) 80%, transparent),
+      transparent 65%
+    ),
+    var(--mantine-color-body);
+}
+
+@media (max-width: 760px) {
+  .admin-health-ai-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .admin-health-ai-heading > button {
+    width: 100%;
+  }
+
+  .admin-health-ai-local-fields,
+  .admin-health-ai-guard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-health-ai-page {
+    gap: 14px;
+  }
+
+  .admin-health-ai-status-card {
+    min-height: auto;
+  }
+}

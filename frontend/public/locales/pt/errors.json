@@ -1,0 +1,114 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "alert": {
+    "errorCount": "{{count}} Erro",
+    "errorCount_one": "{{count}} Erro",
+    "errorCount_other": "{{count}} Erros",
+    "formError": "Erro no Formulário",
+    "highPriority": "{{count}} alta prioridade",
+    "highPriority_one": "{{count}} alta prioridade",
+    "highPriority_other": "{{count}} alta prioridade",
+    "suggestions": "Sugestões:"
+  },
+  "boundary": {
+    "componentLabel": "Componente:",
+    "errorDetails": "Detalhes do erro",
+    "errorIdLabel": "ID do Erro:",
+    "errorLogged": "O erro foi registrado automaticamente para investigação.",
+    "reloadPage": "Recarregar Página",
+    "somethingWentWrong": "Algo deu errado",
+    "tryAgain": "Tentar Novamente",
+    "unexpectedError": "Lamentamos, mas algo inesperado aconteceu no sistema de prontuários médicos."
+  },
+  "file": {
+    "deleteFailed": "Falha ao excluir o arquivo. Tente novamente.",
+    "downloadFailed": "Falha ao baixar o arquivo. Tente novamente.",
+    "notFound": "Arquivo não encontrado.",
+    "viewFailed": "Falha ao abrir o arquivo para visualização. Tente novamente."
+  },
+  "form": {
+    "conditionNotSelected": "Por favor, selecione uma condição",
+    "entityNotFound": "O item solicitado não foi encontrado.",
+    "equipmentFieldsRequired": "Nome e tipo do equipamento são obrigatórios",
+    "equipmentNotSelected": "Por favor, selecione pelo menos um equipamento",
+    "invalidDate": "Por favor, informe uma data válida.",
+    "invalidEmail": "Por favor, informe um endereço de e-mail válido.",
+    "invalidPhone": "Por favor, informe um número de telefone válido.",
+    "invalidPhoneDigits": "Por favor, informe um número de telefone válido",
+    "invalidWebsiteUrl": "Por favor, informe uma URL de site válida",
+    "labResultNotSelected": "Please select at least one lab result",
+    "medicationNotSelected": "Por favor, selecione um medicamento",
+    "mustBeValidNumber": "Deve ser um número válido",
+    "patientNotSelected": "Por favor, selecione um paciente.",
+    "requiredFieldMissing": "Por favor, preencha todos os campos obrigatórios.",
+    "submissionFailed": "Falha ao salvar o formulário. Verifique os dados e tente novamente."
+  },
+  "general": {
+    "maintenanceMode": "O sistema está em manutenção no momento. Tente novamente mais tarde.",
+    "permissionDenied": "Você não tem permissão para realizar esta ação.",
+    "rateLimitExceeded": "Muitas solicitações. Aguarde um momento e tente novamente.",
+    "sessionExpired": "Sua sessão expirou. Faça login novamente.",
+    "storageFull": "Limite de armazenamento atingido. Libere espaço e tente novamente.",
+    "unknownError": "Ocorreu um erro inesperado. Tente novamente.",
+    "validationError": "Verifique os dados informados e tente novamente."
+  },
+  "network": {
+    "connectionError": "Erro de conexão. Verifique sua rede e tente novamente.",
+    "serverError": "Ocorreu um erro no servidor. Tente novamente mais tarde.",
+    "timeout": "A solicitação expirou. Tente novamente.",
+    "unavailable": "Rede indisponível. Verifique sua conexão."
+  },
+  "paperless": {
+    "authFailed": "Falha de autenticação com o serviço Paperless. Verifique as credenciais.",
+    "configIncomplete": "A configuração do Paperless está incompleta. Verifique suas configurações.",
+    "connectionFailed": "Não foi possível conectar ao serviço Paperless. Verifique a configuração.",
+    "duplicateDocument": "Este documento já existe no Paperless. Documentos idênticos não podem ser enviados duas vezes.",
+    "notEnabled": "A integração com o Paperless não está habilitada. Ative nas Configurações.",
+    "taskFailed": "O envio do documento para o Paperless falhou. Tente novamente ou contate o suporte.",
+    "taskTimeout": "O processamento do documento expirou. O documento ainda pode estar sendo processado no Paperless.",
+    "unavailable": "O serviço de gerenciamento de documentos está indisponível no momento.",
+    "uploadFailed": "Falha ao enviar para o sistema de gerenciamento de documentos Paperless."
+  },
+  "patientForm": {
+    "birthDateFuture": "A data de nascimento não pode estar no futuro",
+    "birthDateRequired": "Data de nascimento é obrigatória",
+    "createFailed": "Falha na Criação: {{message}}",
+    "firstNameRequired": "Nome é obrigatório",
+    "lastNameRequired": "Sobrenome é obrigatório",
+    "updateFailed": "Falha na Atualização: {{message}}"
+  },
+  "patientNotAvailable": "Informações do paciente não disponíveis",
+  "relationships": {
+    "addConditionFailed": "Falha ao adicionar relacionamento de condição",
+    "addFailed": "Falha ao adicionar relacionamento",
+    "addMedicationFailed": "Falha ao adicionar relacionamento de medicamento",
+    "deleteFailed": "Falha ao excluir relacionamento",
+    "fetchFailed": "Falha ao carregar relacionamentos",
+    "updateFailed": "Falha ao atualizar relacionamento"
+  },
+  "success": {
+    "batchUploadSuccess": "Todos os arquivos foram enviados com sucesso!",
+    "fileDeleted": "Arquivo excluído com sucesso.",
+    "formSaved": "Formulário salvo com sucesso!",
+    "paperlessSyncSuccess": "Sincronizado com sucesso com o gerenciamento de documentos Paperless.",
+    "uploadMultipleSuccess": "Todos os arquivos foram enviados com sucesso!",
+    "uploadSuccess": "Arquivo enviado com sucesso!"
+  },
+  "upload": {
+    "allUploadsFailed": "Todos os envios de arquivos falharam. Verifique sua conexão e tente novamente.",
+    "batchUploadFailed": "Alguns arquivos falharam no envio. Verifique os erros individuais dos arquivos.",
+    "connectionError": "Erro de conexão. Verifique sua rede e tente novamente.",
+    "duplicateFile": "Este arquivo já foi enviado.",
+    "failed": "Falha ao enviar o arquivo. Tente novamente.",
+    "fileProcessingFailed": "Falha ao processar o arquivo. Tente um arquivo diferente.",
+    "fileTooLarge": "O tamanho do arquivo excede o limite máximo.",
+    "invalidFileType": "Tipo de arquivo não suportado.",
+    "partialUploadSuccess": "Envio concluído com alguns erros. Revise os arquivos que falharam."
+  },
+  "warnings": {
+    "duplicateWarning": "Este arquivo parece ser um duplicado.",
+    "largeFileWarning": "Arquivo grande detectado. O envio pode levar vários minutos.",
+    "partialSuccess": "Operação concluída com alguns avisos.",
+    "slowConnection": "O envio está demorando mais que o normal devido à conexão lenta."
+  }
+}

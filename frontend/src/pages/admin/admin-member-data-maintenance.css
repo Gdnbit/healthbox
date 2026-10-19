@@ -1,0 +1,65 @@
+.admin-member-maintenance-page {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.admin-member-maintenance-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-member-maintenance-eyebrow {
+  color: var(--mantine-color-orange-7);
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-member-maintenance-context {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--mantine-color-orange-1) 70%, transparent),
+      transparent 58%
+    ),
+    var(--mantine-color-body);
+}
+
+.admin-member-maintenance-source-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-member-maintenance-state {
+  display: flex;
+  min-height: 12rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 48em) {
+  .admin-member-maintenance-page {
+    padding: 1rem;
+  }
+
+  .admin-member-maintenance-hero {
+    flex-direction: column;
+  }
+
+  .admin-member-maintenance-source-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-member-maintenance-page .mantine-Tabs-list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+}

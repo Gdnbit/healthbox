@@ -1,0 +1,228 @@
+{
+  "contract_id": "household-local-ai-qa@1.0.0",
+  "status": "implemented_and_isolated_synthetic_oracle_candidate_verified",
+  "processing": {
+    "default_enabled": false,
+    "providers": [
+      "local_openai_compatible",
+      "dynamic_test"
+    ],
+    "allowed_hosts": [
+      "127.0.0.1",
+      "localhost",
+      "::1",
+      "host.docker.internal"
+    ],
+    "redirects_allowed": false,
+    "environment_proxy_inheritance": false,
+    "external_processing_allowed": false,
+    "api_key_exposed_to_client_or_database": false,
+    "temperature": 0,
+    "maximum_request_records": 200,
+    "maximum_input_characters": 24000,
+    "maximum_response_bytes": 256000,
+    "maximum_output_tokens": 800,
+    "record_selection_over_budget": "preserve_latest_per_metric_then_fill_newest_and_disclose_omitted_count",
+    "character_or_response_over_budget": "reject_without_silent_truncation",
+    "admin_starting_helper_prefills_endpoint_only": true,
+    "admin_starting_helper_prefills_or_recommends_model": false
+  },
+  "authorization": {
+    "default_subject_scope": "self_owned_archive_only",
+    "structured_dashboard_share_grants_generate": false,
+    "structured_dashboard_share_grants_copy": false,
+    "structured_dashboard_share_grants_in_app_call": false,
+    "owner_global_read_grants_ai": false,
+    "client_values_trusted": false,
+    "record_ids_resolved_against_formal_database": true,
+    "not_found_behavior": "404_without_subject_existence_disclosure"
+  },
+  "request": {
+    "allowed_fields": [
+      "question_id",
+      "question",
+      "range",
+      "record_ids"
+    ],
+    "in_app_question_ids": [
+      "recent_changes"
+    ],
+    "canonical_questions": {
+      "recent_changes": "最近有哪些变化？"
+    },
+    "question_text_policy": {
+      "exact_match_required": true,
+      "mismatch_http_status": 422,
+      "mismatch_error_code": "health_ai_question_text_mismatch",
+      "mismatch_provider_calls": 0,
+      "mismatch_answer_history_writes": 0,
+      "provider_payload_uses_server_canonical_text": true,
+      "answer_history_uses_server_canonical_text": true
+    },
+    "handoff_only_question_ids": [
+      "doctor_questions",
+      "term_or_custom",
+      "custom"
+    ],
+    "screening_schedule_enabled": false,
+    "ranges": [
+      "1y",
+      "3y",
+      "5y",
+      "all"
+    ],
+    "minimum_record_count": 1,
+    "maximum_record_count": 200,
+    "client_health_values_allowed": false,
+    "extra_fields_allowed": false,
+    "originals_allowed": false,
+    "narrative_background_allowed": false,
+    "guidance_or_screening_allowed": false,
+    "tools_available": []
+  },
+  "provider_contract": {
+    "answer_template_version": "household-ai-answer@1.1.0",
+    "purpose": [
+      "local_transport",
+      "strict_structured_contract",
+      "citation_allowlist",
+      "quantitative_primary_value_grounding",
+      "known_safety_gates"
+    ],
+    "strict_schema_required": true,
+    "validated_provider_answer_visible": true,
+    "validated_provider_answer_persisted_in_separate_history": true,
+    "unvalidated_provider_response_visible": false,
+    "unvalidated_provider_response_persisted": false,
+    "provider_has_tools": false,
+    "provider_answer_can_write_formal_health_data": false,
+    "medical_correctness_proven": false
+  },
+  "response": {
+    "user_visible_output": "validated_provider_answer_with_server_fixed_disclosures",
+    "member_capability_model": null,
+    "member_processing_model_labels": {
+      "local_openai_compatible": "家庭服务器安全整理器",
+      "dynamic_test": "虚构规则测试器（非模型）"
+    },
+    "actual_model_id_visible_to_member": false,
+    "personal_answer_items_require_citations": true,
+    "unknown_citations_rejected": true,
+    "missing_citations_rejected": true,
+    "answer_item_citation_union_covers_all_provider_input_records": true,
+    "every_selected_record_requires_explicit_anchor": "R#=<primary_value><unit>",
+    "dual_reading_anchor": "R#=<primary_value>/<secondary_value><unit>",
+    "citation_id_without_explicit_value_binding_is_rejected": true,
+    "same_value_from_unrelated_record_is_rejected": true,
+    "date_or_record_count_number_coincidence_rejected": true,
+    "ungrounded_error": {
+      "http_status": 502,
+      "error_code": "health_ai_ungrounded_model_output",
+      "visible": false,
+      "persisted": false
+    },
+    "record_data_or_result_untrusted_or_unreliable_claim_rejected": true,
+    "tool_calls_rejected": true,
+    "extra_fields_rejected": true,
+    "sections": [
+      "answer_items",
+      "general_explanations",
+      "citations",
+      "limitations",
+      "next_steps",
+      "disclaimer"
+    ],
+    "saved_as_formal_health_fact": false,
+    "saved_as_original_or_trend": false,
+    "validated_provider_answer_history_persisted": true,
+    "server_fixed_disclosures_persisted": true,
+    "provider_and_test_mode_persisted": true,
+    "test_mode_disclosed": true,
+    "server_fixed_disclosures": {
+      "selected_data_scope": true,
+      "non_diagnostic_and_no_health_safety_guarantee": true,
+      "cross_institution_method_reference_range_comparability": true
+    },
+    "required_fixed_comparability_limitation": "不同机构、检测方法或参考范围的结果可能不可直接比较；请结合原报告或由专业医疗人员判断。"
+  },
+  "privacy": {
+    "provider_input_includes": [
+      "question_id",
+      "server_canonical_question_text",
+      "selected_formal_scalar_records",
+      "metric_id",
+      "stable_record_citations",
+      "range",
+      "data_cutoff"
+    ],
+    "provider_input_excludes": [
+      "name",
+      "username",
+      "email",
+      "contact_details",
+      "original_files",
+      "filenames",
+      "report_body",
+      "narrative_background",
+      "server_paths",
+      "other_subjects",
+      "screening_state",
+      "guidance"
+    ],
+    "free_text_questions": {
+      "location": "browser_memory_and_user_initiated_local_clipboard_handoff_only",
+      "sent_to_in_app_service": false,
+      "sent_to_provider": false,
+      "persisted_as_answer_history": false
+    },
+    "activity_log_excludes": [
+      "question_text",
+      "provider_answer_text",
+      "health_values",
+      "record_labels",
+      "provider_payload",
+      "api_key",
+      "api_key_fingerprint",
+      "base_url",
+      "model",
+      "model_id",
+      "actual_model_id"
+    ]
+  },
+  "failure_closed": [
+    "provider_disabled_or_incomplete",
+    "unverified_local_configuration_revision",
+    "non_local_provider_host",
+    "redirect_or_environment_proxy",
+    "shared_or_unowned_subject",
+    "unknown_or_cross_subject_record",
+    "empty_scope_after_range_filter",
+    "unsupported_non_recent_changes_in_app_question",
+    "question_text_mismatch_before_provider_or_history",
+    "provider_timeout_or_invalid_json",
+    "provider_response_too_large",
+    "provider_tool_call",
+    "request_or_response_contract_extra_field",
+    "missing_or_unknown_record_citation",
+    "cited_quantitative_primary_value_missing_from_answer_item",
+    "record_data_or_result_described_as_untrusted_or_unreliable",
+    "audit_commit_failure"
+  ],
+  "release_boundary": {
+    "new_output_contract_implementation_verified": true,
+    "candidate_selected_mode": "test",
+    "candidate_effective_mode": "test",
+    "candidate_effective_provider": "dynamic_test",
+    "candidate_answer_source": "deterministic_non_model_oracle",
+    "approved_local_model": null,
+    "local_model_observations": {
+      "qwen3_0_6b": "failed_household_ai_answer_1_1_0_explicit_all_record_binding_gate",
+      "qwen3_1_7b": "failed_household_ai_answer_1_1_0_explicit_all_record_binding_gate",
+      "qwen3_4b": "cpu_warmup_not_completed_within_10_minutes"
+    },
+    "historical_18_23_second_result": "superseded_weaker_pre_1_1_0_gate_only",
+    "model_language_quality_verified": false,
+    "medical_risk_or_screening_completed": false,
+    "public_production_ready": false
+  }
+}

@@ -1,0 +1,452 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+from typing import Any, List, Optional
+
+from fastapi import APIRouter, Depends, Query, Request, status
+from sqlalchemy.orm import Session
+
+from app.api import deps
+from app.api.v1.endpoints.utils import (
+    handle_create_with_logging,
+    handle_delete_with_logging,
+    handle_not_found,
+    handle_update_with_logging,
+    verify_patient_ownership,
+)
+from app.core.events.bus import get_event_bus
+from app.core.http.error_handling import (
+    BusinessLogicException,
+    NotFoundException,
+    ValidationException,
+    handle_database_errors,
+)
+from app.core.logging.config import get_logger
+from app.core.logging.constants import LogFields
+from app.core.logging.helpers import log_data_access
+from app.crud.medication import medication
+from app.crud.treatment import treatment_medication
+from app.events.medication_events import MedicationReminderDueEvent
+from app.models.activity_log import EntityType
+from app.models.models import User
+from app.schemas.medication import (
+    MedicationCreate,
+    MedicationResponseWithNested,
+    MedicationUpdate,
+)
+from app.schemas.treatment import MedicationTreatmentResponse
+from app.services.notification_service import NotificationService
+
+router = APIRouter()
+
+# Initialize logger
+logger = get_logger(__name__, "app")
+
+
+@router.post("/", response_model=MedicationResponseWithNested)
+def create_medication(
+    *,
+    medication_in: MedicationCreate,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    current_user_id: int = Depends(deps.get_current_user_id),
+    current_user: User = Depends(deps.get_current_user),
+    current_user_patient_id: int = Depends(deps.get_current_user_patient_id),
+) -> Any:
+    """Create new medication."""
+    medication_obj = handle_create_with_logging(
+        db=db,
+        crud_obj=medication,
+        obj_in=medication_in,
+        entity_type=EntityType.MEDICATION,
+        user_id=current_user_id,
+        entity_name="Medication",
+        request=request,
+        current_user_patient_id=current_user_patient_id,
+        current_user=current_user,
+    )
+
+    # Return with relationships loaded
+    medication_id = getattr(medication_obj, "id", None)
+    if medication_id:
+        return medication.get_with_relations(
+            db=db,
+            record_id=medication_id,
+            relations=["practitioner", "pharmacy", "condition"],
+        )
+    return medication_obj
+
+
+@router.get("/", response_model=List[MedicationResponseWithNested])
+def read_medications(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = Query(default=10000, le=10000),
+    name: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    tags: Optional[List[str]] = Query(None, description="Filter by tags"),
+    tag_match_all: bool = Query(
+        False, description="Match all tags (AND) vs any tag (OR)"
+    ),
+    target_patient_id: int = Depends(deps.get_accessible_patient_id),
+    current_user_id: int = Depends(deps.get_current_user_id),
+) -> Any:
+    """Retrieve medications for the current user or specified patient (Phase 1 support)."""
+
+    with handle_database_errors(request=request):
+        if tags:
+            # Use tag filtering with patient constraint
+            filters = {"patient_id": target_patient_id}
+            if status:
+                filters["status"] = status
+            medications = medication.get_multi_with_tag_filters(
+                db,
+                tags=tags,
+                tag_match_all=tag_match_all,
+                skip=skip,
+                limit=limit,
+                **filters,
+            )
+            # Load relationships manually for tag-filtered results
+            for med in medications:
+                if hasattr(med, "practitioner_id") and med.practitioner_id:
+                    db.refresh(med, ["practitioner"])
+                if hasattr(med, "pharmacy_id") and med.pharmacy_id:
+                    db.refresh(med, ["pharmacy"])
+                if hasattr(med, "condition_id") and med.condition_id:
+                    db.refresh(med, ["condition"])
+            # Apply name filter manually if both tags and name are specified
+            if name:
+                medications = [
+                    med
+                    for med in medications
+                    if name.lower() in getattr(med, "medication_name", "").lower()
+                ]
+        elif name and status:
+            # Combined name and status filtering
+            filters = {"patient_id": target_patient_id, "status": status}
+            medications = medication.query(
+                db=db,
+                filters=filters,
+                search={"field": "medication_name", "term": name},
+                skip=skip,
+                limit=limit,
+                load_relations=["practitioner", "pharmacy", "condition"],
+            )
+        elif name:
+            # Filter by medication name only (no status filter)
+            medications = medication.get_by_name(
+                db=db, name=name, patient_id=target_patient_id, skip=skip, limit=limit
+            )
+        elif status:
+            # Filter by status (includes active, stopped, etc.)
+            medications = medication.query(
+                db=db,
+                filters={"patient_id": target_patient_id, "status": status},
+                skip=skip,
+                limit=limit,
+                load_relations=["practitioner", "pharmacy", "condition"],
+            )
+        else:
+            # Use regular patient filtering
+            medications = medication.get_by_patient(
+                db=db,
+                patient_id=target_patient_id,
+                skip=skip,
+                limit=limit,
+                load_relations=["practitioner", "pharmacy", "condition"],
+            )
+
+        log_data_access(
+            logger,
+            request,
+            current_user_id,
+            "read",
+            "Medication",
+            patient_id=target_patient_id,
+            count=len(medications),
+        )
+
+        return medications
+
+
+@router.get("/{medication_id}", response_model=MedicationResponseWithNested)
+def read_medication(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    medication_id: int,
+    current_user_patient_id: int = Depends(deps.get_current_user_patient_id),
+    current_user_id: int = Depends(deps.get_current_user_id),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Get medication by ID - only allows access to user's own medications."""
+    with handle_database_errors(request=request):
+        medication_obj = medication.get_with_relations(
+            db=db,
+            record_id=medication_id,
+            relations=["practitioner", "pharmacy", "condition"],
+        )
+        handle_not_found(medication_obj, "Medication", request)
+        verify_patient_ownership(
+            medication_obj,
+            current_user_patient_id,
+            "medication",
+            db=db,
+            current_user=current_user,
+        )
+
+        log_data_access(
+            logger,
+            request,
+            current_user_id,
+            "read",
+            "Medication",
+            record_id=medication_id,
+            patient_id=current_user_patient_id,
+        )
+
+        return medication_obj
+
+
+@router.put("/{medication_id}", response_model=MedicationResponseWithNested)
+def update_medication(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    medication_id: int,
+    medication_in: MedicationUpdate,
+    current_user_id: int = Depends(deps.get_current_user_id),
+    current_user: User = Depends(deps.get_current_user),
+    current_user_patient_id: int = Depends(deps.get_current_user_patient_id),
+) -> Any:
+    """Update a medication."""
+    updated_medication = handle_update_with_logging(
+        db=db,
+        crud_obj=medication,
+        entity_id=medication_id,
+        obj_in=medication_in,
+        entity_type=EntityType.MEDICATION,
+        user_id=current_user_id,
+        entity_name="Medication",
+        request=request,
+        current_user=current_user,
+        current_user_patient_id=current_user_patient_id,
+    )
+
+    # Return with relationships loaded
+    return medication.get_with_relations(
+        db=db,
+        record_id=medication_id,
+        relations=["practitioner", "pharmacy", "condition"],
+    )
+
+
+@router.delete("/{medication_id}")
+def delete_medication(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    medication_id: int,
+    current_user_id: int = Depends(deps.get_current_user_id),
+    current_user: User = Depends(deps.get_current_user),
+    current_user_patient_id: int = Depends(deps.get_current_user_patient_id),
+) -> Any:
+    """Delete a medication."""
+    return handle_delete_with_logging(
+        db=db,
+        crud_obj=medication,
+        entity_id=medication_id,
+        entity_type=EntityType.MEDICATION,
+        user_id=current_user_id,
+        entity_name="Medication",
+        request=request,
+        current_user=current_user,
+        current_user_patient_id=current_user_patient_id,
+    )
+
+
+@router.get("/patient/{patient_id}", response_model=List[MedicationResponseWithNested])
+def read_patient_medications(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    patient_id: int = Depends(deps.verify_patient_access),
+    skip: int = 0,
+    limit: int = Query(default=10000, le=10000),
+    active_only: bool = Query(False),
+    current_user_id: int = Depends(deps.get_current_user_id),
+) -> Any:
+    """Get all medications for a specific patient."""
+    with handle_database_errors(request=request):
+        if active_only:
+            medications = medication.get_active_by_patient(db=db, patient_id=patient_id)
+        else:
+            medications = medication.get_by_patient(
+                db=db,
+                patient_id=patient_id,
+                skip=skip,
+                limit=limit,
+                load_relations=["practitioner", "pharmacy", "condition"],
+            )
+
+        log_data_access(
+            logger,
+            request,
+            current_user_id,
+            "read",
+            "Medication",
+            patient_id=patient_id,
+            count=len(medications),
+        )
+
+        return medications
+
+
+@router.post("/{medication_id}/reminders/test", status_code=status.HTTP_204_NO_CONTENT)
+async def send_test_reminder(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    medication_id: int,
+    current_user_id: int = Depends(deps.get_current_user_id),
+    current_user: User = Depends(deps.get_current_user),
+) -> None:
+    """Fire a one-shot test reminder for this medication.
+
+    The notification is delivered to the patient owner's enabled channels for
+    the medication_reminder_due event type. Test events carry is_test=True and
+    no scheduled time, so they cannot collide with the scheduler's idempotency
+    dedup key.
+    """
+    with handle_database_errors(request=request):
+        medication_obj = medication.get(db, id=medication_id)
+        handle_not_found(medication_obj, "Medication", request)
+        deps.verify_patient_owner_access(
+            medication_obj.patient_id,
+            db,
+            current_user,
+        )
+
+        if not medication_obj.reminder_enabled:
+            raise BusinessLogicException(
+                message="Reminders are not enabled for this medication."
+            )
+
+        owner_user_id = medication_obj.patient.owner_user_id
+
+        if not NotificationService(db).has_enabled_route(
+            owner_user_id, "medication_reminder_due"
+        ):
+            raise ValidationException(
+                message=(
+                    "No notification channel is enabled for medication "
+                    "reminders. Open Notification Settings to enable a "
+                    "channel."
+                ),
+            )
+
+        event = MedicationReminderDueEvent(
+            user_id=owner_user_id,
+            patient_id=medication_obj.patient_id,
+            medication_id=medication_obj.id,
+            medication_name=medication_obj.medication_name,
+            dosage=medication_obj.dosage,
+            is_test=True,
+        )
+        await get_event_bus().publish(event)
+
+        logger.info(
+            "Medication reminder test triggered",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "medication_reminder_test_triggered",
+                "medication_id": medication_obj.id,
+                LogFields.USER_ID: current_user_id,
+            },
+        )
+
+
+@router.get(
+    "/{medication_id}/treatments", response_model=list[MedicationTreatmentResponse]
+)
+def get_medication_treatments(
+    *,
+    medication_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    current_user_patient_id: int = Depends(deps.get_current_user_patient_id),
+    current_user_id: int = Depends(deps.get_current_user_id),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Get all treatments that use a specific medication."""
+    with handle_database_errors(request=request):
+        medication_obj = medication.get(db, id=medication_id)
+        if not medication_obj:
+            raise NotFoundException(
+                resource="Medication",
+                message="Medication not found",
+                request=request,
+            )
+        verify_patient_ownership(
+            medication_obj,
+            current_user_patient_id,
+            "medication",
+            db=db,
+            current_user=current_user,
+        )
+
+        relationships = treatment_medication.get_by_medication(
+            db, medication_id=medication_id
+        )
+
+        result = []
+        for rel in relationships:
+            trt = rel.treatment
+            if not trt:
+                continue
+
+            entry = {
+                "id": rel.id,
+                "treatment_id": rel.treatment_id,
+                "medication_id": rel.medication_id,
+                "specific_dosage": rel.specific_dosage,
+                "specific_frequency": rel.specific_frequency,
+                "specific_duration": rel.specific_duration,
+                "timing_instructions": rel.timing_instructions,
+                "relevance_note": rel.relevance_note,
+                "specific_prescriber_id": rel.specific_prescriber_id,
+                "specific_pharmacy_id": rel.specific_pharmacy_id,
+                "specific_start_date": rel.specific_start_date,
+                "specific_end_date": rel.specific_end_date,
+                "treatment": {
+                    "id": trt.id,
+                    "treatment_name": trt.treatment_name,
+                    "treatment_type": trt.treatment_type,
+                    "status": trt.status,
+                    "mode": trt.mode,
+                    "start_date": trt.start_date,
+                    "end_date": trt.end_date,
+                    "condition": None,
+                },
+            }
+
+            if trt.condition:
+                entry["treatment"]["condition"] = {
+                    "id": trt.condition.id,
+                    "condition_name": trt.condition.condition_name,
+                }
+
+            result.append(entry)
+
+        log_data_access(
+            logger,
+            request,
+            current_user_id,
+            "read",
+            "MedicationTreatments",
+            record_id=medication_id,
+            count=len(result),
+        )
+
+        return result

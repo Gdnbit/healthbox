@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0",
+  "synthetic_only": true,
+  "gates": {
+    "min_field_precision": 1.0,
+    "min_field_recall": 1.0,
+    "min_rejection_accuracy": 1.0,
+    "max_high_confidence_error_rate": 0.0,
+    "max_positive_extraction_failure_rate": 0.0
+  },
+  "cases": [
+    {
+      "id": "clean-english-panel",
+      "source_kind": "image",
+      "layout": "clean_english",
+      "expected_candidates": [
+        {
+          "test_code": "GLU",
+          "numeric_value": 5.2,
+          "unit": "mmol/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "TC",
+          "numeric_value": 4.6,
+          "unit": "mmol/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "HDL-C",
+          "numeric_value": 1.4,
+          "unit": "mmol/L",
+          "result_status": "normal"
+        }
+      ]
+    },
+    {
+      "id": "bordered-chinese-table",
+      "source_kind": "image",
+      "layout": "bordered_chinese",
+      "expected_candidates": [
+        {
+          "test_code": "GLU",
+          "numeric_value": 5.4,
+          "unit": "mmol/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "LDL-C",
+          "numeric_value": 2.6,
+          "unit": "mmol/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "HGB",
+          "numeric_value": 145.0,
+          "unit": "g/L",
+          "result_status": "normal"
+        }
+      ]
+    },
+    {
+      "id": "rotated-low-contrast-photo",
+      "source_kind": "image",
+      "layout": "rotated_low_contrast",
+      "expected_candidates": [
+        {
+          "test_code": "TG",
+          "numeric_value": 1.1,
+          "unit": "mmol/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "UA",
+          "numeric_value": 330.0,
+          "unit": "umol/L",
+          "result_status": "normal"
+        }
+      ]
+    },
+    {
+      "id": "two-page-scanned-pdf",
+      "source_kind": "scanned_pdf",
+      "layout": "two_page_scan",
+      "expected_candidates": [
+        {
+          "test_code": "ALT",
+          "numeric_value": 26.0,
+          "unit": "U/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "AST",
+          "numeric_value": 22.0,
+          "unit": "U/L",
+          "result_status": "normal"
+        }
+      ]
+    },
+    {
+      "id": "non-lab-page-rejected",
+      "source_kind": "image",
+      "layout": "non_lab",
+      "expected_candidates": []
+    },
+    {
+      "id": "missing-value-rejected",
+      "source_kind": "image",
+      "layout": "missing_value",
+      "expected_candidates": []
+    }
+  ]
+}

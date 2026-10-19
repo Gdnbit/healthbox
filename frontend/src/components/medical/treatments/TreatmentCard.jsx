@@ -1,0 +1,204 @@
+import { Text, Group } from '@mantine/core';
+import { useTranslation } from 'react-i18next';
+import BaseMedicalCard from '../base/BaseMedicalCard';
+import StatusBadge from '../StatusBadge';
+import { useDateFormat } from '../../../hooks/useDateFormat';
+import logger from '../../../services/logger';
+
+const TreatmentCard = ({
+  treatment,
+  onEdit,
+  onDelete,
+  onView,
+  conditions = [],
+  onConditionClick,
+  navigate: _navigate,
+  fileCount = 0,
+  fileCountLoading = false,
+  disableActions = false,
+  disableActionsTooltip,
+  onError,
+}) => {
+  const { t } = useTranslation(['medical', 'common', 'shared']);
+  const { formatLongDate } = useDateFormat();
+
+  const handleError = error => {
+    logger.error('treatment_card_error', {
+      message: 'Error in TreatmentCard',
+      treatmentId: treatment?.id,
+      error: error.message,
+      component: 'TreatmentCard',
+    });
+
+    if (onError) {
+      onError(error);
+    }
+  };
+
+  // Helper function to get condition name from ID
+  const getConditionName = conditionId => {
+    if (!conditionId || !conditions || conditions.length === 0) {
+      return null;
+    }
+    const condition = conditions.find(c => c.id === conditionId);
+    return condition ? condition.diagnosis || condition.name : null;
+  };
+
+  const handleConditionClick = conditionId => {
+    if (onConditionClick) {
+      onConditionClick(conditionId);
+    }
+  };
+
+  // Treatment category labels mapping
+  const TREATMENT_CATEGORY_LABELS = {
+    medication_therapy: 'Medication Therapy',
+    physical_therapy: 'Physical Therapy',
+    surgery_procedure: 'Surgery / Procedure',
+    lifestyle_dietary: 'Lifestyle / Dietary',
+    monitoring: 'Monitoring / Observation',
+    mental_health: 'Mental Health / Counseling',
+    rehabilitation: 'Rehabilitation',
+    alternative: 'Alternative / Complementary',
+    combination: 'Combination Therapy',
+    other: 'Other',
+  };
+
+  // Get display label for treatment type (supports both predefined and custom values)
+  const getTreatmentTypeLabel = type => {
+    if (!type) return null;
+    return TREATMENT_CATEGORY_LABELS[type] || type;
+  };
+
+  try {
+    // Generate badges based on treatment properties
+    const badges = [];
+
+    if (treatment.treatment_type) {
+      badges.push({
+        label: getTreatmentTypeLabel(treatment.treatment_type),
+        color: 'blue',
+      });
+    }
+
+    if (treatment.condition_id) {
+      badges.push({
+        label:
+          treatment.condition?.diagnosis ||
+          getConditionName(treatment.condition_id) ||
+          t('common:treatments.card.conditionId', 'Condition #{{id}}', {
+            id: treatment.condition_id,
+          }),
+        color: 'teal',
+        clickable: true,
+        onClick: () => handleConditionClick(treatment.condition_id),
+      });
+    }
+
+    // Generate dynamic fields
+    const fields = [
+      {
+        label: t('shared:labels.startDate'),
+        value: treatment.start_date,
+        render: value =>
+          value ? formatLongDate(value) : t('shared:labels.notSpecified'),
+      },
+      {
+        label: t('shared:labels.endDate'),
+        value: treatment.end_date,
+        render: value =>
+          value ? formatLongDate(value) : t('shared:labels.notSpecified'),
+      },
+      {
+        label: t('treatments.amount.label'),
+        value: treatment.dosage,
+        render: value => value || t('shared:labels.notSpecified'),
+      },
+      {
+        label: t('shared:fields.frequency'),
+        value: treatment.frequency,
+        render: value => value || t('shared:labels.notSpecified'),
+      },
+      {
+        label: t('shared:labels.description'),
+        value: treatment.description,
+        render: value => value || t('shared:labels.notSpecified'),
+        style: { flex: 1 },
+      },
+    ].filter(field => field.value); // Only show fields with values
+
+    // Custom status badge in title area
+    const titleContent = (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          width: '100%',
+        }}
+      >
+        <Text fw={600} size="lg" style={{ flex: 1 }}>
+          {treatment.treatment_name}
+        </Text>
+        <StatusBadge status={treatment.status} />
+      </div>
+    );
+
+    // Custom content for clickable condition link
+    const customContent = treatment.condition_id ? (
+      <Group gap="xs" style={{ marginBottom: '8px' }}>
+        <Text size="sm" c="dimmed">
+          {t('shared:labels.relatedCondition', 'Related Condition')}:
+        </Text>
+        <Text
+          size="sm"
+          fw={500}
+          c="blue"
+          style={{ cursor: 'pointer', textDecoration: 'underline' }}
+          onClick={() => handleConditionClick(treatment.condition_id)}
+          title={t(
+            'shared:labels.viewConditionDetails',
+            'View condition details'
+          )}
+        >
+          {treatment.condition?.diagnosis ||
+            getConditionName(treatment.condition_id) ||
+            t('common:treatments.card.conditionId', 'Condition #{{id}}', {
+              id: treatment.condition_id,
+            })}
+        </Text>
+      </Group>
+    ) : null;
+
+    return (
+      <BaseMedicalCard
+        title={titleContent}
+        subtitle={
+          treatment.treatment_type
+            ? getTreatmentTypeLabel(treatment.treatment_type)
+            : null
+        }
+        badges={badges.filter(badge => !badge.clickable)}
+        tags={treatment.tags || []}
+        fields={fields}
+        notes={treatment.notes}
+        entityType="treatment"
+        fileCount={fileCount}
+        fileCountLoading={fileCountLoading}
+        onView={() => onView(treatment)}
+        onEdit={() => onEdit(treatment)}
+        onDelete={() => onDelete(treatment.id)}
+        disableActions={disableActions}
+        disableActionsTooltip={disableActionsTooltip}
+        onError={handleError}
+      >
+        {customContent}
+      </BaseMedicalCard>
+    );
+  } catch (error) {
+    handleError(error);
+    return null;
+  }
+};
+
+export default TreatmentCard;

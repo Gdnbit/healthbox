@@ -1,0 +1,247 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+from datetime import date
+from typing import TYPE_CHECKING, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+
+from app.schemas.base_tags import TaggedEntityMixin
+
+if TYPE_CHECKING:
+    pass
+
+
+class ImmunizationBase(TaggedEntityMixin):
+    vaccine_name: str = Field(
+        ..., min_length=2, max_length=200, description="Name of the vaccine"
+    )
+    vaccine_trade_name: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Formal/trade name (e.g., Flublok TRIV 2025-2026 PFS)",
+    )
+    date_administered: date = Field(
+        ..., description="Date when the vaccine was administered"
+    )
+    dose_number: Optional[int] = Field(
+        None, ge=1, description="Dose number in the series"
+    )
+    lot_number: Optional[str] = Field(
+        None, max_length=50, description="Vaccine lot number"
+    )
+    ndc_number: Optional[str] = Field(
+        None, max_length=50, description="NDC number of the vaccine"
+    )
+    manufacturer: Optional[str] = Field(
+        None, max_length=200, description="Vaccine manufacturer"
+    )
+    site: Optional[str] = Field(None, max_length=100, description="Injection site")
+    route: Optional[str] = Field(
+        None, max_length=50, description="Route of administration"
+    )
+    expiration_date: Optional[date] = Field(None, description="Vaccine expiration date")
+    location: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Where vaccine was administered (clinic, hospital, pharmacy, etc.)",
+    )
+    notes: Optional[str] = Field(None, max_length=5000, description="Additional notes")
+    patient_id: int = Field(..., gt=0, description="ID of the patient")
+    practitioner_id: Optional[int] = Field(
+        None, gt=0, description="ID of the administering practitioner"
+    )
+
+    @field_validator("date_administered", mode="before")
+    @classmethod
+    def validate_date_administered(cls, v):
+        if isinstance(v, str):
+            try:
+                v = date.fromisoformat(v)
+            except ValueError:
+                raise ValueError("Invalid date format. Use YYYY-MM-DD")
+        if v > date.today():
+            raise ValueError("Administration date cannot be in the future")
+        return v
+
+    @field_validator("expiration_date", mode="before")
+    @classmethod
+    def validate_expiration_date(cls, v, info: ValidationInfo):
+        if v and isinstance(v, str):
+            try:
+                v = date.fromisoformat(v)
+            except ValueError:
+                raise ValueError("Invalid expiration date format. Use YYYY-MM-DD")
+        if v and info.data.get("date_administered"):
+            admin_date = info.data["date_administered"]
+            if isinstance(admin_date, str):
+                try:
+                    admin_date = date.fromisoformat(admin_date)
+                except ValueError:
+                    pass  # Skip comparison if admin_date is invalid
+            if isinstance(admin_date, date) and v < admin_date:
+                raise ValueError("Expiration date cannot be before administration date")
+        return v
+
+    @field_validator("route")
+    @classmethod
+    def validate_route(cls, v):
+        if v:
+            valid_routes = [
+                "intramuscular",
+                "subcutaneous",
+                "intradermal",
+                "oral",
+                "nasal",
+            ]
+            if v.lower() not in valid_routes:
+                raise ValueError(f"Route must be one of: {', '.join(valid_routes)}")
+            return v.lower()
+        return v
+
+
+class ImmunizationCreate(ImmunizationBase):
+    standardized_vaccine_who_code: Optional[str] = Field(
+        None,
+        max_length=100,
+        description=(
+            "WHO PCMT code of the standardized vaccine the user picked from the "
+            "autocomplete. The backend attempts to resolve it to "
+            "standardized_vaccine_id; if no matching library entry exists, the "
+            "record is saved with standardized_vaccine_id=NULL (the free-text "
+            "vaccine_name remains the source of truth)."
+        ),
+    )
+
+
+class ImmunizationUpdate(BaseModel):
+    vaccine_name: Optional[str] = Field(None, min_length=2, max_length=200)
+    vaccine_trade_name: Optional[str] = Field(None, max_length=200)
+    date_administered: Optional[date] = None
+    dose_number: Optional[int] = Field(None, ge=1)
+    lot_number: Optional[str] = Field(None, max_length=50)
+    ndc_number: Optional[str] = Field(None, max_length=50)
+    manufacturer: Optional[str] = Field(None, max_length=200)
+    site: Optional[str] = Field(None, max_length=100)
+    route: Optional[str] = Field(None, max_length=50)
+    expiration_date: Optional[date] = None
+    location: Optional[str] = Field(None, max_length=200)
+    notes: Optional[str] = Field(None, max_length=5000)
+    practitioner_id: Optional[int] = Field(None, gt=0)
+    tags: Optional[List[str]] = None
+    standardized_vaccine_who_code: Optional[str] = Field(
+        None,
+        max_length=100,
+        description=(
+            "Optional WHO PCMT code hint for the standardized vaccine. A resolvable "
+            "code takes precedence; otherwise the backend falls back to vaccine_name. "
+            "An explicit null does not force unlinking when the name still resolves."
+        ),
+    )
+
+    @field_validator("date_administered", mode="before")
+    @classmethod
+    def validate_date_administered(cls, v):
+        if v and isinstance(v, str):
+            try:
+                v = date.fromisoformat(v)
+            except ValueError:
+                raise ValueError("Invalid date format. Use YYYY-MM-DD")
+        if v and v > date.today():
+            raise ValueError("Administration date cannot be in the future")
+        return v
+
+    @field_validator("expiration_date", mode="before")
+    @classmethod
+    def validate_expiration_date(cls, v, info: ValidationInfo):
+        if v and isinstance(v, str):
+            try:
+                v = date.fromisoformat(v)
+            except ValueError:
+                raise ValueError("Invalid expiration date format. Use YYYY-MM-DD")
+        if (
+            v
+            and info.data.get("date_administered")
+            and v < info.data["date_administered"]
+        ):
+            raise ValueError("Expiration date cannot be before administration date")
+        return v
+
+    @field_validator("route")
+    @classmethod
+    def validate_route(cls, v):
+        if v:
+            valid_routes = [
+                "intramuscular",
+                "subcutaneous",
+                "intradermal",
+                "oral",
+                "nasal",
+            ]
+            if v.lower() not in valid_routes:
+                raise ValueError(f"Route must be one of: {', '.join(valid_routes)}")
+            return v.lower()
+        return v
+
+
+class ImmunizationResponse(ImmunizationBase):
+    id: int
+    standardized_vaccine_id: Optional[int] = Field(
+        None,
+        gt=0,
+        description="FK to standardized_vaccines.id if this record is linked to the library",
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ImmunizationWithRelations(ImmunizationResponse):
+    patient: Optional[dict] = None
+    practitioner: Optional[dict] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ImmunizationSummary(BaseModel):
+    id: int
+    vaccine_name: str
+    date_administered: date
+    dose_number: Optional[int]
+    patient_name: Optional[str] = None
+    practitioner_name: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ImmunizationHistoryItem(ImmunizationResponse):
+    components: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Canonical disease keys this immunization covers (e.g. "
+            '["Polio"], ["Diphtheria", "Tetanus", "Pertussis"]). '
+            "Sourced from the library's disease_keys, not raw antigen labels, "
+            "so combination and single-disease vaccines bucket consistently."
+        ),
+    )
+    is_combined: bool = Field(
+        False, description="True if the linked vaccine is a combination vaccine"
+    )
+    is_library_matched: bool = Field(
+        False,
+        description="True if the record was successfully matched to a library entry",
+    )
+
+
+class ImmunizationHistoryResponse(BaseModel):
+    items: List[ImmunizationHistoryItem]
+    diseases_index: Dict[str, List[int]] = Field(
+        default_factory=dict,
+        description=(
+            'Mapping of canonical disease key (e.g. "Polio", "Hepatitis B") '
+            "to the immunization record IDs that confer protection against it. "
+            "Pre-aggregated server-side so the client doesn't re-derive groups."
+        ),
+    )
+    unmatched_count: int = Field(
+        0,
+        ge=0,
+        description="Number of records that could not be matched to the library",
+    )

@@ -1,0 +1,52 @@
+{
+  "contract_version": "1.0.0",
+  "task_id": "MVP-DASHBOARD-PREFERENCES-01",
+  "scope": {
+    "key": [
+      "authenticated_user_id",
+      "authorized_patient_id"
+    ],
+    "ordinary_access_basis": [
+      "owner",
+      "structured_dashboard"
+    ],
+    "access_is_rechecked_on_every_read_and_write": true,
+    "unauthorized_subject_status": 404,
+    "revoked_share_cannot_read_or_write": true
+  },
+  "payload": {
+    "pinned_metric_ids": {
+      "minimum_on_write": 1,
+      "maximum": 2,
+      "unique": true,
+      "maximum_id_characters": 512
+    },
+    "ranges_by_metric_id": {
+      "maximum_entries": 50,
+      "allowed_values": [
+        "auto",
+        "3m",
+        "6m",
+        "1y",
+        "2y",
+        "5y",
+        "all"
+      ]
+    },
+    "health_observation_values_stored": false,
+    "source_or_original_metadata_stored": false,
+    "browser_web_storage_used": false
+  },
+  "client": {
+    "restores_across_refresh_login_and_device": true,
+    "preferences_are_normalized_against_the_loaded_authorized_snapshot": true,
+    "same_subject_writes_are_serialized": true,
+    "late_load_cannot_replace_newer_local_choice": true,
+    "save_failure_keeps_current_page_choice_and_reports_retry": true,
+    "home_detail_selects_the_same_archive_metric": true
+  },
+  "deployment": {
+    "migration_revision": "dashboard_preferences_v1",
+    "migration_applied_to_existing_database": false
+  }
+}

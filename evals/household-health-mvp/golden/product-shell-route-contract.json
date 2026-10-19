@@ -1,0 +1,117 @@
+{
+  "contract": "household-product-shell-route@1.0.0",
+  "product_home": "/family-health",
+  "public_entry": {
+    "registration_enabled": false,
+    "login_page_actions": [
+      "sign_in",
+      "contact_administrator_for_password_reset"
+    ],
+    "forbidden_actions": [
+      "public_create_account",
+      "self_select_role",
+      "link_to_upstream_sponsorship"
+    ],
+    "invitation_activation_is_separate": true
+  },
+  "default_destinations": [
+    {
+      "source": "root",
+      "destination": "/family-health"
+    },
+    {
+      "source": "already_authenticated_public_route",
+      "destination": "/family-health"
+    },
+    {
+      "source": "ordinary_password_login",
+      "destination": "/family-health"
+    },
+    {
+      "source": "ordinary_sso_login",
+      "destination": "/family-health"
+    },
+    {
+      "source": "password_change_complete_without_pending_consent",
+      "destination": "/family-health"
+    },
+    {
+      "source": "privacy_consent_accepted",
+      "destination": "/family-health"
+    },
+    {
+      "source": "authorization_fallback",
+      "destination": "/family-health"
+    },
+    {
+      "source": "ordinary_back_to_product",
+      "destination": "/family-health"
+    },
+    {
+      "source": "legacy_dashboard",
+      "destination": "/family-health"
+    }
+  ],
+  "gate_precedence": [
+    "force_password_change",
+    "privacy_consent",
+    "validated_same_origin_deep_link",
+    "product_home"
+  ],
+  "deep_link_rules": {
+    "preserve_user_requested_authorized_internal_path": true,
+    "allow_external_destination": false,
+    "allow_authentication_or_activation_loop": false,
+    "allow_admin_route_for_non_admin": false
+  },
+  "ordinary_member_navigation": {
+    "desktop": [
+      "home",
+      "health_archive",
+      "ai_assistant_when_enabled",
+      "export",
+      "more"
+    ],
+    "mobile": [
+      "home",
+      "health_archive",
+      "ai_assistant_when_enabled",
+      "my_account"
+    ],
+    "forbidden_primary_items": [
+      "medications_table",
+      "lab_results_table",
+      "visit_history_table",
+      "practitioners_table",
+      "pharmacies_table",
+      "data_models"
+    ]
+  },
+  "administrator_navigation": {
+    "ordinary_member_shell_remains_available": true,
+    "system_management_entry_is_explicit": true,
+    "default_destination_after_login": "/family-health",
+    "management_destination": "/admin"
+  },
+  "responsive_acceptance": {
+    "desktop_viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "mobile_viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "minimum_touch_target_px": 44,
+    "critical_horizontal_overflow_allowed": false
+  },
+  "prohibited_regressions": [
+    "bypass_force_password_change",
+    "bypass_privacy_consent",
+    "restore_directional_patient_sharing",
+    "enable_public_registration",
+    "expose_internal_archive_circle_names",
+    "send_health_data_to_external_ai",
+    "strand_administrator_without_management_entry"
+  ]
+}

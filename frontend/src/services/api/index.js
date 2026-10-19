@@ -1,0 +1,2931 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import logger from '../logger.js';
+import { ENTITY_TYPES } from '../../utils/entityRelationships';
+import { extractErrorMessage } from '../../utils/errorUtils';
+import { getApiUrl, isDevelopment } from '../../config/env';
+import i18n from '../../i18n/config';
+
+// Map entity types to their API endpoint paths
+const ENTITY_TO_API_PATH = {
+  [ENTITY_TYPES.MEDICATION]: 'medications',
+  [ENTITY_TYPES.LAB_RESULT]: 'lab-results',
+  [ENTITY_TYPES.IMMUNIZATION]: 'immunizations',
+  [ENTITY_TYPES.INSURANCE]: 'insurances',
+  [ENTITY_TYPES.PROCEDURE]: 'procedures',
+  [ENTITY_TYPES.ALLERGY]: 'allergies',
+  [ENTITY_TYPES.CONDITION]: 'conditions',
+  [ENTITY_TYPES.TREATMENT]: 'treatments',
+  [ENTITY_TYPES.ENCOUNTER]: 'encounters',
+  [ENTITY_TYPES.VITALS]: 'vitals',
+  [ENTITY_TYPES.PRACTITIONER]: 'practitioners',
+  [ENTITY_TYPES.PHARMACY]: 'pharmacies',
+  [ENTITY_TYPES.EMERGENCY_CONTACT]: 'emergency-contacts',
+  [ENTITY_TYPES.PATIENT]: 'patients',
+  [ENTITY_TYPES.FAMILY_MEMBER]: 'family-members',
+  [ENTITY_TYPES.SYMPTOM]: 'symptoms',
+  [ENTITY_TYPES.INJURY]: 'injuries',
+  [ENTITY_TYPES.MEDICAL_EQUIPMENT]: 'medical-equipment',
+  [ENTITY_TYPES.PRACTICE]: 'practices',
+};
+
+// Streamlined API service with proper logging integration
+class ApiService {
+  constructor() {
+    // Use environment variable for configurable API URL
+    // Docker and production set VITE_API_URL=/api/v1 for relative paths
+    // Development uses VITE_API_URL=http://localhost:8000/api/v1
+    let baseURL = getApiUrl();
+
+    // Auto-detect protocol mismatch and adjust for local development
+    if (
+      typeof window !== 'undefined' &&
+      baseURL.startsWith('http://localhost')
+    ) {
+      const currentProtocol = window.location.protocol;
+      if (currentProtocol === 'https:') {
+        // Frontend is HTTPS but API URL is HTTP - switch to HTTPS
+        baseURL = baseURL.replace('http://', 'https://');
+        logger.warn(
+          'Detected HTTPS frontend with HTTP API URL. Switching to HTTPS:',
+          baseURL
+        );
+      }
+    }
+
+    this.baseURL = baseURL;
+    // Fallback URLs for better Docker compatibility
+    // Use same environment variable for fallback, defaulting to relative path
+    this.fallbackURL = isDevelopment()
+      ? baseURL // In development, use same URL for fallback
+      : '/api/v1'; // In production, use relative path
+  }
+
+  getAuthHeaders() {
+    return { 'Content-Type': 'application/json' };
+  }
+  async handleResponse(response, method, url) {
+    if (!response.ok) {
+      const errorData = await response.text();
+      let errorMessage;
+      let fullErrorData;
+
+      try {
+        fullErrorData = JSON.parse(errorData);
+
+        // Log validation errors for debugging
+        if (response.status === 422) {
+          logger.error('Validation Error Details:', fullErrorData);
+        }
+
+        // Log authentication errors with more detail
+        if (response.status === 401 || response.status === 403) {
+          logger.error('Authentication Error:', {
+            status: response.status,
+            url: url,
+            error: fullErrorData,
+          });
+        }
+
+        // Use the error utility to extract a user-friendly message
+        errorMessage = extractErrorMessage(fullErrorData, response.status);
+      } catch {
+        errorMessage =
+          errorData ||
+          `HTTP error! status: ${response.status} - ${response.statusText}`;
+      }
+
+      logger.apiError('API Error', method, url, response.status, errorMessage);
+      const structuredDetail =
+        fullErrorData?.detail &&
+        typeof fullErrorData.detail === 'object' &&
+        !Array.isArray(fullErrorData.detail)
+          ? fullErrorData.detail
+          : null;
+      const resolvedErrorMessage =
+        typeof errorMessage === 'string'
+          ? errorMessage
+          : typeof structuredDetail?.message === 'string'
+            ? structuredDetail.message
+            : `HTTP error! status: ${response.status}`;
+      const err = new Error(resolvedErrorMessage);
+      err.status = response.status;
+      if (typeof structuredDetail?.code === 'string') {
+        err.code = structuredDetail.code;
+      }
+      err.detail = fullErrorData?.detail;
+      throw err;
+    }
+
+    // logger.debug('API request successful', {
+    //   method,
+    //   url,
+    //   status: response.status,
+    // });
+
+    // Handle 204 No Content responses (common for DELETE operations)
+    if (response.status === 204) {
+      return null;
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
+    } else if (
+      contentType &&
+      (contentType.includes('application/octet-stream') ||
+        contentType.includes('image/') ||
+        contentType.includes('application/pdf'))
+    ) {
+      return response.blob();
+    }
+    return response.text();
+  } // Core request method with logging and fallback
+
+  requestWithUploadProgress(
+    method,
+    fullUrl,
+    data,
+    { signal, customHeaders, responseType, onUploadProgress }
+  ) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      let settled = false;
+
+      const cleanup = () => {
+        signal?.removeEventListener('abort', abortRequest);
+      };
+      const finish = callback => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback();
+      };
+      const abortRequest = () => xhr.abort();
+
+      if (signal?.aborted) {
+        reject(new DOMException('The operation was aborted.', 'AbortError'));
+        return;
+      }
+
+      xhr.open(method, fullUrl);
+      xhr.withCredentials = true;
+      xhr.responseType = responseType === 'blob' ? 'blob' : 'text';
+      xhr.setRequestHeader('Accept', 'application/json');
+      Object.entries(customHeaders).forEach(([name, value]) => {
+        if (name.toLowerCase() !== 'content-type') {
+          xhr.setRequestHeader(name, value);
+        }
+      });
+
+      xhr.upload.onprogress = event => {
+        const total = event.lengthComputable ? event.total : 0;
+        const percent =
+          total > 0
+            ? Math.min(
+                100,
+                Math.max(0, Math.round((event.loaded / total) * 100))
+              )
+            : undefined;
+        try {
+          onUploadProgress({
+            loaded: event.loaded,
+            total,
+            percent,
+          });
+        } catch (error) {
+          logger.warn('Upload progress callback failed:', error);
+        }
+      };
+
+      xhr.onload = () => {
+        try {
+          const contentType =
+            xhr.getResponseHeader('content-type') || 'application/json';
+          const responseBody =
+            xhr.status === 204
+              ? null
+              : responseType === 'blob'
+                ? xhr.response
+                : xhr.responseText;
+          const response = new Response(responseBody, {
+            status: xhr.status,
+            statusText: xhr.statusText,
+            headers: { 'content-type': contentType },
+          });
+          finish(() => {
+            Promise.resolve(
+              this.handleResponse(response, method, fullUrl)
+            ).then(resolve, reject);
+          });
+        } catch (error) {
+          finish(() => reject(error));
+        }
+      };
+      xhr.onerror = () =>
+        finish(() => reject(new Error(`Failed to connect to ${fullUrl}`)));
+      xhr.onabort = () =>
+        finish(() =>
+          reject(new DOMException('The operation was aborted.', 'AbortError'))
+        );
+      xhr.ontimeout = () =>
+        finish(() => reject(new Error(`Upload timed out for ${fullUrl}`)));
+
+      signal?.addEventListener('abort', abortRequest, { once: true });
+      xhr.send(data);
+    });
+  }
+
+  async uploadRequest(method, url, data, options) {
+    const urls = [...new Set([this.baseURL + url, this.fallbackURL + url])];
+    let lastError = null;
+
+    for (let i = 0; i < urls.length; i++) {
+      const fullUrl = urls[i];
+      try {
+        return await this.requestWithUploadProgress(method, fullUrl, data, {
+          signal: options.signal,
+          customHeaders: options.headers || {},
+          responseType: options.responseType,
+          onUploadProgress: options.onUploadProgress,
+        });
+      } catch (error) {
+        if (options.signal?.aborted || error?.name === 'AbortError')
+          throw error;
+        if (error?.status) throw error;
+        logger.warn(`Failed to upload to ${fullUrl}:`, error.message);
+        lastError = error;
+      }
+    }
+
+    logger.apiError(lastError, url, method);
+    throw (
+      lastError ||
+      new Error(`Failed to connect to any API endpoint for ${method} ${url}`)
+    );
+  }
+
+  async request(method, url, data = null, options = {}) {
+    const {
+      signal,
+      headers: customHeaders = {},
+      responseType,
+      params,
+    } = options;
+
+    // Handle query parameters
+    if (params && Object.keys(params).length > 0) {
+      const searchParams = new URLSearchParams();
+
+      // Handle array parameters correctly for FastAPI List[str] parameters
+      Object.entries(params).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          // Add each array item as a separate parameter with the same key
+          value.forEach(item => searchParams.append(key, item));
+        } else {
+          searchParams.append(key, value);
+        }
+      });
+
+      url += `?${searchParams.toString()}`;
+    }
+
+    if (
+      options.onUploadProgress &&
+      data instanceof FormData &&
+      typeof XMLHttpRequest !== 'undefined'
+    ) {
+      return this.uploadRequest(method, url, data, options);
+    }
+
+    // Auth is handled by HttpOnly cookie sent automatically with credentials: 'include'
+    const config = {
+      method,
+      signal,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...customHeaders,
+      },
+    };
+
+    // Handle different data types
+    if (data instanceof FormData) {
+      delete config.headers['Content-Type']; // Let browser set the boundary
+      config.body = data;
+    } else if (data instanceof URLSearchParams) {
+      config.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      config.body = data.toString();
+    } else if (data) {
+      config.body = JSON.stringify(data);
+    }
+
+    // Try multiple URLs for Docker compatibility
+    const urls = [...new Set([this.baseURL + url, this.fallbackURL + url])];
+    let lastError = null;
+
+    for (let i = 0; i < urls.length; i++) {
+      const fullUrl = urls[i];
+      try {
+        logger.debug(
+          `${method} request attempt ${i + 1}/${urls.length} to ${fullUrl}`,
+          {
+            url: fullUrl,
+            method: method,
+          }
+        );
+
+        const response = await fetch(fullUrl, config);
+
+        // Handle blob responses specially
+        if (responseType === 'blob' && response.ok) {
+          return response.blob();
+        }
+
+        return this.handleResponse(response, method, fullUrl);
+      } catch (error) {
+        // Component cleanup and route changes intentionally abort in-flight
+        // reads. Preserve AbortError semantics without retrying a fallback URL
+        // or reporting a false connectivity failure.
+        if (signal?.aborted || error?.name === 'AbortError') {
+          throw error;
+        }
+        logger.warn(`Failed to connect to ${fullUrl}:`, error.message);
+        lastError = error;
+
+        // Continue to next URL if this one fails and we have more URLs to try
+        if (i < urls.length - 1) {
+          continue;
+        }
+      }
+    }
+
+    // If all URLs failed, log and throw the last error
+    logger.apiError(lastError, url, method);
+    throw (
+      lastError ||
+      new Error(`Failed to connect to any API endpoint for ${method} ${url}`)
+    );
+  }
+  // Generic HTTP methods with signal support
+  get(endpoint, options = {}) {
+    return this.request('GET', endpoint, null, options);
+  }
+
+  post(endpoint, data, options = {}) {
+    return this.request('POST', endpoint, data, options);
+  }
+
+  put(endpoint, data, options = {}) {
+    return this.request('PUT', endpoint, data, options);
+  }
+
+  delete(endpoint, options = {}) {
+    return this.request('DELETE', endpoint, null, options);
+  }
+
+  patch(endpoint, data, options = {}) {
+    return this.request('PATCH', endpoint, data, options);
+  }
+
+  // Simplified API methods for backward compatibility  // Auth methods
+  login(username, password, signal) {
+    // FastAPI OAuth2PasswordRequestForm expects form-encoded data
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+
+    return this.request('POST', '/auth/login/', formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      signal,
+    });
+  }
+
+  register(username, password, email, fullName, signal) {
+    return this.post(
+      '/auth/register/',
+      {
+        username,
+        password,
+        email,
+        full_name: fullName,
+      },
+      { signal }
+    );
+  }
+
+  // Update user profile
+  updateUserProfile(profileData, signal) {
+    return this.put('/users/me', profileData, { signal });
+  }
+
+  changePassword(passwordData, signal) {
+    return this.post('/auth/change-password', passwordData, { signal });
+  }
+
+  // Patient methods
+  getCurrentPatient(signal) {
+    return this.get('/patients/me', { signal });
+  }
+
+  createCurrentPatient(patientData, signal) {
+    return this.post('/patients/me', patientData, { signal });
+  }
+
+  updateCurrentPatient(patientData, signal) {
+    return this.put('/patients/me', patientData, { signal });
+  }
+
+  async getRecentActivity(patientId = null, signal) {
+    // Always send patient_id parameter if we have one, even if it's 0
+    const params =
+      patientId !== null && patientId !== undefined
+        ? { patient_id: patientId }
+        : {};
+
+    return this.get('/patients/recent-activity/', {
+      params,
+      signal,
+    });
+  }
+
+  getDashboardStats(patientId, signal) {
+    // Support both Phase 1 patient switching and legacy single patient mode
+    if (patientId) {
+      return this.get('/patients/me/dashboard-stats', {
+        params: { patient_id: patientId },
+        signal,
+      });
+    } else {
+      // Fallback for legacy mode
+      return this.get('/patients/me/dashboard-stats', { signal });
+    }
+  }
+
+  // Generic entity methods using the entity relationship system
+  getEntities(entityType, signal) {
+    const apiPath = ENTITY_TO_API_PATH[entityType] || entityType;
+    return this.get(`/${apiPath}/`, { signal });
+  }
+
+  getEntity(entityType, entityId, signal) {
+    const apiPath = ENTITY_TO_API_PATH[entityType] || entityType;
+    return this.get(`/${apiPath}/${entityId}`, { signal });
+  }
+
+  createEntity(entityType, entityData, signal, patientId = null) {
+    const apiPath = ENTITY_TO_API_PATH[entityType] || entityType;
+    let url = `/${apiPath}/`;
+
+    // Add patient_id query parameter if provided
+    if (patientId !== null) {
+      url += `?patient_id=${patientId}`;
+    }
+
+    return this.post(url, entityData, { signal });
+  }
+
+  updateEntity(entityType, entityId, entityData, signal, patientId = null) {
+    const apiPath = ENTITY_TO_API_PATH[entityType] || entityType;
+    let url = `/${apiPath}/${entityId}`;
+
+    // Add patient_id query parameter if provided
+    if (patientId !== null) {
+      url += `?patient_id=${patientId}`;
+    }
+
+    logger.debug('api_update_entity', 'Update entity URL construction', {
+      entityType,
+      entityId,
+      apiPath,
+      url,
+      patientId,
+      baseURL: this.baseURL,
+      fallbackURL: this.fallbackURL,
+    });
+    return this.put(url, entityData, { signal });
+  }
+
+  deleteEntity(entityType, entityId, signal, patientId = null) {
+    const apiPath = ENTITY_TO_API_PATH[entityType] || entityType;
+    let url = `/${apiPath}/${entityId}`;
+
+    // Add patient_id query parameter if provided
+    if (patientId !== null) {
+      url += `?patient_id=${patientId}`;
+    }
+
+    return this.delete(url, { signal });
+  }
+
+  getEntitiesWithFilters(entityType, filters = {}, signal) {
+    const apiPath = ENTITY_TO_API_PATH[entityType] || entityType;
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        params.append(key, value);
+      }
+    });
+    const queryString = params.toString();
+    return this.get(`/${apiPath}/${queryString ? `?${queryString}` : ''}`, {
+      signal,
+    });
+  }
+
+  getPatientEntities(entityType, patientId, signal) {
+    const apiPath = ENTITY_TO_API_PATH[entityType] || entityType;
+    const url = `/${apiPath}/?patient_id=${patientId}`;
+    logger.debug('api_patient_entities', 'Fetching patient entities', {
+      entityType,
+      patientId,
+      url,
+      apiPath,
+    });
+    return this.get(url, { signal });
+  }
+
+  // Lab Result methods
+  getLabResults(signal) {
+    return this.getEntities(ENTITY_TYPES.LAB_RESULT, signal);
+  }
+  getPatientLabResults(patientId, signal) {
+    return this.getPatientEntities(ENTITY_TYPES.LAB_RESULT, patientId, signal);
+  }
+  getLabResult(labResultId, signal) {
+    return this.getEntity(ENTITY_TYPES.LAB_RESULT, labResultId, signal);
+  }
+
+  createLabResult(labResultData, signal) {
+    return this.createEntity(ENTITY_TYPES.LAB_RESULT, labResultData, signal);
+  }
+
+  updateLabResult(labResultId, labResultData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.LAB_RESULT,
+      labResultId,
+      labResultData,
+      signal
+    );
+  }
+
+  deleteLabResult(labResultId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.LAB_RESULT, labResultId, signal);
+  }
+
+  // ==========================================
+  // GENERIC FILE MANAGEMENT METHODS
+  // ==========================================
+
+  /**
+   * Generic file management methods that work with any entity type
+   * Supports: lab-result, insurance, visit, procedure, etc.
+   */
+
+  // Map entity types to their file endpoint paths
+  getFileEndpoint(entityType, entityId) {
+    // Use the new generic backend API endpoints
+    return `/entity-files/${entityType}/${entityId}/files`;
+  }
+
+  // Get all files for an entity
+  getEntityFiles(entityType, entityId, signal) {
+    try {
+      const endpoint = this.getFileEndpoint(entityType, entityId);
+
+      logger.debug('api_get_entity_files', 'Fetching entity files', {
+        entityType,
+        entityId,
+        endpoint,
+        component: 'ApiService',
+      });
+
+      return this.get(endpoint, {
+        signal,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
+    } catch (error) {
+      logger.error('api_get_entity_files_error', 'Failed to get entity files', {
+        entityType,
+        entityId,
+        error: error.message,
+        component: 'ApiService',
+      });
+      throw error;
+    }
+  }
+
+  // Upload file to an entity
+  uploadEntityFile(
+    entityType,
+    entityId,
+    file,
+    description = '',
+    category = '',
+    storageBackend = undefined,
+    signal
+  ) {
+    const endpoint = this.getFileEndpoint(entityType, entityId);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    if (description && description.trim()) {
+      formData.append('description', description.trim());
+    }
+    if (category && category.trim()) {
+      formData.append('category', category.trim());
+    }
+    // Only send storage_backend if explicitly specified, otherwise let backend use user's default
+    if (storageBackend) {
+      formData.append('storage_backend', storageBackend);
+    }
+
+    logger.info('api_upload_entity_file', 'Uploading file to entity', {
+      entityType,
+      entityId,
+      fileName: file.name,
+      fileSize: file.size,
+      hasDescription: !!description,
+      hasCategory: !!category,
+      storageBackend,
+      actualStorageBackend: storageBackend || 'local',
+      endpoint,
+      component: 'ApiService',
+    });
+
+    return this.post(endpoint, formData, { signal })
+      .then(response => {
+        logger.info(
+          'api_upload_entity_file_response',
+          'File upload response received',
+          {
+            response: JSON.stringify(response),
+            hasPaperlessTaskUuid: !!response?.paperless_task_uuid,
+            component: 'ApiService',
+          }
+        );
+
+        return response;
+      })
+      .catch(error => {
+        logger.error(
+          'api_upload_entity_file_error',
+          'Failed to upload entity file',
+          {
+            entityType,
+            entityId,
+            fileName: file?.name,
+            error: error.message,
+            component: 'ApiService',
+          }
+        );
+        throw error;
+      });
+  }
+
+  // Upload file to an entity with Paperless task status monitoring
+  async uploadEntityFileWithTaskMonitoring(
+    entityType,
+    entityId,
+    file,
+    description = '',
+    category = '',
+    storageBackend = undefined,
+    signal,
+    onProgress = null
+  ) {
+    try {
+      logger.info(
+        'api_upload_entity_file_with_monitoring',
+        'Starting monitored upload',
+        {
+          entityType,
+          entityId,
+          fileName: file.name,
+          fileSize: file.size,
+          storageBackend,
+          component: 'ApiService',
+        }
+      );
+
+      // Perform the initial upload
+      const uploadResult = await this.uploadEntityFile(
+        entityType,
+        entityId,
+        file,
+        description,
+        category,
+        storageBackend,
+        signal
+      );
+
+      logger.info('api_upload_result', 'Upload result received', {
+        uploadResult: JSON.stringify(uploadResult),
+        hasTaskUuid: !!uploadResult?.paperless_task_uuid,
+        storageBackend,
+        component: 'ApiService',
+      });
+
+      // If not using Paperless or no task UUID returned, return immediately
+      if (
+        storageBackend !== 'paperless' ||
+        !uploadResult?.paperless_task_uuid
+      ) {
+        logger.info(
+          'api_upload_no_monitoring_needed',
+          'Upload completed without task monitoring',
+          {
+            entityType,
+            entityId,
+            fileName: file.name,
+            storageBackend,
+            hasTaskUuid: !!uploadResult?.paperless_task_uuid,
+            component: 'ApiService',
+          }
+        );
+        return {
+          ...uploadResult,
+          taskMonitored: false,
+          documentId: null,
+          isDuplicate: false,
+        };
+      }
+
+      // Monitor Paperless task status
+      const taskUuid = uploadResult.paperless_task_uuid;
+
+      if (onProgress) {
+        onProgress({
+          status: 'processing',
+          message: i18n.t('notifications:toasts.upload.paperlessProcessing'),
+        });
+      }
+
+      logger.info(
+        'api_upload_task_monitoring',
+        'Starting Paperless task monitoring',
+        {
+          entityType,
+          entityId,
+          fileName: file.name,
+          taskUuid,
+          component: 'ApiService',
+        }
+      );
+
+      // Import the pollPaperlessTaskStatus function
+      const { pollPaperlessTaskStatus } = await import('./paperlessApi.jsx');
+
+      // Handle background transition notification
+      const handleBackgroundTransition = taskUuid => {
+        // Import notifications dynamically to avoid dependency issues
+        import('@mantine/notifications')
+          .then(({ notifications }) => {
+            notifications.show({
+              title: i18n.t(
+                'notifications:toasts.upload.backgroundProcessingTitle'
+              ),
+              message: i18n.t(
+                'notifications:toasts.upload.paperlessBackgroundMessage'
+              ),
+              color: 'blue',
+              autoClose: 10000,
+              withCloseButton: true,
+            });
+          })
+          .catch(err => {
+            logger.warn(
+              'background_notification_import_failed',
+              'Failed to import Mantine notifications for background upload',
+              {
+                error: err.message,
+                component: 'apiService',
+              }
+            );
+          });
+
+        logger.info(
+          'api_upload_background_transition',
+          'Upload transitioned to background processing',
+          {
+            entityType,
+            entityId,
+            fileName: file.name,
+            taskUuid,
+            component: 'ApiService',
+          }
+        );
+      };
+
+      // Poll task status with background transition support
+      const taskResult = await pollPaperlessTaskStatus(
+        taskUuid,
+        300,
+        1000,
+        handleBackgroundTransition
+      );
+
+      logger.info(
+        'api_upload_task_complete',
+        'Paperless task monitoring completed',
+        {
+          entityType,
+          entityId,
+          fileName: file.name,
+          taskUuid,
+          taskStatus: taskResult.status,
+          hasError: !!taskResult.error,
+          hasDocumentId: !!(
+            taskResult.result?.document_id || taskResult.document_id
+          ),
+          component: 'ApiService',
+        }
+      );
+
+      // Process task result directly
+      logger.debug('api_upload_task_processing', 'Processing task result', {
+        taskResultStatus: taskResult?.status,
+        taskResultErrorType: taskResult?.error_type,
+        taskResultHasResult: !!taskResult?.result,
+        component: 'ApiService',
+      });
+
+      // Handle background processing status
+      if (taskResult?.status === 'PROCESSING_BACKGROUND') {
+        logger.info(
+          'api_upload_background_processing',
+          'Task moved to background processing',
+          {
+            entityType,
+            entityId,
+            fileName: file.name,
+            taskUuid: taskResult.task_uuid,
+            component: 'ApiService',
+          }
+        );
+
+        // Store task UUID in the entity file for background tracking
+        await this.post('/paperless/entity-files/set-background-task', {
+          entity_type: entityType,
+          entity_id: entityId,
+          file_name: file.name,
+          task_uuid: taskResult.task_uuid,
+          sync_status: 'processing',
+        });
+
+        // Start background resolution immediately (don't await - let it run in background)
+        const { resolveBackgroundTask } = await import('./paperlessApi.jsx');
+        resolveBackgroundTask(
+          taskResult.task_uuid,
+          entityType,
+          entityId,
+          file.name
+        ).catch(error => {
+          logger.error(
+            'api_upload_background_resolution_error',
+            'Background task resolution failed',
+            {
+              entityType,
+              entityId,
+              fileName: file.name,
+              taskUuid: taskResult.task_uuid,
+              error: error.message,
+              component: 'ApiService',
+            }
+          );
+        });
+
+        if (onProgress) {
+          onProgress({
+            status: 'processing',
+            message: i18n.t(
+              'notifications:toasts.upload.backgroundProcessingMessage'
+            ),
+            isBackground: true,
+          });
+        }
+
+        return {
+          ...uploadResult,
+          taskMonitored: true,
+          taskResult,
+          success: false, // Not complete yet
+          isBackgroundProcessing: true,
+          taskUuid: taskResult.task_uuid,
+          message: taskResult.message,
+        };
+      }
+
+      // Check if task was successful
+      const isSuccess =
+        taskResult?.status === 'SUCCESS' &&
+        (taskResult?.id ||
+          taskResult?.related_document ||
+          taskResult?.result?.document_id ||
+          taskResult?.document_id);
+
+      // Check if task failed due to duplicate
+      const isDuplicate =
+        taskResult?.error_type === 'duplicate' ||
+        (taskResult?.status === 'FAILURE' &&
+          taskResult?.result &&
+          (taskResult.result.toLowerCase().includes('duplicate') ||
+            taskResult.result.toLowerCase().includes('already exists')));
+
+      // Get user-friendly error message based on error type
+      const getUserFriendlyErrorMessage = (taskResult, fileName) => {
+        const errorType = taskResult?.error_type;
+        switch (errorType) {
+          case 'duplicate':
+            return `"${fileName}" already exists in Paperless. This document appears to be a duplicate.`;
+          case 'corrupted_file':
+            return `"${fileName}" appears to be corrupted or in an unsupported format. Please check the file and try again.`;
+          case 'permission_error':
+            return `Permission denied uploading "${fileName}". Please check your Paperless access rights.`;
+          case 'file_too_large':
+            return `"${fileName}" is too large for Paperless. Please reduce the file size or check your Paperless configuration.`;
+          case 'storage_full':
+            return `Paperless storage is full. Unable to upload "${fileName}". Please contact your administrator.`;
+          case 'ocr_failed':
+            return `"${fileName}" was uploaded but Paperless had trouble extracting text from it. The document is still stored.`;
+          case 'network_error':
+            return `Network error uploading "${fileName}" to Paperless. Please check your connection and try again.`;
+          case 'processing_error':
+          default:
+            return `Paperless was unable to process "${fileName}". Please try again or contact support if the problem persists.`;
+        }
+      };
+
+      // Extract and validate document ID if successful
+      let documentId = null;
+      if (isSuccess) {
+        // Check multiple possible locations for document ID
+        const rawDocumentId =
+          taskResult?.id ||
+          taskResult?.related_document ||
+          taskResult?.result?.document_id ||
+          taskResult?.document_id;
+
+        // Validate document ID - reject invalid values like "unknown"
+        if (
+          rawDocumentId &&
+          String(rawDocumentId).toLowerCase() !== 'unknown' &&
+          String(rawDocumentId).toLowerCase() !== 'none' &&
+          String(rawDocumentId).toLowerCase() !== 'null' &&
+          String(rawDocumentId) !== '' &&
+          !isNaN(rawDocumentId) &&
+          parseInt(rawDocumentId) > 0
+        ) {
+          documentId = rawDocumentId;
+        } else {
+          // Invalid document ID - trigger fallback search
+          logger.warn(
+            'api_upload_invalid_document_id',
+            'Task returned invalid document ID, attempting fallback search',
+            {
+              rawDocumentId,
+              fileName: file.name,
+              taskUuid,
+              component: 'ApiService',
+            }
+          );
+
+          try {
+            // Import and call fallback search
+            const { searchDocumentByFilenameAndTime } =
+              await import('./paperlessApi');
+            const fallbackDocumentId = await searchDocumentByFilenameAndTime(
+              file.name
+            );
+
+            if (fallbackDocumentId) {
+              documentId = fallbackDocumentId;
+              logger.info(
+                'api_upload_fallback_success',
+                'Fallback search found document ID',
+                {
+                  fileName: file.name,
+                  fallbackDocumentId,
+                  originalTaskResult: rawDocumentId,
+                  component: 'ApiService',
+                }
+              );
+            } else {
+              logger.error(
+                'api_upload_fallback_failed',
+                'Fallback search could not find document',
+                {
+                  fileName: file.name,
+                  originalTaskResult: rawDocumentId,
+                  component: 'ApiService',
+                }
+              );
+              // Keep documentId as null to indicate failure
+            }
+          } catch (fallbackError) {
+            logger.error(
+              'api_upload_fallback_error',
+              'Error during fallback search',
+              {
+                fileName: file.name,
+                originalTaskResult: rawDocumentId,
+                error: fallbackError.message,
+                component: 'ApiService',
+              }
+            );
+            // Keep documentId as null to indicate failure
+          }
+        }
+      }
+
+      logger.debug('api_upload_task_processed', 'Task result processed', {
+        isSuccess,
+        isDuplicate,
+        documentId,
+        component: 'ApiService',
+      });
+
+      if (onProgress) {
+        const status = isSuccess
+          ? 'completed'
+          : isDuplicate
+            ? 'completed_duplicate'
+            : 'failed';
+
+        let message;
+        if (isSuccess) {
+          message = 'Document processed successfully';
+        } else if (isDuplicate) {
+          message = getUserFriendlyErrorMessage(taskResult, file.name);
+        } else {
+          message = getUserFriendlyErrorMessage(taskResult, file.name);
+        }
+
+        onProgress({
+          status,
+          message,
+          isDuplicate,
+          errorType: taskResult?.error_type,
+        });
+      }
+
+      return {
+        ...uploadResult,
+        taskMonitored: true,
+        taskResult,
+        documentId,
+        isDuplicate,
+        success: isSuccess,
+      };
+    } catch (error) {
+      logger.error(
+        'api_upload_entity_file_monitoring_error',
+        'Failed to upload and monitor entity file',
+        {
+          entityType,
+          entityId,
+          fileName: file?.name,
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+
+      // Re-throw with additional context
+      const enhancedError = new Error(
+        `Upload monitoring failed: ${error.message}`
+      );
+      enhancedError.originalError = error;
+      throw enhancedError;
+    }
+  }
+
+  // View file in new tab (generic - file ID is enough)
+  async viewEntityFile(fileId, fileName, _signal) {
+    try {
+      logger.info('api_view_entity_file', 'Opening entity file for viewing', {
+        fileId,
+        fileName,
+        component: 'ApiService',
+      });
+
+      // Construct view URL -- the HttpOnly cookie is sent automatically by the
+      // browser for same-origin requests opened via window.open().
+      const envBaseUrl = getApiUrl();
+      const baseUrl = envBaseUrl.endsWith('/api/v1')
+        ? envBaseUrl.slice(0, -7)
+        : envBaseUrl;
+      const viewUrl = `${baseUrl}/api/v1/entity-files/files/${fileId}/view`;
+
+      const newWindow = window.open(viewUrl, '_blank', 'noopener,noreferrer');
+
+      if (!newWindow) {
+        logger.warn(
+          'popup_detection_warning',
+          'window.open returned null, but file may still open',
+          {
+            fileId,
+            fileName,
+            viewUrl,
+            component: 'ApiService',
+          }
+        );
+      }
+
+      logger.info(
+        'api_view_entity_file_success',
+        'File viewer opened successfully',
+        {
+          fileId,
+          fileName,
+          viewUrl,
+          component: 'ApiService',
+        }
+      );
+
+      return { success: true, message: 'File opened in new tab' };
+    } catch (error) {
+      logger.error('api_view_entity_file_error', 'Failed to view entity file', {
+        fileId,
+        fileName,
+        error: error.message,
+        errorStack: error.stack,
+        errorType: error.constructor.name,
+        component: 'ApiService',
+      });
+      throw error;
+    }
+  }
+
+  // Download file (generic - file ID is enough)
+  async downloadEntityFile(fileId, fileName, signal) {
+    try {
+      logger.info('api_download_entity_file', 'Downloading entity file', {
+        fileId,
+        fileName,
+        component: 'ApiService',
+      });
+
+      // Use direct fetch with cookie auth to get full response with headers
+      const response = await fetch(
+        `${this.baseURL}/entity-files/files/${fileId}/download`,
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          signal,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Download failed: ${response.status} ${response.statusText}`
+        );
+      }
+
+      // Extract filename from Content-Disposition header
+      const contentDisposition = response.headers.get('content-disposition');
+      let correctedFileName = fileName || `file_${fileId}`;
+
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+        );
+        if (fileNameMatch && fileNameMatch[1]) {
+          correctedFileName = fileNameMatch[1].replace(/['"]/g, '');
+          logger.info(
+            `Using server-provided filename: ${correctedFileName} (original: ${fileName})`
+          );
+        }
+      }
+
+      const blob = await response.blob();
+
+      // Handle blob download in browser
+      if (blob instanceof Blob) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = correctedFileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        logger.info(
+          'api_download_entity_file_success',
+          'File download completed',
+          {
+            fileId,
+            fileName,
+            component: 'ApiService',
+          }
+        );
+      } else {
+        throw new Error('Invalid blob response from server');
+      }
+    } catch (error) {
+      logger.error(
+        'api_download_entity_file_error',
+        'Failed to download entity file',
+        {
+          fileId,
+          fileName,
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  // Delete file (generic - file ID is enough)
+  deleteEntityFile(fileId, signal) {
+    try {
+      logger.info('api_delete_entity_file', 'Deleting entity file', {
+        fileId,
+        component: 'ApiService',
+      });
+
+      return this.delete(`/entity-files/files/${fileId}`, { signal });
+    } catch (error) {
+      logger.error(
+        'api_delete_entity_file_error',
+        'Failed to delete entity file',
+        {
+          fileId,
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  // Batch get file counts for multiple entities (performance optimization)
+  getMultipleEntityFilesCounts(entityType, entityIds, signal) {
+    try {
+      logger.debug('api_batch_file_counts', 'Getting batch file counts', {
+        entityType,
+        entityCount: entityIds?.length,
+        component: 'ApiService',
+      });
+
+      return this.post(
+        '/entity-files/files/batch-counts',
+        {
+          entity_type: entityType,
+          entity_ids: entityIds,
+        },
+        { signal }
+      );
+    } catch (error) {
+      logger.error(
+        'api_batch_file_counts_error',
+        'Failed to get batch file counts',
+        {
+          entityType,
+          entityCount: entityIds?.length,
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  // Check Paperless document sync status
+  async checkPaperlessSyncStatus(signal) {
+    // Create a timeout signal to prevent hanging requests
+    let timeoutId;
+    const timeoutSignal = new AbortController();
+
+    try {
+      logger.debug(
+        'api_paperless_sync_check',
+        'Checking Paperless sync status',
+        {
+          component: 'ApiService',
+        }
+      );
+
+      if (!signal) {
+        // Set 30-second timeout for sync check requests
+        timeoutId = setTimeout(() => {
+          timeoutSignal.abort();
+        }, 30000);
+      }
+
+      const finalSignal = signal || timeoutSignal.signal;
+
+      const result = await this.post(
+        '/entity-files/sync/paperless',
+        {},
+        {
+          signal: finalSignal,
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      );
+
+      // Clear timeout if request completed successfully
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      logger.info(
+        'api_paperless_sync_check_success',
+        'Paperless sync status check completed',
+        {
+          filesChecked: Object.keys(result || {}).length,
+          component: 'ApiService',
+        }
+      );
+
+      return result;
+    } catch (error) {
+      // Clear timeout if request failed
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      // Enhanced error logging for better debugging
+      logger.error(
+        'api_paperless_sync_check_error',
+        'Failed to check Paperless sync status',
+        {
+          error: error.message,
+          errorStack: error.stack,
+          errorResponse: error.response,
+          isAbortError: error.name === 'AbortError',
+          component: 'ApiService',
+        }
+      );
+
+      // Provide more specific error messages for common issues
+      let enhancedError = error;
+      if (error.name === 'AbortError') {
+        enhancedError = new Error(
+          'Sync check timed out. Please check your Paperless connection and try again.'
+        );
+      } else if (
+        error.message?.includes('401') ||
+        error.message?.includes('Unauthorized')
+      ) {
+        enhancedError = new Error(
+          'Authentication failed. Please check your Paperless credentials in Settings.'
+        );
+      } else if (
+        error.message?.includes('403') ||
+        error.message?.includes('Forbidden')
+      ) {
+        enhancedError = new Error(
+          'Access denied. Please verify your Paperless permissions.'
+        );
+      } else if (error.message?.includes('404')) {
+        enhancedError = new Error(
+          'Paperless API endpoint not found. Please check your Paperless URL configuration.'
+        );
+      } else if (error.message?.includes('500')) {
+        enhancedError = new Error(
+          'Paperless server error. Please check your Paperless instance status.'
+        );
+      } else if (
+        error.message?.includes('ECONNREFUSED') ||
+        error.message?.includes('Network')
+      ) {
+        enhancedError = new Error(
+          'Cannot connect to Paperless. Please check your Paperless URL and network connection.'
+        );
+      }
+
+      enhancedError.originalError = error;
+      throw enhancedError;
+    }
+  }
+
+  // Check Papra document sync status
+  async checkPapraSyncStatus(signal) {
+    let timeoutId;
+    const timeoutSignal = new AbortController();
+
+    try {
+      if (!signal) {
+        timeoutId = setTimeout(() => {
+          timeoutSignal.abort();
+        }, 30000);
+      }
+
+      const finalSignal = signal || timeoutSignal.signal;
+
+      const result = await this.post(
+        '/entity-files/sync/papra',
+        {},
+        {
+          signal: finalSignal,
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      );
+
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      return result;
+    } catch (error) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      logger.error(
+        'api_papra_sync_check_error',
+        'Failed to check Papra sync status',
+        {
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+
+      throw error;
+    }
+  }
+
+  // Update processing files status by checking Paperless task completion
+  updateProcessingFiles(signal) {
+    try {
+      logger.info(
+        'api_update_processing_files',
+        'Updating processing files status',
+        {
+          component: 'ApiService',
+        }
+      );
+
+      return this.post(
+        '/entity-files/processing/update',
+        {},
+        {
+          signal,
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      );
+    } catch (error) {
+      logger.error(
+        'api_update_processing_files_error',
+        'Failed to update processing files status',
+        {
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  // ==========================================
+  // BACKWARD COMPATIBILITY WRAPPERS
+  // ==========================================
+
+  /**
+   * Maintain backward compatibility with existing LabResult file methods
+   * These now use the generic methods internally
+   */
+
+  // Backward compatibility for lab result files
+  getLabResultFiles(labResultId, signal) {
+    return this.getEntityFiles('lab-result', labResultId, signal);
+  }
+
+  uploadLabResultFile(
+    labResultId,
+    file,
+    description = '',
+    category = '',
+    storageBackend = undefined,
+    signal
+  ) {
+    return this.uploadEntityFile(
+      'lab-result',
+      labResultId,
+      file,
+      description,
+      category,
+      storageBackend,
+      signal
+    );
+  }
+
+  downloadLabResultFile(fileId, fileName, signal) {
+    return this.downloadEntityFile(fileId, fileName, signal);
+  }
+
+  deleteLabResultFile(fileId, signal) {
+    return this.deleteEntityFile(fileId, signal);
+  }
+
+  // Lab Result - Condition Relationship methods
+  getLabResultConditions(labResultId, signal) {
+    return this.get(`/lab-results/${labResultId}/conditions`, { signal });
+  }
+  createLabResultCondition(labResultId, conditionData, signal) {
+    return this.post(`/lab-results/${labResultId}/conditions`, conditionData, {
+      signal,
+    });
+  }
+  updateLabResultCondition(labResultId, relationshipId, conditionData, signal) {
+    return this.put(
+      `/lab-results/${labResultId}/conditions/${relationshipId}`,
+      conditionData,
+      { signal }
+    );
+  }
+  deleteLabResultCondition(labResultId, relationshipId, signal) {
+    return this.delete(
+      `/lab-results/${labResultId}/conditions/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Encounter - Lab Result Relationship methods (encounter side)
+  getEncounterLabResults(encounterId, signal) {
+    return this.get(`/encounters/${encounterId}/lab-results`, { signal });
+  }
+  linkEncounterLabResult(encounterId, data, signal) {
+    return this.post(`/encounters/${encounterId}/lab-results`, data, {
+      signal,
+    });
+  }
+  linkEncounterLabResultsBulk(encounterId, data, signal) {
+    return this.post(`/encounters/${encounterId}/lab-results/bulk`, data, {
+      signal,
+    });
+  }
+  updateEncounterLabResult(encounterId, relationshipId, data, signal) {
+    return this.put(
+      `/encounters/${encounterId}/lab-results/${relationshipId}`,
+      data,
+      { signal }
+    );
+  }
+  unlinkEncounterLabResult(encounterId, relationshipId, signal) {
+    return this.delete(
+      `/encounters/${encounterId}/lab-results/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Lab Result - Encounter Relationship methods (lab result side)
+  getLabResultEncounters(labResultId, signal) {
+    return this.get(`/lab-results/${labResultId}/encounters`, { signal });
+  }
+  createLabResultEncounter(labResultId, data, signal) {
+    return this.post(`/lab-results/${labResultId}/encounters`, data, {
+      signal,
+    });
+  }
+  createLabResultEncountersBulk(labResultId, data, signal) {
+    return this.post(`/lab-results/${labResultId}/encounters/bulk`, data, {
+      signal,
+    });
+  }
+  updateLabResultEncounter(labResultId, relationshipId, data, signal) {
+    return this.put(
+      `/lab-results/${labResultId}/encounters/${relationshipId}`,
+      data,
+      { signal }
+    );
+  }
+  deleteLabResultEncounter(labResultId, relationshipId, signal) {
+    return this.delete(
+      `/lab-results/${labResultId}/encounters/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Lab Result - Medication Relationship methods (lab result side)
+  getLabResultMedications(labResultId, signal) {
+    return this.get(`/lab-results/${labResultId}/medications`, { signal });
+  }
+  createLabResultMedication(labResultId, data, signal) {
+    return this.post(`/lab-results/${labResultId}/medications`, data, {
+      signal,
+    });
+  }
+  updateLabResultMedication(labResultId, relationshipId, data, signal) {
+    return this.put(
+      `/lab-results/${labResultId}/medications/${relationshipId}`,
+      data,
+      { signal }
+    );
+  }
+  deleteLabResultMedication(labResultId, relationshipId, signal) {
+    return this.delete(
+      `/lab-results/${labResultId}/medications/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Lab Result - Procedure Relationship methods (lab result side)
+  getLabResultProcedures(labResultId, signal) {
+    return this.get(`/lab-results/${labResultId}/procedures`, { signal });
+  }
+  createLabResultProcedure(labResultId, data, signal) {
+    return this.post(`/lab-results/${labResultId}/procedures`, data, {
+      signal,
+    });
+  }
+  updateLabResultProcedure(labResultId, relationshipId, data, signal) {
+    return this.put(
+      `/lab-results/${labResultId}/procedures/${relationshipId}`,
+      data,
+      { signal }
+    );
+  }
+  deleteLabResultProcedure(labResultId, relationshipId, signal) {
+    return this.delete(
+      `/lab-results/${labResultId}/procedures/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Lab Result - Treatment Relationship methods (lab result side)
+  getLabResultTreatments(labResultId, signal) {
+    return this.get(`/lab-results/${labResultId}/treatments`, { signal });
+  }
+  createLabResultTreatment(labResultId, data, signal) {
+    return this.post(`/lab-results/${labResultId}/treatments`, data, {
+      signal,
+    });
+  }
+  updateLabResultTreatment(labResultId, relationshipId, data, signal) {
+    return this.put(
+      `/lab-results/${labResultId}/treatments/${relationshipId}`,
+      data,
+      { signal }
+    );
+  }
+  deleteLabResultTreatment(labResultId, relationshipId, signal) {
+    return this.delete(
+      `/lab-results/${labResultId}/treatments/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Medication methods
+  getMedications(signal) {
+    return this.getEntities(ENTITY_TYPES.MEDICATION, signal);
+  }
+  getPatientMedications(patientId, signal) {
+    return this.getPatientEntities(ENTITY_TYPES.MEDICATION, patientId, signal);
+  }
+  getMedicationsWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(
+      ENTITY_TYPES.MEDICATION,
+      filters,
+      signal
+    );
+  }
+
+  createMedication(medicationData, signal) {
+    // Clean up empty strings which might cause backend validation issues
+    const cleanPayload = {};
+    Object.keys(medicationData).forEach(key => {
+      const value = medicationData[key];
+      if (value !== '' && value !== null && value !== undefined) {
+        cleanPayload[key] = value;
+      }
+    });
+
+    // Ensure required fields
+    if (!cleanPayload.medication_name) {
+      throw new Error('Medication name is required');
+    }
+
+    return this.post(`/medications/`, cleanPayload, { signal });
+  }
+  updateMedication(medicationId, medicationData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.MEDICATION,
+      medicationId,
+      medicationData,
+      signal
+    );
+  }
+
+  deleteMedication(medicationId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.MEDICATION, medicationId, signal);
+  }
+
+  sendMedicationTestReminder(medicationId, signal) {
+    return this.post(`/medications/${medicationId}/reminders/test`, null, {
+      signal,
+    });
+  }
+
+  // Insurance methods
+  getInsurances(signal) {
+    return this.getEntities(ENTITY_TYPES.INSURANCE, signal);
+  }
+  getPatientInsurances(patientId, signal) {
+    return this.getPatientEntities(ENTITY_TYPES.INSURANCE, patientId, signal);
+  }
+  getInsurancesWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(ENTITY_TYPES.INSURANCE, filters, signal);
+  }
+
+  createInsurance(insuranceData, signal) {
+    // Clean up empty strings which might cause backend validation issues
+    const cleanPayload = {};
+    Object.keys(insuranceData).forEach(key => {
+      const value = insuranceData[key];
+      if (value !== '' && value !== null && value !== undefined) {
+        cleanPayload[key] = value;
+      }
+    });
+
+    // Ensure required fields
+    if (!cleanPayload.insurance_type) {
+      throw new Error('Insurance type is required');
+    }
+    if (!cleanPayload.company_name) {
+      throw new Error('Insurance company name is required');
+    }
+    if (!cleanPayload.member_name) {
+      throw new Error('Member name is required');
+    }
+    if (!cleanPayload.member_id) {
+      throw new Error('Member ID is required');
+    }
+
+    return this.post(`/insurances/`, cleanPayload, { signal });
+  }
+  updateInsurance(insuranceId, insuranceData, signal) {
+    logger.debug('api_update_insurance', 'Updating insurance via API', {
+      insuranceId,
+      insuranceData,
+      hasData: !!insuranceData,
+    });
+    return this.updateEntity(
+      ENTITY_TYPES.INSURANCE,
+      insuranceId,
+      insuranceData,
+      signal
+    );
+  }
+
+  deleteInsurance(insuranceId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.INSURANCE, insuranceId, signal);
+  }
+
+  setPrimaryInsurance(insuranceId, signal) {
+    return this.request(
+      'PATCH',
+      `/insurances/${insuranceId}/set-primary`,
+      null,
+      { signal }
+    );
+  }
+
+  // Immunization methods
+  getImmunizations(signal) {
+    return this.getEntities(ENTITY_TYPES.IMMUNIZATION, signal);
+  }
+  getPatientImmunizations(patientId, signal) {
+    return this.getPatientEntities(
+      ENTITY_TYPES.IMMUNIZATION,
+      patientId,
+      signal
+    );
+  }
+  getImmunizationsWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(
+      ENTITY_TYPES.IMMUNIZATION,
+      filters,
+      signal
+    );
+  }
+
+  getImmunizationHistory(patientId, params = {}, signal) {
+    const queryParams = {};
+    if (params.startDate != null) queryParams.start_date = params.startDate;
+    if (params.endDate != null) queryParams.end_date = params.endDate;
+    return this.get(`/immunizations/patient/${patientId}/history`, {
+      params: queryParams,
+      signal,
+    });
+  }
+
+  createImmunization(immunizationData, signal) {
+    return this.createEntity(
+      ENTITY_TYPES.IMMUNIZATION,
+      immunizationData,
+      signal
+    );
+  }
+  updateImmunization(immunizationId, immunizationData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.IMMUNIZATION,
+      immunizationId,
+      immunizationData,
+      signal
+    );
+  }
+
+  deleteImmunization(immunizationId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.IMMUNIZATION, immunizationId, signal);
+  }
+
+  // Practitioner methods
+  getPractitioners(signal) {
+    return this.getEntities(ENTITY_TYPES.PRACTITIONER, signal);
+  }
+
+  getPractitioner(practitionerId, signal) {
+    return this.getEntity(ENTITY_TYPES.PRACTITIONER, practitionerId, signal);
+  }
+  getPractitionersWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(
+      ENTITY_TYPES.PRACTITIONER,
+      filters,
+      signal
+    );
+  }
+
+  createPractitioner(practitionerData, signal) {
+    return this.createEntity(
+      ENTITY_TYPES.PRACTITIONER,
+      practitionerData,
+      signal
+    );
+  }
+
+  updatePractitioner(practitionerId, practitionerData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.PRACTITIONER,
+      practitionerId,
+      practitionerData,
+      signal
+    );
+  }
+
+  deletePractitioner(practitionerId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.PRACTITIONER, practitionerId, signal);
+  }
+
+  // Pharmacy methods
+  getPharmacies(signal) {
+    return this.getEntities(ENTITY_TYPES.PHARMACY, signal);
+  }
+
+  getPharmacy(pharmacyId, signal) {
+    return this.getEntity(ENTITY_TYPES.PHARMACY, pharmacyId, signal);
+  }
+
+  createPharmacy(pharmacyData, signal) {
+    return this.createEntity(ENTITY_TYPES.PHARMACY, pharmacyData, signal);
+  }
+
+  updatePharmacy(pharmacyId, pharmacyData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.PHARMACY,
+      pharmacyId,
+      pharmacyData,
+      signal
+    );
+  }
+
+  deletePharmacy(pharmacyId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.PHARMACY, pharmacyId, signal);
+  }
+
+  // Practice methods
+  getPractices(signal) {
+    return this.getEntities(ENTITY_TYPES.PRACTICE, signal);
+  }
+
+  getPractice(practiceId, signal) {
+    return this.getEntity(ENTITY_TYPES.PRACTICE, practiceId, signal);
+  }
+
+  getPracticesSummary(signal) {
+    return this.request(`${this.baseURL}/practices/summary`, {
+      method: 'GET',
+      signal,
+    });
+  }
+
+  searchPractices(name, signal) {
+    return this.request(
+      `${this.baseURL}/practices/search/by-name?name=${encodeURIComponent(name)}`,
+      { method: 'GET', signal }
+    );
+  }
+
+  createPractice(practiceData, signal) {
+    return this.createEntity(ENTITY_TYPES.PRACTICE, practiceData, signal);
+  }
+
+  updatePractice(practiceId, practiceData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.PRACTICE,
+      practiceId,
+      practiceData,
+      signal
+    );
+  }
+
+  deletePractice(practiceId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.PRACTICE, practiceId, signal);
+  }
+
+  // Allergy methods
+  getAllergies(signal) {
+    return this.getEntities(ENTITY_TYPES.ALLERGY, signal);
+  }
+  getPatientAllergies(patientId, signal) {
+    return this.getPatientEntities(ENTITY_TYPES.ALLERGY, patientId, signal);
+  }
+  getAllergy(allergyId, signal) {
+    return this.getEntity(ENTITY_TYPES.ALLERGY, allergyId, signal);
+  }
+
+  createAllergy(allergyData, signal) {
+    return this.createEntity(ENTITY_TYPES.ALLERGY, allergyData, signal);
+  }
+
+  updateAllergy(allergyId, allergyData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.ALLERGY,
+      allergyId,
+      allergyData,
+      signal
+    );
+  }
+
+  deleteAllergy(allergyId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.ALLERGY, allergyId, signal);
+  }
+
+  // =====================================================
+  // Injury Type methods
+  // =====================================================
+  getInjuryTypes(signal) {
+    return this.get('/injury-types/', { signal });
+  }
+
+  getInjuryTypesDropdown(signal) {
+    return this.get('/injury-types/dropdown/', { signal });
+  }
+
+  createInjuryType(injuryTypeData, signal) {
+    return this.post('/injury-types/', injuryTypeData, { signal });
+  }
+
+  deleteInjuryType(injuryTypeId, signal) {
+    return this.delete(`/injury-types/${injuryTypeId}/`, { signal });
+  }
+
+  // =====================================================
+  // Injury methods
+  // =====================================================
+  getInjuries(signal) {
+    return this.getEntities(ENTITY_TYPES.INJURY, signal);
+  }
+
+  getPatientInjuries(patientId, signal) {
+    return this.getPatientEntities(ENTITY_TYPES.INJURY, patientId, signal);
+  }
+
+  getInjury(injuryId, signal) {
+    return this.getEntity(ENTITY_TYPES.INJURY, injuryId, signal);
+  }
+
+  getInjuriesWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(ENTITY_TYPES.INJURY, filters, signal);
+  }
+
+  createInjury(injuryData, signal) {
+    return this.createEntity(ENTITY_TYPES.INJURY, injuryData, signal);
+  }
+
+  updateInjury(injuryId, injuryData, signal) {
+    return this.updateEntity(ENTITY_TYPES.INJURY, injuryId, injuryData, signal);
+  }
+
+  deleteInjury(injuryId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.INJURY, injuryId, signal);
+  }
+
+  // Injury-Medication relationship methods
+  getInjuryMedications(injuryId, signal) {
+    return this.get(`/injuries/${injuryId}/medications`, { signal });
+  }
+
+  linkInjuryMedication(injuryId, medicationId, relevanceNote = null, signal) {
+    return this.post(
+      `/injuries/${injuryId}/medications`,
+      {
+        medication_id: medicationId,
+        relevance_note: relevanceNote,
+      },
+      { signal }
+    );
+  }
+
+  unlinkInjuryMedication(injuryId, medicationId, signal) {
+    return this.delete(`/injuries/${injuryId}/medications/${medicationId}`, {
+      signal,
+    });
+  }
+
+  // Injury-Condition relationship methods
+  getInjuryConditions(injuryId, signal) {
+    return this.get(`/injuries/${injuryId}/conditions`, { signal });
+  }
+
+  linkInjuryCondition(injuryId, conditionId, relevanceNote = null, signal) {
+    return this.post(
+      `/injuries/${injuryId}/conditions`,
+      {
+        condition_id: conditionId,
+        relevance_note: relevanceNote,
+      },
+      { signal }
+    );
+  }
+
+  unlinkInjuryCondition(injuryId, conditionId, signal) {
+    return this.delete(`/injuries/${injuryId}/conditions/${conditionId}`, {
+      signal,
+    });
+  }
+
+  // Injury-Treatment relationship methods
+  getInjuryTreatments(injuryId, signal) {
+    return this.get(`/injuries/${injuryId}/treatments`, { signal });
+  }
+
+  linkInjuryTreatment(injuryId, treatmentId, relevanceNote = null, signal) {
+    return this.post(
+      `/injuries/${injuryId}/treatments`,
+      {
+        treatment_id: treatmentId,
+        relevance_note: relevanceNote,
+      },
+      { signal }
+    );
+  }
+
+  unlinkInjuryTreatment(injuryId, treatmentId, signal) {
+    return this.delete(`/injuries/${injuryId}/treatments/${treatmentId}`, {
+      signal,
+    });
+  }
+
+  // Injury-Procedure relationship methods
+  getInjuryProcedures(injuryId, signal) {
+    return this.get(`/injuries/${injuryId}/procedures`, { signal });
+  }
+
+  linkInjuryProcedure(injuryId, procedureId, relevanceNote = null, signal) {
+    return this.post(
+      `/injuries/${injuryId}/procedures`,
+      {
+        procedure_id: procedureId,
+        relevance_note: relevanceNote,
+      },
+      { signal }
+    );
+  }
+
+  unlinkInjuryProcedure(injuryId, procedureId, signal) {
+    return this.delete(`/injuries/${injuryId}/procedures/${procedureId}`, {
+      signal,
+    });
+  }
+
+  // Symptom methods - DEPRECATED
+  // Use symptomApi from './symptomApi' instead for two-level hierarchy support
+  // Old single-level symptom methods removed - see symptomApi for:
+  // - Parent symptom CRUD (symptom definitions)
+  // - Occurrence CRUD (individual episodes)
+  // - Timeline and stats methods
+
+  // Treatment methods
+  getTreatments(signal) {
+    return this.getEntities(ENTITY_TYPES.TREATMENT, signal);
+  }
+  getPatientTreatments(patientId, signal) {
+    return this.getPatientEntities(ENTITY_TYPES.TREATMENT, patientId, signal);
+  }
+  getTreatment(treatmentId, signal) {
+    return this.getEntity(ENTITY_TYPES.TREATMENT, treatmentId, signal);
+  }
+  getTreatmentsWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(ENTITY_TYPES.TREATMENT, filters, signal);
+  }
+
+  createTreatment(treatmentData, signal) {
+    return this.createEntity(ENTITY_TYPES.TREATMENT, treatmentData, signal);
+  }
+
+  updateTreatment(treatmentId, treatmentData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.TREATMENT,
+      treatmentId,
+      treatmentData,
+      signal
+    );
+  }
+
+  deleteTreatment(treatmentId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.TREATMENT, treatmentId, signal);
+  }
+
+  // Medication-Treatment reverse lookup
+  getMedicationTreatments(medicationId, signal) {
+    return this.get(`/medications/${medicationId}/treatments`, { signal });
+  }
+
+  // Treatment-Medication relationship methods
+  getTreatmentMedications(treatmentId, signal) {
+    return this.get(`/treatments/${treatmentId}/medications`, { signal });
+  }
+
+  linkTreatmentMedication(treatmentId, data, signal) {
+    return this.post(`/treatments/${treatmentId}/medications`, data, {
+      signal,
+    });
+  }
+
+  linkTreatmentMedicationsBulk(
+    treatmentId,
+    medicationIds,
+    relevanceNote = null,
+    signal
+  ) {
+    return this.post(
+      `/treatments/${treatmentId}/medications/bulk`,
+      {
+        medication_ids: medicationIds,
+        relevance_note: relevanceNote,
+      },
+      { signal }
+    );
+  }
+
+  updateTreatmentMedication(treatmentId, relationshipId, data, signal) {
+    return this.put(
+      `/treatments/${treatmentId}/medications/${relationshipId}`,
+      data,
+      { signal }
+    );
+  }
+
+  unlinkTreatmentMedication(treatmentId, relationshipId, signal) {
+    return this.delete(
+      `/treatments/${treatmentId}/medications/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Treatment-Encounter relationship methods
+  getTreatmentEncounters(treatmentId, signal) {
+    return this.get(`/treatments/${treatmentId}/encounters`, { signal });
+  }
+
+  linkTreatmentEncounter(treatmentId, data, signal) {
+    return this.post(`/treatments/${treatmentId}/encounters`, data, { signal });
+  }
+
+  linkTreatmentEncountersBulk(
+    treatmentId,
+    encounterIds,
+    relevanceNote = null,
+    signal
+  ) {
+    return this.post(
+      `/treatments/${treatmentId}/encounters/bulk`,
+      {
+        encounter_ids: encounterIds,
+        relevance_note: relevanceNote,
+      },
+      { signal }
+    );
+  }
+
+  updateTreatmentEncounter(treatmentId, relationshipId, data, signal) {
+    return this.put(
+      `/treatments/${treatmentId}/encounters/${relationshipId}`,
+      data,
+      { signal }
+    );
+  }
+
+  unlinkTreatmentEncounter(treatmentId, relationshipId, signal) {
+    return this.delete(
+      `/treatments/${treatmentId}/encounters/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Treatment-LabResult relationship methods
+  getTreatmentLabResults(treatmentId, signal) {
+    return this.get(`/treatments/${treatmentId}/lab-results`, { signal });
+  }
+
+  linkTreatmentLabResult(treatmentId, data, signal) {
+    return this.post(`/treatments/${treatmentId}/lab-results`, data, {
+      signal,
+    });
+  }
+
+  linkTreatmentLabResultsBulk(
+    treatmentId,
+    labResultIds,
+    purpose = null,
+    relevanceNote = null,
+    signal
+  ) {
+    return this.post(
+      `/treatments/${treatmentId}/lab-results/bulk`,
+      {
+        lab_result_ids: labResultIds,
+        purpose: purpose,
+        relevance_note: relevanceNote,
+      },
+      { signal }
+    );
+  }
+
+  updateTreatmentLabResult(treatmentId, relationshipId, data, signal) {
+    return this.put(
+      `/treatments/${treatmentId}/lab-results/${relationshipId}`,
+      data,
+      { signal }
+    );
+  }
+
+  unlinkTreatmentLabResult(treatmentId, relationshipId, signal) {
+    return this.delete(
+      `/treatments/${treatmentId}/lab-results/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Treatment-Equipment relationship methods
+  getTreatmentEquipment(treatmentId, signal) {
+    return this.get(`/treatments/${treatmentId}/equipment`, { signal });
+  }
+
+  linkTreatmentEquipment(treatmentId, data, signal) {
+    return this.post(`/treatments/${treatmentId}/equipment`, data, { signal });
+  }
+
+  linkTreatmentEquipmentBulk(
+    treatmentId,
+    equipmentIds,
+    relevanceNote = null,
+    signal
+  ) {
+    return this.post(
+      `/treatments/${treatmentId}/equipment/bulk`,
+      {
+        equipment_ids: equipmentIds,
+        relevance_note: relevanceNote,
+      },
+      { signal }
+    );
+  }
+
+  updateTreatmentEquipment(treatmentId, relationshipId, data, signal) {
+    return this.put(
+      `/treatments/${treatmentId}/equipment/${relationshipId}`,
+      data,
+      { signal }
+    );
+  }
+
+  unlinkTreatmentEquipment(treatmentId, relationshipId, signal) {
+    return this.delete(
+      `/treatments/${treatmentId}/equipment/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Medical Equipment methods
+  getMedicalEquipment(signal) {
+    return this.get('/medical-equipment/', { signal });
+  }
+
+  getMedicalEquipmentById(equipmentId, signal) {
+    return this.get(`/medical-equipment/${equipmentId}`, { signal });
+  }
+
+  getActiveMedicalEquipment(signal) {
+    return this.get('/medical-equipment/active/', { signal });
+  }
+
+  getMedicalEquipmentNeedingService(signal) {
+    return this.get('/medical-equipment/needing-service/', { signal });
+  }
+
+  createMedicalEquipment(equipmentData, signal) {
+    return this.post('/medical-equipment/', equipmentData, { signal });
+  }
+
+  updateMedicalEquipment(equipmentId, equipmentData, signal) {
+    return this.put(`/medical-equipment/${equipmentId}`, equipmentData, {
+      signal,
+    });
+  }
+
+  deleteMedicalEquipment(equipmentId, signal) {
+    return this.delete(`/medical-equipment/${equipmentId}`, { signal });
+  }
+
+  // Procedure methods
+  getProcedures(signal) {
+    return this.getEntities(ENTITY_TYPES.PROCEDURE, signal);
+  }
+  getPatientProcedures(patientId, signal) {
+    return this.getPatientEntities(ENTITY_TYPES.PROCEDURE, patientId, signal);
+  }
+  getProcedure(procedureId, signal) {
+    return this.getEntity(ENTITY_TYPES.PROCEDURE, procedureId, signal);
+  }
+  getProceduresWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(ENTITY_TYPES.PROCEDURE, filters, signal);
+  }
+
+  createProcedure(procedureData, signal) {
+    return this.createEntity(ENTITY_TYPES.PROCEDURE, procedureData, signal);
+  }
+  updateProcedure(procedureId, procedureData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.PROCEDURE,
+      procedureId,
+      procedureData,
+      signal
+    );
+  }
+
+  deleteProcedure(procedureId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.PROCEDURE, procedureId, signal);
+  }
+
+  // Condition methods
+  getConditions(signal) {
+    return this.getEntities(ENTITY_TYPES.CONDITION, signal);
+  }
+  getPatientConditions(patientId, signal) {
+    return this.getPatientEntities(ENTITY_TYPES.CONDITION, patientId, signal);
+  }
+  getCondition(conditionId, signal) {
+    return this.getEntity(ENTITY_TYPES.CONDITION, conditionId, signal);
+  }
+  getConditionsWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(ENTITY_TYPES.CONDITION, filters, signal);
+  }
+
+  createCondition(conditionData, signal) {
+    return this.createEntity(ENTITY_TYPES.CONDITION, conditionData, signal);
+  }
+
+  updateCondition(conditionId, conditionData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.CONDITION,
+      conditionId,
+      conditionData,
+      signal
+    );
+  }
+
+  deleteCondition(conditionId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.CONDITION, conditionId, signal);
+  }
+
+  getConditionsDropdown(activeOnly = true, signal) {
+    const url = `/conditions/dropdown?active_only=${activeOnly}`;
+    return this.get(url, { signal });
+  }
+
+  // Condition - Medication Relationship methods
+  getConditionMedications(conditionId, signal) {
+    return this.get(`/conditions/condition-medications/${conditionId}`, {
+      signal,
+    });
+  }
+  getConditionLabResults(conditionId, signal) {
+    return this.get(`/conditions/${conditionId}/lab-results`, { signal });
+  }
+  createConditionMedication(conditionId, medicationData, signal) {
+    return this.post(`/conditions/${conditionId}/medications`, medicationData, {
+      signal,
+    });
+  }
+  createConditionMedicationsBulk(conditionId, bulkData, signal) {
+    return this.post(`/conditions/${conditionId}/medications/bulk`, bulkData, {
+      signal,
+    });
+  }
+  updateConditionMedication(
+    conditionId,
+    relationshipId,
+    medicationData,
+    signal
+  ) {
+    return this.put(
+      `/conditions/${conditionId}/medications/${relationshipId}`,
+      medicationData,
+      { signal }
+    );
+  }
+  deleteConditionMedication(conditionId, relationshipId, signal) {
+    return this.delete(
+      `/conditions/${conditionId}/medications/${relationshipId}`,
+      { signal }
+    );
+  }
+
+  // Medication - Condition Relationship methods (for showing conditions on medication view)
+  getMedicationConditions(medicationId, signal) {
+    return this.get(`/conditions/medication/${medicationId}/conditions`, {
+      signal,
+    });
+  }
+
+  // Encounter methods
+  getEncounters(signal) {
+    return this.getEntities(ENTITY_TYPES.ENCOUNTER, signal);
+  }
+  getPatientEncounters(patientId, signal) {
+    return this.getPatientEntities(ENTITY_TYPES.ENCOUNTER, patientId, signal);
+  }
+  getEncounter(encounterId, signal) {
+    return this.getEntity(ENTITY_TYPES.ENCOUNTER, encounterId, signal);
+  }
+  getEncountersWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(ENTITY_TYPES.ENCOUNTER, filters, signal);
+  }
+
+  createEncounter(encounterData, signal) {
+    return this.createEntity(ENTITY_TYPES.ENCOUNTER, encounterData, signal);
+  }
+
+  updateEncounter(encounterId, encounterData, signal) {
+    return this.updateEntity(
+      ENTITY_TYPES.ENCOUNTER,
+      encounterId,
+      encounterData,
+      signal
+    );
+  }
+
+  deleteEncounter(encounterId, signal) {
+    return this.deleteEntity(ENTITY_TYPES.ENCOUNTER, encounterId, signal);
+  }
+
+  // Emergency Contact methods
+  getEmergencyContacts(signal) {
+    return this.getEntities(ENTITY_TYPES.EMERGENCY_CONTACT, signal);
+  }
+  getPatientEmergencyContacts(patientId, signal) {
+    return this.getPatientEntities(
+      ENTITY_TYPES.EMERGENCY_CONTACT,
+      patientId,
+      signal
+    );
+  }
+  getEmergencyContact(emergencyContactId, signal) {
+    return this.getEntity(
+      ENTITY_TYPES.EMERGENCY_CONTACT,
+      emergencyContactId,
+      signal
+    );
+  }
+
+  createEmergencyContact(emergencyContactData, signal) {
+    // Extract patient_id to pass as query parameter for multi-patient support
+    const { patient_id, ...bodyData } = emergencyContactData;
+    return this.createEntity(
+      ENTITY_TYPES.EMERGENCY_CONTACT,
+      bodyData,
+      signal,
+      patient_id
+    );
+  }
+
+  updateEmergencyContact(emergencyContactId, emergencyContactData, signal) {
+    // Extract patient_id to pass as query parameter for multi-patient support
+    const { patient_id, ...bodyData } = emergencyContactData;
+    return this.updateEntity(
+      ENTITY_TYPES.EMERGENCY_CONTACT,
+      emergencyContactId,
+      bodyData,
+      signal,
+      patient_id
+    );
+  }
+
+  deleteEmergencyContact(emergencyContactId, signal, patientId = null) {
+    return this.deleteEntity(
+      ENTITY_TYPES.EMERGENCY_CONTACT,
+      emergencyContactId,
+      signal,
+      patientId
+    );
+  }
+
+  // Generic method for fetching entities with relationship filters
+  getRelatedEntities(entityType, filters = {}, signal) {
+    return this.getEntitiesWithFilters(entityType, filters, signal);
+  }
+
+  // Family Member methods
+  getFamilyMembers(signal) {
+    return this.getEntities(ENTITY_TYPES.FAMILY_MEMBER, signal);
+  }
+  getPatientFamilyMembers(patientId, signal) {
+    return this.getPatientEntities(
+      ENTITY_TYPES.FAMILY_MEMBER,
+      patientId,
+      signal
+    );
+  }
+  getFamilyMember(familyMemberId, signal) {
+    return this.getEntity(ENTITY_TYPES.FAMILY_MEMBER, familyMemberId, signal);
+  }
+  getFamilyMembersWithFilters(filters = {}, signal) {
+    return this.getEntitiesWithFilters(
+      ENTITY_TYPES.FAMILY_MEMBER,
+      filters,
+      signal
+    );
+  }
+
+  createFamilyMember(familyMemberData, signal) {
+    return this.createEntity(
+      ENTITY_TYPES.FAMILY_MEMBER,
+      familyMemberData,
+      signal
+    );
+  }
+  updateFamilyMember(
+    familyMemberId,
+    familyMemberData,
+    signal,
+    patientId = null
+  ) {
+    return this.updateEntity(
+      ENTITY_TYPES.FAMILY_MEMBER,
+      familyMemberId,
+      familyMemberData,
+      signal,
+      patientId
+    );
+  }
+  deleteFamilyMember(familyMemberId, signal, patientId = null) {
+    return this.deleteEntity(
+      ENTITY_TYPES.FAMILY_MEMBER,
+      familyMemberId,
+      signal,
+      patientId
+    );
+  }
+
+  // Family Condition methods (nested under family members)
+  getFamilyMemberConditions(familyMemberId, signal) {
+    return this.get(`/family-members/${familyMemberId}/conditions`, { signal });
+  }
+  createFamilyCondition(
+    familyMemberId,
+    conditionData,
+    signal,
+    patientId = null
+  ) {
+    let url = `/family-members/${familyMemberId}/conditions`;
+    if (patientId !== null) {
+      url += `?patient_id=${patientId}`;
+    }
+    return this.post(url, conditionData, { signal });
+  }
+  updateFamilyCondition(
+    familyMemberId,
+    conditionId,
+    conditionData,
+    signal,
+    patientId = null
+  ) {
+    let url = `/family-members/${familyMemberId}/conditions/${conditionId}`;
+    if (patientId !== null) {
+      url += `?patient_id=${patientId}`;
+    }
+    return this.put(url, conditionData, { signal });
+  }
+  deleteFamilyCondition(familyMemberId, conditionId, signal, patientId = null) {
+    let url = `/family-members/${familyMemberId}/conditions/${conditionId}`;
+    if (patientId !== null) {
+      url += `?patient_id=${patientId}`;
+    }
+    return this.delete(url, { signal });
+  }
+
+  // Search family members
+  searchFamilyMembers(searchTerm, signal) {
+    return this.get(
+      `/family-members/search/?name=${encodeURIComponent(searchTerm)}`,
+      { signal }
+    );
+  }
+
+  // ==========================================
+  // CUSTOM REPORTS METHODS
+  // ==========================================
+
+  /**
+   * Get summary of all medical data available for custom report generation.
+   * Returns counts and basic info for each category to support UI selection.
+   */
+  getCustomReportSummary(signal) {
+    try {
+      logger.debug(
+        'api_custom_report_summary',
+        'Fetching custom report data summary',
+        {
+          component: 'ApiService',
+        }
+      );
+
+      return this.get('/custom-reports/data-summary', { signal });
+    } catch (error) {
+      logger.error(
+        'api_custom_report_summary_error',
+        'Failed to get custom report summary',
+        {
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get available vital types and lab test names for trend chart selection.
+   */
+  getAvailableTrendData(signal) {
+    try {
+      logger.debug(
+        'api_available_trend_data',
+        'Fetching available trend data for chart selection',
+        {
+          component: 'ApiService',
+        }
+      );
+
+      return this.get('/custom-reports/available-trend-data', { signal });
+    } catch (error) {
+      logger.error(
+        'api_available_trend_data_error',
+        'Failed to get available trend data',
+        {
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get record counts for selected trend charts filtered by their time ranges.
+   */
+  getTrendChartCounts(chartSelection, signal) {
+    try {
+      logger.debug(
+        'api_trend_chart_counts',
+        'Fetching trend chart record counts',
+        {
+          vitalCount: chartSelection.vital_charts?.length || 0,
+          labTestCount: chartSelection.lab_test_charts?.length || 0,
+          component: 'ApiService',
+        }
+      );
+
+      return this.post('/custom-reports/trend-chart-counts', chartSelection, {
+        signal,
+      });
+    } catch (error) {
+      logger.error(
+        'api_trend_chart_counts_error',
+        'Failed to get trend chart counts',
+        {
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Generate a custom PDF report with selected records from various categories.
+   */
+  async generateCustomReport(reportRequest, signal) {
+    try {
+      logger.info('api_generate_custom_report', 'Generating custom report', {
+        selectedCategoriesCount: reportRequest.selected_records?.length || 0,
+        reportTitle: reportRequest.report_title,
+        component: 'ApiService',
+      });
+
+      // Use request method directly to handle PDF blob response
+      const response = await this.request(
+        'POST',
+        '/custom-reports/generate',
+        reportRequest,
+        {
+          signal,
+          responseType: 'blob',
+        }
+      );
+
+      logger.info(
+        'api_generate_custom_report_success',
+        'Custom report generated successfully',
+        {
+          hasPdfData: !!response,
+          component: 'ApiService',
+        }
+      );
+
+      return response;
+    } catch (error) {
+      logger.error(
+        'api_generate_custom_report_error',
+        'Failed to generate custom report',
+        {
+          error: error.message,
+          reportTitle: reportRequest.report_title,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Save a custom report template for future use.
+   */
+  saveReportTemplate(template, signal) {
+    try {
+      logger.info('api_save_report_template', 'Saving report template', {
+        templateName: template.name,
+        selectedCategoriesCount: template.selected_records?.length || 0,
+        component: 'ApiService',
+      });
+
+      return this.post('/custom-reports/templates', template, { signal });
+    } catch (error) {
+      logger.error(
+        'api_save_report_template_error',
+        'Failed to save report template',
+        {
+          templateName: template.name,
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get all saved report templates for the current user.
+   */
+  getReportTemplates(signal) {
+    try {
+      logger.debug('api_get_report_templates', 'Fetching report templates', {
+        component: 'ApiService',
+      });
+
+      return this.get('/custom-reports/templates', { signal });
+    } catch (error) {
+      logger.error(
+        'api_get_report_templates_error',
+        'Failed to get report templates',
+        {
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific report template by ID.
+   */
+  getReportTemplate(templateId, signal) {
+    try {
+      logger.debug('api_get_report_template', 'Fetching report template', {
+        templateId,
+        component: 'ApiService',
+      });
+
+      return this.get(`/custom-reports/templates/${templateId}`, { signal });
+    } catch (error) {
+      logger.error(
+        'api_get_report_template_error',
+        'Failed to get report template',
+        {
+          templateId,
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing report template.
+   */
+  updateReportTemplate(templateId, template, signal) {
+    try {
+      logger.info('api_update_report_template', 'Updating report template', {
+        templateId,
+        templateName: template.name,
+        component: 'ApiService',
+      });
+
+      return this.put(`/custom-reports/templates/${templateId}`, template, {
+        signal,
+      });
+    } catch (error) {
+      logger.error(
+        'api_update_report_template_error',
+        'Failed to update report template',
+        {
+          templateId,
+          templateName: template.name,
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a report template.
+   */
+  deleteReportTemplate(templateId, signal) {
+    try {
+      logger.info('api_delete_report_template', 'Deleting report template', {
+        templateId,
+        component: 'ApiService',
+      });
+
+      return this.delete(`/custom-reports/templates/${templateId}`, { signal });
+    } catch (error) {
+      logger.error(
+        'api_delete_report_template_error',
+        'Failed to delete report template',
+        {
+          templateId,
+          error: error.message,
+          component: 'ApiService',
+        }
+      );
+      throw error;
+    }
+  }
+}
+
+export const apiService = new ApiService();
+export default apiService;
+
+// V1 Patient Management Services
+export { default as patientApi } from './patientApi';
+export { default as patientSharingApi } from './patientSharingApi';
+
+// Medical Record Services
+export { default as symptomApi } from './symptomApi';

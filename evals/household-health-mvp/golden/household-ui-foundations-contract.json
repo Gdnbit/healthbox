@@ -1,0 +1,31 @@
+{
+  "contract_id": "household-ui-foundations-v1",
+  "scope_selector": ".health-prototype",
+  "reference_viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  "minimums": {
+    "body_font_px": 16,
+    "caption_font_px": 12,
+    "mobile_touch_target_px": 44
+  },
+  "spacing_scale_px": [4, 8, 12, 16, 24, 32, 40, 48],
+  "metric_detail_flow": [
+    "select_metric",
+    "update_trend",
+    "toggle_equivalent_table"
+  ],
+  "equivalent_table_fields": ["date", "recorded_value", "status", "source"],
+  "boundaries": {
+    "synthetic_data_only_for_prototype": true,
+    "production_ai_stays_capability_gated": true,
+    "shared_archives_do_not_gain_owner_actions": true
+  }
+}

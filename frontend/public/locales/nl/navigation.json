@@ -1,0 +1,123 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "activity": {
+    "actions": {
+      "added": "Toegevoegd",
+      "deleted": "Verwijderd",
+      "modified": "Gewijzigd",
+      "removed": "Verwijderd",
+      "scheduled": "Gepland",
+      "updated": "Bijgewerkt",
+      "viewed": "Bekeken"
+    }
+  },
+  "dashboard": {
+    "activity": {
+      "lastUpdated": "Laatst bijgewerkt",
+      "noActivity": "Geen recente activiteit",
+      "noActivityDescription": "Uw medische dossieractiviteiten verschijnen hier"
+    },
+    "hello": "Hallo",
+    "loading": "Uw medisch dashboard wordt geladen...",
+    "modules": {
+      "exportRecords": "Dossiers exporteren",
+      "visitHistory": "Bezoekgeschiedenis"
+    },
+    "search": {
+      "advancedSearch": "Geavanceerd zoeken",
+      "placeholder": "Zoeken in medische dossiers..."
+    },
+    "sections": {
+      "additionalResources": "Aanvullende bronnen",
+      "coreMedical": "Kernmedische informatie",
+      "healthMonitoring": "Gezondheidsmonitoring",
+      "prevention": "Preventie & geschiedenis",
+      "recentActivity": "Recente activiteit",
+      "treatments": "Behandelingen en ingrepen"
+    },
+    "stats": {
+      "activeMedications": "Actieve medicatie"
+    },
+    "subtitle": "Beheer uw gezondheidsinformatie veilig",
+    "title": "HealthBox Dashboard"
+  },
+  "invitations": {
+    "acceptButton": "Uitnodiging accepteren",
+    "confirmDescription": "Door te accepteren krijgt u toegang om de gedeelde medische informatie te bekijken.",
+    "confirmQuestion": "Weet u zeker dat u deze uitnodiging wilt accepteren?",
+    "confirmTitle": "Bevestig acceptatie uitnodiging",
+    "from": "Van",
+    "lastUpdated": "Laatst bijgewerkt",
+    "manageAll": "Alle uitnodigingen beheren",
+    "noPending": "Geen openstaande uitnodigingen",
+    "noPendingDescription": "Nieuwe deeluitnodigingen verschijnen hier",
+    "sharePatient": "Patiënt delen",
+    "title": "Uitnodigingen",
+    "types": {
+      "patientRecord": "Patiëntdossier"
+    }
+  },
+  "menu": {
+    "account": "Account",
+    "backToDashboard": "Terug naar dashboard",
+    "darkMode": "Donkere modus",
+    "help": "Help",
+    "lightMode": "Lichte modus",
+    "logout": "Uitloggen",
+    "patients": "Patiënten",
+    "profile": "Profiel",
+    "reports": "Rapporten",
+    "userActions": "Gebruikersacties"
+  },
+  "pages": {
+    "help": "Help & ondersteuning",
+    "medicalHistory": "Medische geschiedenis",
+    "patientDetails": "Patiëntgegevens",
+    "patientList": "Patiëntenlijst",
+    "preferences": "Voorkeuren",
+    "reports": "Rapporten",
+    "userProfile": "Gebruikersprofiel"
+  },
+  "sections": {
+    "personalInfo": "Persoonlijke informatie",
+    "preferences": "Voorkeuren"
+  },
+  "sidebarNav": {
+    "items": {
+      "adminDashboard": "Admin Dashboard",
+      "allergies": "Allergieën",
+      "backupManagement": "Backupbeheer",
+      "conditions": "Aandoeningen",
+      "customReports": "Aangepaste rapporten",
+      "dataModels": "Datamodellen",
+      "emergencyContacts": "Noodcontacten",
+      "exportRecords": "Dossiers exporteren",
+      "familyHistory": "Familiegeschiedenis",
+      "immunizations": "Inentingen",
+      "injuries": "Verwondingen",
+      "insurance": "Verzekering",
+      "labResults": "Laboratoriumuitslagen",
+      "language": "Taal",
+      "medicalEquipment": "Medische apparatuur",
+      "medications": "Medicatie",
+      "patientInfo": "Patiëntinfo",
+      "pharmacies": "Apotheken",
+      "practitioners": "Zorgverleners",
+      "procedures": "Procedures",
+      "settings": "Instellingen",
+      "symptoms": "Symptomen",
+      "systemHealth": "Systeemstatus",
+      "tagManagement": "Tagbeheer",
+      "theme": "Thema",
+      "treatments": "Behandelingen",
+      "visitHistory": "Bezoekgeschiedenis",
+      "vitalSigns": "Vitale functies"
+    },
+    "sections": {
+      "administration": "Beheer",
+      "careAndTreatment": "Zorg & behandeling",
+      "misc": "Overig",
+      "tools": "Hulpmiddelen"
+    }
+  }
+}

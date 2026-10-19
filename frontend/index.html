@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md. -->
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/healthbox-icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#087f8c" />
+    <meta
+      name="description"
+      content="HealthBox 健康档案盒——把分散的健康资料，整理成自己的长期健康档案。"
+    />
+
+    <!-- Android PWA specific meta tags -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="HealthBox" />
+
+    <!-- iOS PWA specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="HealthBox" />
+    <link rel="apple-touch-icon" href="/healthbox-icon.svg" />
+
+    <!-- Windows PWA specific meta tags -->
+    <meta name="msapplication-TileColor" content="#087f8c" />
+    <meta name="msapplication-TileImage" content="/healthbox-icon.svg" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <title>HealthBox · 健康档案盒</title>
+  </head>
+  <body>
+    <noscript>请启用 JavaScript 后使用本应用。</noscript>
+    <div id="root"></div>
+
+    <!-- Vite Entry Point - THIS IS CRITICAL! -->
+    <script type="module" src="/src/index.jsx"></script>
+  </body>
+</html>

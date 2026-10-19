@@ -1,0 +1,315 @@
+from datetime import datetime, timezone
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
+
+
+def serialize_datetime_utc(value: Optional[datetime]) -> Optional[str]:
+    """Serialize datetime with Z suffix so frontend knows it's UTC."""
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    else:
+        value = value.astimezone(timezone.utc)
+    return value.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+VALID_GLUCOSE_CONTEXTS = {"fasting", "before_meal", "after_meal", "random"}
+
+
+def _validate_glucose_context_strict(v):
+    """Shared strict validator for glucose context on write operations."""
+    if v is not None:
+        v = v.strip().lower()
+        if v not in VALID_GLUCOSE_CONTEXTS:
+            raise ValueError(
+                f"Glucose context must be one of: {', '.join(sorted(VALID_GLUCOSE_CONTEXTS))}"
+            )
+    return v
+
+
+class VitalsBase(BaseModel):
+    """Base schema for Vitals"""
+
+    recorded_date: datetime
+    systolic_bp: Optional[int] = None
+    diastolic_bp: Optional[int] = None
+    heart_rate: Optional[int] = None
+    temperature: Optional[float] = None
+    weight: Optional[float] = None
+    height: Optional[float] = None
+    oxygen_saturation: Optional[float] = None
+    respiratory_rate: Optional[int] = None
+    blood_glucose: Optional[float] = None
+    a1c: Optional[float] = None
+    glucose_context: Optional[str] = None
+    bmi: Optional[float] = None
+    pain_scale: Optional[int] = None
+    notes: Optional[str] = None
+    location: Optional[str] = None
+    device_used: Optional[str] = None
+    import_source: Optional[str] = None
+    patient_id: int
+    practitioner_id: Optional[int] = None
+
+    @field_validator("systolic_bp")
+    @classmethod
+    def validate_systolic_bp(cls, v):
+        """Validate systolic blood pressure"""
+        if v is not None:
+            if v < 60 or v > 250:
+                raise ValueError("Systolic blood pressure must be between 60-250 mmHg")
+        return v
+
+    @field_validator("diastolic_bp")
+    @classmethod
+    def validate_diastolic_bp(cls, v):
+        """Validate diastolic blood pressure"""
+        if v is not None:
+            if v < 30 or v > 150:
+                raise ValueError("Diastolic blood pressure must be between 30-150 mmHg")
+        return v
+
+    @field_validator("heart_rate")
+    @classmethod
+    def validate_heart_rate(cls, v):
+        """Validate heart rate"""
+        if v is not None:
+            if v < 30 or v > 250:
+                raise ValueError("Heart rate must be between 30-250 bpm")
+        return v
+
+    @field_validator("temperature")
+    @classmethod
+    def validate_temperature(cls, v):
+        """Validate temperature (stored as Fahrenheit, converted from user's preferred units)"""
+        if v is not None:
+            if v < 80.0 or v > 115.0:
+                raise ValueError("Temperature must be between 80-115°F")
+        return v
+
+    @field_validator("weight")
+    @classmethod
+    def validate_weight(cls, v):
+        """Validate weight (stored as pounds, converted from user's preferred units)"""
+        if v is not None:
+            # Allow up to 2 decimal places for precision from metric conversion
+            if v < 1.0 or v > 992.0:
+                raise ValueError("Weight must be between 1-992 lbs")
+        return v
+
+    @field_validator("height")
+    @classmethod
+    def validate_height(cls, v):
+        """Validate height (stored as inches, converted from user's preferred units)"""
+        if v is not None:
+            # Allow up to 2 decimal places for precision from metric conversion
+            if v < 12.0 or v > 108.0:
+                raise ValueError("Height must be between 12-108 inches")
+        return v
+
+    @field_validator("oxygen_saturation")
+    @classmethod
+    def validate_oxygen_saturation(cls, v):
+        """Validate oxygen saturation percentage"""
+        if v is not None:
+            if v < 70.0 or v > 100.0:
+                raise ValueError("Oxygen saturation must be between 70-100%")
+        return v
+
+    @field_validator("respiratory_rate")
+    @classmethod
+    def validate_respiratory_rate(cls, v):
+        """Validate respiratory rate"""
+        if v is not None:
+            if v < 8 or v > 50:
+                raise ValueError("Respiratory rate must be between 8-50 breaths/min")
+        return v
+
+    @field_validator("blood_glucose")
+    @classmethod
+    def validate_blood_glucose(cls, v):
+        """Validate blood glucose (mg/dL)"""
+        if v is not None:
+            if v < 20.0 or v > 800.0:
+                raise ValueError("Blood glucose must be between 20-800 mg/dL")
+        return v
+
+    @field_validator("a1c")
+    @classmethod
+    def validate_a1c(cls, v):
+        """Validate hemoglobin A1C (%)"""
+        if v is not None:
+            if v < 0.0 or v > 20.0:
+                raise ValueError("A1C must be between 0-20%")
+        return v
+
+    @field_validator("glucose_context")
+    @classmethod
+    def normalize_glucose_context(cls, v):
+        """Normalize glucose context (strip/lowercase). Lenient on read for DB compat."""
+        if v is not None and isinstance(v, str):
+            v = v.strip().lower()
+        return v
+
+    @field_validator("bmi")
+    @classmethod
+    def validate_bmi(cls, v):
+        """Validate BMI"""
+        if v is not None:
+            if v < 10.0 or v > 100.0:
+                raise ValueError("BMI must be between 10-100")
+        return v
+
+    @field_validator("pain_scale")
+    @classmethod
+    def validate_pain_scale(cls, v):
+        """Validate pain scale (0-10)"""
+        if v is not None:
+            if v < 0 or v > 10:
+                raise ValueError("Pain scale must be between 0-10")
+        return v
+
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, v):
+        """Validate notes"""
+        if v and len(v.strip()) > 5000:
+            raise ValueError("Notes must be 5000 characters or fewer")
+        return v.strip() if v else None
+
+    @field_validator("location")
+    @classmethod
+    def validate_location(cls, v):
+        """Validate location"""
+        if v and len(v.strip()) > 100:
+            raise ValueError("Location must be less than 100 characters")
+        return v.strip() if v else None
+
+    @field_validator("device_used")
+    @classmethod
+    def validate_device_used(cls, v):
+        """Validate device used"""
+        if v and len(v.strip()) > 100:
+            raise ValueError("Device used must be less than 100 characters")
+        return v.strip() if v else None
+
+
+class VitalsCreate(VitalsBase):
+    """Schema for creating new vitals"""
+
+    @field_validator("glucose_context")
+    @classmethod
+    def validate_glucose_context(cls, v):
+        """Strict validation for glucose context on create."""
+        return _validate_glucose_context_strict(v)
+
+
+class VitalsUpdate(BaseModel):
+    """Schema for updating existing vitals"""
+
+    recorded_date: Optional[datetime] = None
+    systolic_bp: Optional[int] = None
+    diastolic_bp: Optional[int] = None
+    heart_rate: Optional[int] = None
+    temperature: Optional[float] = None
+    weight: Optional[float] = None
+    height: Optional[float] = None
+    oxygen_saturation: Optional[float] = None
+    respiratory_rate: Optional[int] = None
+    blood_glucose: Optional[float] = None
+    a1c: Optional[float] = None
+    glucose_context: Optional[str] = None
+    bmi: Optional[float] = None
+    pain_scale: Optional[int] = None
+    notes: Optional[str] = None
+    location: Optional[str] = None
+    device_used: Optional[str] = None
+    practitioner_id: Optional[int] = None
+
+    @field_validator("glucose_context")
+    @classmethod
+    def validate_glucose_context(cls, v):
+        """Strict validation for glucose context on update."""
+        return _validate_glucose_context_strict(v)
+
+
+class VitalsResponse(VitalsBase):
+    """Schema for vitals response"""
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("recorded_date", "created_at", "updated_at")
+    @classmethod
+    def serialize_datetime_as_utc(cls, value: datetime) -> Optional[str]:
+        return serialize_datetime_utc(value)
+
+
+class VitalsWithRelations(VitalsResponse):
+    """Schema for vitals with related data"""
+
+    patient_name: Optional[str] = None
+    practitioner_name: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VitalsSummary(BaseModel):
+    """Schema for vitals summary/dashboard display"""
+
+    id: int
+    recorded_date: datetime
+    systolic_bp: Optional[int] = None
+    diastolic_bp: Optional[int] = None
+    heart_rate: Optional[int] = None
+    temperature: Optional[float] = None
+    weight: Optional[float] = None
+    bmi: Optional[float] = None
+    patient_name: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("recorded_date")
+    @classmethod
+    def serialize_datetime_as_utc(cls, value: datetime) -> Optional[str]:
+        return serialize_datetime_utc(value)
+
+
+class VitalsStats(BaseModel):
+    """Schema for vitals statistics"""
+
+    total_readings: int
+    latest_reading_date: Optional[datetime] = None
+    avg_systolic_bp: Optional[float] = None
+    avg_diastolic_bp: Optional[float] = None
+    avg_heart_rate: Optional[float] = None
+    avg_temperature: Optional[float] = None
+    current_temperature: Optional[float] = None
+    current_weight: Optional[float] = None
+    current_bmi: Optional[float] = None
+    weight_change: Optional[float] = None  # Change from first to latest reading
+    current_blood_glucose: Optional[float] = None
+    current_a1c: Optional[float] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("latest_reading_date")
+    @classmethod
+    def serialize_datetime_as_utc(cls, value: Optional[datetime]) -> Optional[str]:
+        return serialize_datetime_utc(value)
+
+
+class VitalsPaginatedResponse(BaseModel):
+    """Schema for paginated vitals response with total count"""
+
+    items: list[VitalsResponse]
+    total: int
+    skip: int
+    limit: int
+
+    model_config = ConfigDict(from_attributes=True)

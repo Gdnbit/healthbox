@@ -1,0 +1,70 @@
+{
+  "contract": "household-formal-metric-revision",
+  "version": "1.0.0",
+  "case_id": "CASE-MVP-REVISION-BOUNDARY",
+  "scope": "owner_only_imported_lab_component",
+  "authority": {
+    "owner_can_revise_own_formal_component": true,
+    "shared_dashboard_can_revise": false,
+    "owner_global_read_can_revise": false,
+    "delegated_upload_can_revise": false,
+    "legacy_generic_update_can_mutate_imported_component": false,
+    "legacy_generic_delete_can_remove_imported_component": false
+  },
+  "history": {
+    "commit_creates_initial_revision": true,
+    "revision_rows_are_append_only": true,
+    "version_starts_at": 1,
+    "version_increments_by": 1,
+    "current_projection": "lab_test_components",
+    "current_revision": "highest_version_for_component",
+    "supersedes_revision_required_after_version_one": true,
+    "reason_required_after_version_one": true
+  },
+  "concurrency": {
+    "expected_current_revision_id_required": true,
+    "stale_expected_revision_result": "formal_metric_revision_conflict",
+    "idempotency_key_required": true,
+    "same_key_same_payload_returns_original_revision": true,
+    "same_key_different_payload_result": "formal_metric_revision_idempotency_conflict"
+  },
+  "editable_snapshot_fields": [
+    "result_type",
+    "numeric_value",
+    "qualitative_value",
+    "textual_value",
+    "unit",
+    "ref_range_min",
+    "ref_range_max",
+    "ref_range_text",
+    "result_status"
+  ],
+  "fixed_identity_fields": [
+    "patient_id",
+    "component_id",
+    "lab_result_id",
+    "test_name",
+    "canonical_test_name",
+    "test_code",
+    "observed_date",
+    "source_document_id",
+    "source_page",
+    "source_locator",
+    "import_batch_id"
+  ],
+  "rollback": {
+    "unrevised_committed_batch_can_rollback": true,
+    "revised_component_blocks_batch_rollback": true,
+    "rollback_never_deletes_revision_history_independently": true
+  },
+  "audit": {
+    "stores_actor_subject_component_revision_version_and_changed_field_names": true,
+    "stores_health_values": false,
+    "stores_reason_text": false,
+    "reason_is_retained_in_protected_revision_history": true
+  },
+  "export": {
+    "complete_archive_includes_all_revisions": true,
+    "complete_archive_identifies_current_revision": true
+  }
+}

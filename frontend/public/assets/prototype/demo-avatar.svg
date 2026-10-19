@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <title>Generic demo avatar</title>
+  <rect width="96" height="96" rx="48" fill="#e0f4ef"/>
+  <circle cx="48" cy="34" r="16" fill="#087f8c"/>
+  <path d="M17 88c0-22 12-34 31-34s31 12 31 34" fill="#087f8c"/>
+</svg>

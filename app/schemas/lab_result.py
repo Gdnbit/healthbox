@@ -1,0 +1,741 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import math
+from datetime import date, datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, field_validator, model_validator
+
+from app.core.constants import LAB_TEST_COMPONENT_LIMITS
+from app.schemas.base_tags import TaggedEntityMixin
+
+
+def _validate_relevance_note(v):
+    """Validate relevance note shared by lab result relationship schemas"""
+    if v and len(v.strip()) > 500:
+        raise ValueError("Relevance note must be less than 500 characters")
+    return v.strip() if v else None
+
+
+class LabResultBase(TaggedEntityMixin):
+    """Base schema for LabResult - simple test tracking"""
+
+    test_name: str
+    test_code: Optional[str] = None
+    test_category: Optional[str] = None
+    test_type: Optional[str] = None
+    facility: Optional[str] = None
+    status: Optional[str] = "ordered"
+    labs_result: Optional[str] = None
+    ordered_date: Optional[date] = None
+    completed_date: Optional[date] = None
+    notes: Optional[str] = None
+    patient_id: int
+    practitioner_id: Optional[int] = None
+    is_panel: bool = False
+
+    # Numeric result fields (optional — for quantitative tests and trending)
+    value: Optional[float] = None
+    unit: Optional[str] = None
+    ref_range_min: Optional[float] = None
+    ref_range_max: Optional[float] = None
+    ref_range_text: Optional[str] = None
+
+    @field_validator("test_name")
+    @classmethod
+    def validate_test_name(cls, v):
+        """Validate test name"""
+        if not v or len(v.strip()) < 2:
+            raise ValueError("Test name must be at least 2 characters long")
+        if len(v) > 200:
+            raise ValueError("Test name must be less than 200 characters")
+        return v.strip()
+
+    @field_validator("test_code")
+    @classmethod
+    def validate_test_code(cls, v):
+        """Validate test code (LOINC, CPT, etc.)"""
+        if v and len(v.strip()) > 50:
+            raise ValueError("Test code must be less than 50 characters")
+        return v.strip().upper() if v else None
+
+    @field_validator("test_category")
+    @classmethod
+    def validate_test_category(cls, v):
+        """Validate test category"""
+        valid_categories = [
+            "blood work",
+            "imaging",
+            "pathology",
+            "microbiology",
+            "chemistry",
+            "hematology",
+            "hepatology",
+            "immunology",
+            "genetics",
+            "cardiology",
+            "pulmonology",
+            "hearing",
+            "stomatology",
+            "other",
+        ]
+        if v and v.lower() not in valid_categories:
+            raise ValueError(
+                f"Test category must be one of: {', '.join(valid_categories)}"
+            )
+        return v.lower() if v else None
+
+    @field_validator("test_type")
+    @classmethod
+    def validate_test_type(cls, v):
+        """Validate test type"""
+        valid_types = [
+            "routine",
+            "urgent",
+            "stat",
+            "emergency",
+            "follow-up",
+            "screening",
+        ]
+        if v and v.lower() not in valid_types:
+            raise ValueError(f"Test type must be one of: {', '.join(valid_types)}")
+        return v.lower() if v else None
+
+    @field_validator("facility")
+    @classmethod
+    def validate_facility(cls, v):
+        """Validate facility name"""
+        if v and len(v.strip()) > 300:
+            raise ValueError("Facility name must be less than 300 characters")
+        return v.strip() if v else None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        """Validate lab result status"""
+        valid_statuses = ["ordered", "in-progress", "completed", "cancelled"]
+        if v and v.lower() not in valid_statuses:
+            raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+        return v.lower() if v else "ordered"
+
+    @field_validator("labs_result")
+    @classmethod
+    def validate_labs_result(cls, v):
+        """Validate lab result interpretation"""
+        valid_results = [
+            "normal",
+            "abnormal",
+            "critical",
+            "high",
+            "low",
+            "borderline",
+            "inconclusive",
+        ]
+        if v and v.strip() and v.lower() not in valid_results:
+            raise ValueError(f"Labs result must be one of: {', '.join(valid_results)}")
+        return v.lower() if v and v.strip() else None
+
+    @field_validator("ordered_date")
+    @classmethod
+    def validate_ordered_date(cls, v):
+        """Validate ordered date - ensure it's a date object only"""
+        if v is None:
+            return None
+
+        if isinstance(v, date) and not isinstance(v, datetime):
+            return v
+
+        if isinstance(v, datetime):
+            # Convert datetime to date (remove time component)
+            return v.date()
+
+        if isinstance(v, str):
+            try:
+                # Parse string and convert to date only
+                if "T" in v:
+                    # Handle ISO format with time (e.g., "2024-01-15T00:00:00")
+                    dt = datetime.fromisoformat(v.replace("Z", "+00:00"))
+                    return dt.date()
+                # Handle date-only format (e.g., "2024-01-15")
+                return datetime.strptime(v, "%Y-%m-%d").date()
+            except ValueError:
+                raise ValueError(
+                    "Invalid date format for ordered_date. Use YYYY-MM-DD format."
+                )
+
+        raise ValueError("ordered_date must be a date string or date object")
+
+    @field_validator("completed_date")
+    @classmethod
+    def validate_completed_date(cls, v):
+        """Validate completed date - ensure it's a date object only"""
+        if v is None:
+            return None
+
+        if isinstance(v, date) and not isinstance(v, datetime):
+            return v
+
+        if isinstance(v, datetime):
+            # Convert datetime to date (remove time component)
+            return v.date()
+
+        if isinstance(v, str):
+            try:
+                # Parse string and convert to date only
+                if "T" in v:
+                    # Handle ISO format with time (e.g., "2024-01-15T00:00:00")
+                    dt = datetime.fromisoformat(v.replace("Z", "+00:00"))
+                    return dt.date()
+                # Handle date-only format (e.g., "2024-01-15")
+                return datetime.strptime(v, "%Y-%m-%d").date()
+            except ValueError:
+                raise ValueError(
+                    "Invalid date format for completed_date. Use YYYY-MM-DD format."
+                )
+
+        raise ValueError("completed_date must be a date string or date object")
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, v):
+        if v is not None:
+            if not math.isfinite(v):
+                raise ValueError("Value must be a finite number")
+            if abs(v) > 1e15:
+                raise ValueError("Value is out of reasonable range (must be ≤ 1e15)")
+        return v
+
+    @field_validator("ref_range_min")
+    @classmethod
+    def validate_ref_range_min(cls, v):
+        if v is not None:
+            if not math.isfinite(v):
+                raise ValueError("Reference range minimum must be a finite number")
+        return v
+
+    @field_validator("ref_range_max")
+    @classmethod
+    def validate_ref_range_max(cls, v):
+        if v is not None:
+            if not math.isfinite(v):
+                raise ValueError("Reference range maximum must be a finite number")
+        return v
+
+    @field_validator("unit")
+    @classmethod
+    def validate_unit(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) > 50:
+                raise ValueError("Unit must be 50 characters or fewer")
+            return v if v else None
+        return v
+
+    @field_validator("ref_range_text")
+    @classmethod
+    def validate_ref_range_text(cls, v):
+        """Normalize only — length is enforced on the input schemas (Create/Update)
+        so the response can serialize any stored value without crashing (#894)."""
+        if v is None:
+            return None
+        stripped = v.strip()
+        return stripped if stripped else None
+
+    @model_validator(mode="after")
+    def validate_date_order(self):
+        """Validate that completed date is not before ordered date"""
+        if self.completed_date and self.ordered_date:
+            if self.completed_date < self.ordered_date:
+                raise ValueError("Completed date cannot be before ordered date")
+        return self
+
+    @model_validator(mode="after")
+    def validate_ref_range_order(self):
+        """Validate that ref_range_max is greater than ref_range_min"""
+        if self.ref_range_min is not None and self.ref_range_max is not None:
+            if self.ref_range_max <= self.ref_range_min:
+                raise ValueError("Reference range maximum must be greater than minimum")
+        return self
+
+
+class LabResultCreate(LabResultBase):
+    """Schema for creating a new lab result"""
+
+    patient_id: int
+    practitioner_id: Optional[int] = None
+
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, v):
+        """Validate notes length on creation"""
+        if v and len(v.strip()) > 5000:
+            raise ValueError("Notes must be 5000 characters or fewer")
+        return v.strip() if v else None
+
+    @field_validator("ref_range_text")
+    @classmethod
+    def validate_ref_range_text(cls, v):
+        """Validate reference range text length on creation (#894)."""
+        if v is None:
+            return None
+        stripped = v.strip()
+        max_len = LAB_TEST_COMPONENT_LIMITS["MAX_REF_RANGE_TEXT_LENGTH"]
+        if len(stripped) > max_len:
+            raise ValueError(
+                f"Reference range text must be {max_len} characters or fewer"
+            )
+        return stripped if stripped else None
+
+    @field_validator("patient_id")
+    @classmethod
+    def validate_patient_id(cls, v):
+        """Validate patient ID"""
+        if v <= 0:
+            raise ValueError("Patient ID must be a positive integer")
+        return v
+
+
+class LabResultUpdate(BaseModel):
+    """Schema for updating an existing lab result"""
+
+    test_name: Optional[str] = None
+    test_code: Optional[str] = None
+    test_category: Optional[str] = None
+    test_type: Optional[str] = None
+    facility: Optional[str] = None
+    status: Optional[str] = None
+    labs_result: Optional[str] = None
+    ordered_date: Optional[date] = None
+    completed_date: Optional[date] = None
+    notes: Optional[str] = None
+    practitioner_id: Optional[int] = None
+    tags: Optional[List[str]] = None
+    value: Optional[float] = None
+    unit: Optional[str] = None
+    ref_range_min: Optional[float] = None
+    ref_range_max: Optional[float] = None
+    ref_range_text: Optional[str] = None
+
+    @field_validator("test_name")
+    @classmethod
+    def validate_test_name(cls, v):
+        if v is not None:
+            if not v or len(v.strip()) < 2:
+                raise ValueError("Test name must be at least 2 characters long")
+            if len(v) > 200:
+                raise ValueError("Test name must be less than 200 characters")
+            return v.strip()
+        return v
+
+    @field_validator("test_code")
+    @classmethod
+    def validate_test_code(cls, v):
+        if v is not None:
+            if len(v.strip()) > 50:
+                raise ValueError("Test code must be less than 50 characters")
+            return v.strip().upper()
+        return v
+
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, v):
+        """Validate notes length on update"""
+        if v is not None:
+            if len(v.strip()) > 5000:
+                raise ValueError("Notes must be 5000 characters or fewer")
+            return v.strip() if v else None
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        if v is not None:
+            valid_statuses = ["ordered", "in-progress", "completed", "cancelled"]
+            if v.lower() not in valid_statuses:
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+            return v.lower()
+        return v
+
+    @field_validator("labs_result")
+    @classmethod
+    def validate_labs_result(cls, v):
+        if v is not None and v.strip():
+            valid_results = [
+                "normal",
+                "abnormal",
+                "critical",
+                "high",
+                "low",
+                "borderline",
+                "inconclusive",
+            ]
+            if v.lower() not in valid_results:
+                raise ValueError(
+                    f"Labs result must be one of: {', '.join(valid_results)}"
+                )
+            return v.lower()
+        return v
+
+    @field_validator("ordered_date")
+    @classmethod
+    def validate_ordered_date(cls, v):
+        """Validate ordered date - ensure it's a date object only"""
+        if v is None:
+            return None
+
+        if isinstance(v, date) and not isinstance(v, datetime):
+            return v
+
+        if isinstance(v, datetime):
+            # Convert datetime to date (remove time component)
+            return v.date()
+
+        if isinstance(v, str):
+            try:
+                # Parse string and convert to date only
+                if "T" in v:
+                    # Handle ISO format with time (e.g., "2024-01-15T00:00:00")
+                    dt = datetime.fromisoformat(v.replace("Z", "+00:00"))
+                    return dt.date()
+                # Handle date-only format (e.g., "2024-01-15")
+                return datetime.strptime(v, "%Y-%m-%d").date()
+            except ValueError:
+                raise ValueError(
+                    "Invalid date format for ordered_date. Use YYYY-MM-DD format."
+                )
+
+        raise ValueError("ordered_date must be a date string or date object")
+
+    @field_validator("completed_date")
+    @classmethod
+    def validate_completed_date(cls, v):
+        """Validate completed date - ensure it's a date object only"""
+        if v is None:
+            return None
+
+        if isinstance(v, date) and not isinstance(v, datetime):
+            return v
+
+        if isinstance(v, datetime):
+            # Convert datetime to date (remove time component)
+            return v.date()
+
+        if isinstance(v, str):
+            try:
+                # Parse string and convert to date only
+                if "T" in v:
+                    # Handle ISO format with time (e.g., "2024-01-15T00:00:00")
+                    dt = datetime.fromisoformat(v.replace("Z", "+00:00"))
+                    return dt.date()
+                # Handle date-only format (e.g., "2024-01-15")
+                return datetime.strptime(v, "%Y-%m-%d").date()
+            except ValueError:
+                raise ValueError(
+                    "Invalid date format for completed_date. Use YYYY-MM-DD format."
+                )
+
+        raise ValueError("completed_date must be a date string or date object")
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, v):
+        if v is not None:
+            if not math.isfinite(v):
+                raise ValueError("Value must be a finite number")
+            if abs(v) > 1e15:
+                raise ValueError("Value is out of reasonable range (must be ≤ 1e15)")
+        return v
+
+    @field_validator("ref_range_min")
+    @classmethod
+    def validate_ref_range_min(cls, v):
+        if v is not None:
+            if not math.isfinite(v):
+                raise ValueError("Reference range minimum must be a finite number")
+        return v
+
+    @field_validator("ref_range_max")
+    @classmethod
+    def validate_ref_range_max(cls, v):
+        if v is not None:
+            if not math.isfinite(v):
+                raise ValueError("Reference range maximum must be a finite number")
+        return v
+
+    @field_validator("unit")
+    @classmethod
+    def validate_unit(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) > 50:
+                raise ValueError("Unit must be 50 characters or fewer")
+            return v if v else None
+        return v
+
+    @field_validator("ref_range_text")
+    @classmethod
+    def validate_ref_range_text(cls, v):
+        if v is not None:
+            v = v.strip()
+            max_len = LAB_TEST_COMPONENT_LIMITS["MAX_REF_RANGE_TEXT_LENGTH"]
+            if len(v) > max_len:
+                raise ValueError(
+                    f"Reference range text must be {max_len} characters or fewer"
+                )
+            return v if v else None
+        return v
+
+    @model_validator(mode="after")
+    def validate_date_order(self):
+        """Validate that completed date is not before ordered date"""
+        if self.completed_date and self.ordered_date:
+            if self.completed_date < self.ordered_date:
+                raise ValueError("Completed date cannot be before ordered date")
+        return self
+
+    @model_validator(mode="after")
+    def validate_ref_range_order(self):
+        """Validate that ref_range_max is greater than ref_range_min"""
+        if self.ref_range_min is not None and self.ref_range_max is not None:
+            if self.ref_range_max <= self.ref_range_min:
+                raise ValueError("Reference range maximum must be greater than minimum")
+        return self
+
+
+class LabResultResponse(LabResultBase):
+    """Schema for lab result response"""
+
+    id: int
+    patient_id: int
+    practitioner_id: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class LabResultWithRelations(LabResultResponse):
+    """Schema for lab result with related data"""
+
+    patient_name: Optional[str] = None
+    practitioner_name: Optional[str] = None
+    files: Optional[List] = []  # Will be filled with LabResultFileResponse objects
+
+    model_config = {"from_attributes": True}
+
+
+# Lab Result - Condition Relationship Schemas
+
+
+class LabResultConditionBase(BaseModel):
+    """Base schema for lab result condition relationship"""
+
+    lab_result_id: int
+    condition_id: int
+    relevance_note: Optional[str] = None
+
+    @field_validator("relevance_note")
+    @classmethod
+    def validate_relevance_note(cls, v):
+        return _validate_relevance_note(v)
+
+
+class LabResultConditionCreate(LabResultConditionBase):
+    """Schema for creating a lab result condition relationship"""
+
+
+class LabResultConditionUpdate(BaseModel):
+    """Schema for updating a lab result condition relationship"""
+
+    relevance_note: Optional[str] = None
+
+    @field_validator("relevance_note")
+    @classmethod
+    def validate_relevance_note(cls, v):
+        return _validate_relevance_note(v)
+
+
+class LabResultConditionResponse(LabResultConditionBase):
+    """Schema for lab result condition relationship response"""
+
+    id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class LabResultConditionWithDetails(LabResultConditionResponse):
+    """Schema for lab result condition relationship with condition details"""
+
+    condition: Optional[dict] = None  # Will contain condition details
+
+    model_config = {"from_attributes": True}
+
+
+# Lab Result - Medication Relationship Schemas
+
+
+class LabResultMedicationBase(BaseModel):
+    """Base schema for lab result medication relationship"""
+
+    lab_result_id: int
+    medication_id: int
+    relevance_note: Optional[str] = None
+
+    @field_validator("relevance_note")
+    @classmethod
+    def validate_relevance_note(cls, v):
+        return _validate_relevance_note(v)
+
+
+class LabResultMedicationCreate(LabResultMedicationBase):
+    """Schema for creating a lab result medication relationship"""
+
+    lab_result_id: Optional[int] = None  # Will be set from URL path parameter
+
+
+class LabResultMedicationUpdate(BaseModel):
+    """Schema for updating a lab result medication relationship"""
+
+    relevance_note: Optional[str] = None
+
+    @field_validator("relevance_note")
+    @classmethod
+    def validate_relevance_note(cls, v):
+        return _validate_relevance_note(v)
+
+
+class LabResultMedicationResponse(LabResultMedicationBase):
+    """Schema for lab result medication relationship response"""
+
+    id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class LabResultMedicationWithDetails(LabResultMedicationResponse):
+    """Schema for lab result medication relationship with medication details"""
+
+    medication: Optional[dict] = None  # Will contain medication details
+
+    model_config = {"from_attributes": True}
+
+
+# Lab Result - Procedure Relationship Schemas
+
+
+class LabResultProcedureBase(BaseModel):
+    """Base schema for lab result procedure relationship"""
+
+    lab_result_id: int
+    procedure_id: int
+    relevance_note: Optional[str] = None
+
+    @field_validator("relevance_note")
+    @classmethod
+    def validate_relevance_note(cls, v):
+        return _validate_relevance_note(v)
+
+
+class LabResultProcedureCreate(LabResultProcedureBase):
+    """Schema for creating a lab result procedure relationship"""
+
+    lab_result_id: Optional[int] = None  # Will be set from URL path parameter
+
+
+class LabResultProcedureUpdate(BaseModel):
+    """Schema for updating a lab result procedure relationship"""
+
+    relevance_note: Optional[str] = None
+
+    @field_validator("relevance_note")
+    @classmethod
+    def validate_relevance_note(cls, v):
+        return _validate_relevance_note(v)
+
+
+class LabResultProcedureResponse(LabResultProcedureBase):
+    """Schema for lab result procedure relationship response"""
+
+    id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class LabResultProcedureWithDetails(LabResultProcedureResponse):
+    """Schema for lab result procedure relationship with procedure details"""
+
+    procedure: Optional[dict] = None  # Will contain procedure details
+
+    model_config = {"from_attributes": True}
+
+
+# OCR/PDF Extraction Schemas
+
+# Valid extraction methods - centralized for maintainability
+EXTRACTION_METHODS_BASE = ["native", "ocr", "failed"]
+EXTRACTION_METHODS_PARSERS = ["labcorp_parser", "quest_parser"]
+EXTRACTION_METHODS_ALL = EXTRACTION_METHODS_BASE + EXTRACTION_METHODS_PARSERS
+
+
+class PDFExtractionMetadata(BaseModel):
+    """Metadata about PDF text extraction"""
+
+    method: str  # "native", "ocr", "labcorp_parser", etc.
+    confidence: float  # 0.0 to 1.0
+    page_count: int
+    char_count: int
+    filename: str
+    lab_name: Optional[str] = None  # If lab-specific parser was used
+    test_count: Optional[int] = None  # If lab-specific parser was used
+    test_date: Optional[str] = None  # Extracted test date in YYYY-MM-DD format
+    fallback_triggered: Optional[bool] = False  # Indicates OCR fallback was used
+    native_test_count: Optional[int] = None  # Original test count before fallback
+
+    @field_validator("method")
+    @classmethod
+    def validate_method(cls, v):
+        """Validate extraction method"""
+        # Allow OCR variants (e.g., "labcorp_parser_ocr", "quest_parser_ocr")
+        if v.endswith("_ocr"):
+            base_method = v[:-4]  # Remove "_ocr" suffix
+            if base_method in EXTRACTION_METHODS_PARSERS:
+                return v
+
+        if v not in EXTRACTION_METHODS_ALL:
+            raise ValueError(
+                f"Method must be one of: {', '.join(EXTRACTION_METHODS_ALL)} "
+                f"or parser_ocr variants ({', '.join(p + '_ocr' for p in EXTRACTION_METHODS_PARSERS)})"
+            )
+        return v
+
+    @field_validator("confidence")
+    @classmethod
+    def validate_confidence(cls, v):
+        """Validate confidence is between 0 and 1"""
+        if not 0 <= v <= 1:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        return v
+
+
+class PDFExtractionResponse(BaseModel):
+    """Response schema for PDF OCR extraction endpoint"""
+
+    status: str  # "success" or "error"
+    extracted_text: str
+    metadata: PDFExtractionMetadata
+    error: Optional[str] = None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        """Validate status"""
+        if v not in ["success", "error"]:
+            raise ValueError("Status must be 'success' or 'error'")
+        return v
+
+    model_config = {"from_attributes": True}

@@ -1,0 +1,86 @@
+{
+  "contract_id": "household-subject-mismatch-confirmation@1.0.0",
+  "case_id": "CASE-MVP-ONE-CLICK-COMMIT",
+  "assessment": {
+    "version": "subject-identity-assessment@1.0.0",
+    "source": "locally_extracted_report_text",
+    "accepted_labels": [
+      "patient_name",
+      "exam_subject",
+      "name"
+    ],
+    "matching": "unicode_nfkc_exact_after_separator_removal",
+    "fuzzy_matching": false,
+    "unlabeled_name_inference": false,
+    "masked_name_is_mismatch": false,
+    "conflicting_labeled_names_are_mismatch": false,
+    "possible_statuses": [
+      "unavailable",
+      "matched",
+      "suspected_mismatch"
+    ],
+    "does_not_auto_transfer_subject": true
+  },
+  "batch": {
+    "warning_field": "subject_mismatch_warning",
+    "warning_is_persistent": true,
+    "warning_contains": [
+      "observed_name",
+      "confidence",
+      "assessment_version",
+      "evidence",
+      "confirmation_required",
+      "confirmed_at"
+    ],
+    "confirmation_granularity": "one_per_import_batch",
+    "per_page_confirmation": false,
+    "per_candidate_identity_confirmation": false,
+    "confirmation_requires": [
+      "acknowledged_true",
+      "exact_target_patient_id",
+      "exact_observed_name",
+      "exact_assessment_version"
+    ]
+  },
+  "commit": {
+    "without_required_confirmation": "409_subject_mismatch_confirmation_required",
+    "wrong_or_stale_confirmation": "409_subject_mismatch_confirmation_invalid",
+    "formal_writes_before_confirmation": 0,
+    "confirmation_and_commit_share_transaction": true,
+    "committed_replay_is_idempotent": true,
+    "invalid_candidates_remain_nonformal": true
+  },
+  "access": {
+    "confirm": "archive_owner_only",
+    "shared_dashboard": false,
+    "owner_global_read": false,
+    "delegated_upload": false,
+    "cross_subject": false
+  },
+  "privacy": {
+    "observed_name_visible_to_owner_in_review": true,
+    "observed_name_exported_in_owner_complete_archive": true,
+    "observed_name_in_audit": false,
+    "target_name_in_audit": false,
+    "report_text_in_audit": false,
+    "server_path_in_response_or_audit": false
+  },
+  "ui": {
+    "surface": "health_import_review_modal",
+    "warning_visible_before_commit": true,
+    "explains_ocr_may_be_wrong": true,
+    "explicit_checkbox_required": true,
+    "confirm_button_disabled_until_checked": true,
+    "action_copy": "仍写入当前档案",
+    "mobile_min_touch_target_px": 44
+  },
+  "forbidden": [
+    "automatic_subject_transfer",
+    "automatic_original_rejection",
+    "automatic_candidate_acceptance",
+    "automatic_formal_write",
+    "fuzzy_identity_resolution",
+    "cross_subject_name_disclosure",
+    "per_page_identity_confirmation"
+  ]
+}

@@ -1,0 +1,189 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "account": {
+    "deleteAccount": {
+      "button": "Supprimer le compte",
+      "description": "Supprime de façon permanente votre compte et toutes les données médicales associées. Cette action est irréversible.",
+      "title": "Supprimer le compte"
+    }
+  },
+  "actions": {
+    "reset": "Réinitialiser les changements",
+    "save": "Sauvegarder les changements",
+    "unsavedChanges": "Changements non sauvegardés"
+  },
+  "documents": {
+    "cleanup": {
+      "button": "Nettoyer les fichiers",
+      "cleaning": "Nettoyage...",
+      "description": "Nettoie les fichiers désynchronisés et résout les incohérences de stockage de documents. Cette action réinitialisera les téléversements en échec, nettoiera les tâches orphelines, et corrigera les problèmes de synchronisation de la base de données.",
+      "title": "Nettoyage des fichiers"
+    },
+    "paperlessDescription": "Configurez l'intégration au gestionnaire de documents Paperless-ngx"
+  },
+  "help": {
+    "documentation": {
+      "description": "Visitez le wiki pour avoir accès à des guides, des instructions d'installation, et de la documentation sur les fonctionnalités de l'application.",
+      "title": "Documentation"
+    },
+    "issues": {
+      "description": "Vous avez trouvé un bug ou souhaitez demander l'intégration d'une fonctionnalité ? Ouvrez un problème sur GitHub.",
+      "title": "Signaler un problème"
+    }
+  },
+  "paperlessConnection": {
+    "apiTokenHelp": "Votre jeton d'API Paperless-ngx. Vous pouvez le trouver dans l'onglet d'administration de Paperless, sous Paramètres.",
+    "apiTokenLabel": "Jeton d'API",
+    "apiTokenRecommended": "Jeton d'API (Recommandé)",
+    "authMethod": "Méthode d'authentification",
+    "connected": "Connecté à Paperless-ngx",
+    "connectionError": "Connexion impossible. Veuillez vérifier votre URL et vos identifiants.",
+    "methodInfo": "Les jetons d'API sont la méthode d'authentification recommandée pour assurer une meilleure sécurité.",
+    "passwordHelp": "Votre mot de passe pour Paperless-ngx.",
+    "passwordLabel": "Mot de passe",
+    "sessionStorage": "Utilisation du stockage de session pour le jeton",
+    "title": "Connexion à Paperless-ngx",
+    "urlHelp": "L'URL de votre instance de Paperless-ngx (ex : https://paperless.exemple.com)",
+    "urlLabel": "URL du serveur",
+    "usernameHelp": "Votre nom d'utilisateur pour Paperless-ngx.",
+    "usernameLabel": "Nom d'utilisateur",
+    "usernamePassword": "Nom d'utilisateur et mot de passe"
+  },
+  "papra": {
+    "apiTokenPlaceholder": "Saisissez votre jeton d'API Papra",
+    "connectionFailed": "Echec de la connexion",
+    "connectionSuccess": "Connexion réussie",
+    "description": "Connectez-vous à votre instance de Papra pour la gestion des documents",
+    "organization": "Organisation",
+    "organizationPlaceholder": "Sélectionnez une organisation",
+    "urlPlaceholder": "https://votre-instance-papra.com"
+  },
+  "preferences": {
+    "dateFormat": {
+      "description": "Choisissez comment les dates sont affichées dans l'application",
+      "dmy": "JJ/MM/AAAA (Royaume-Uni/International)",
+      "dmy_dot": "JJ.MM.AAAA (Europe)",
+      "mdy": "MM/JJ/AAAA (USA)",
+      "title": "Format des dates",
+      "ymd": "AAAA-MM-JJ (ISO)"
+    },
+    "sessionTimeout": {
+      "description": "Définissez la période d'inactivité devant s'écouler avant l'expiration de votre session (en minutes)",
+      "range": "minutes (5-1440)",
+      "title": "Durée de session"
+    },
+    "unitSystem": {
+      "description": "Choisissez si les mesures doivent être affichées en unités impériales (livres, pieds, degrés Fahrenheit) ou métriques (kilogrammes, centimètres, degrés Celsius)",
+      "imperial": "Impérial (livres, pieds, °F)",
+      "metric": "Métrique (kg, cm, °C)",
+      "title": "Système de mesure"
+    }
+  },
+  "profile": {
+    "description": "Mettez à jour l'identité de votre compte. Modifier votre nom d'utilisateur vous déconnectera -- vous vous reconnecterez avec le nouveau nom.",
+    "errors": {
+      "emailInvalid": "Saisissez une adresse e-mail valide",
+      "nameRequired": "Ce champ ne peut pas être vide",
+      "nameTooLong": "Doit comporter au maximum {{max}} caractères",
+      "updateFailed": "Échec de la mise à jour du profil. Veuillez réessayer.",
+      "usernameChars": "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, soulignements et tirets",
+      "usernameLength": "Le nom d'utilisateur doit comporter entre 3 et 50 caractères"
+    },
+    "fields": {
+      "email": "E-mail",
+      "firstName": "Prénom",
+      "fullName": "Nom complet",
+      "lastName": "Nom",
+      "username": "Nom d'utilisateur"
+    },
+    "save": "Enregistrer le profil",
+    "title": "Informations du profil",
+    "updateSuccess": "Profil mis à jour",
+    "usernameChangedLogoutWarning": "L'enregistrement vous déconnectera afin que le nouveau nom d'utilisateur soit pris en compte. Reconnectez-vous avec le nouveau nom d'utilisateur.",
+    "usernameChangedNotice": "Nom d'utilisateur modifié. Veuillez vous connecter avec votre nouveau nom d'utilisateur."
+  },
+  "releaseNotes": {
+    "currentVersion": "Actuelle",
+    "dismiss": "Compris",
+    "empty": "Aucune note de nouvelle version disponible",
+    "error": "Impossible de charger les notes de nouvelle version",
+    "publishedOn": "Publiée le : {{date}}",
+    "retry": "Réessayer",
+    "showAll": "Afficher plus de versions",
+    "showLess": "Afficher moins",
+    "viewOnGithub": "Voir sur GitHub",
+    "whatsNewTitle": "Quoi de neuf ?"
+  },
+  "sections": {
+    "accountManagement": "Gestion des comptes",
+    "gettingHelp": "Obtenir de l'aide",
+    "preferences": "Préférences d'application",
+    "releaseNotes": "Notes de nouvelle version",
+    "security": "Sécurité",
+    "supportMediKeep": "Soutenir HealthBox",
+    "systemInfo": "Informations système"
+  },
+  "security": {
+    "password": {
+      "button": "Changer de mot de passe",
+      "confirmPassword": "Confirmer le nouveau mot de passe",
+      "currentPassword": "Mot de passe actuel",
+      "description": "Changez le mot de passe de votre compte pour en préserver la sécurité",
+      "forceChange": {
+        "errors": {
+          "allFieldsRequired": "Tous les champs sont requis.",
+          "changeFailed": "Echec du changement de mot de passe. Veuillez réessayer.",
+          "passwordComplexity": "Le nouveau mot de passe doit contenir au moins une lettre et un chiffre.",
+          "passwordMustDiffer": "Le nouveau mot de passe doit être différent de votre mot de passe actuel.",
+          "passwordsMustMatch": "Les nouveaux mots de passe ne correspondent pas.",
+          "passwordTooShort": "Le nouveau mot de passe doit contenir au moins 6 caractères."
+        },
+        "submit": "Définir le nouveau mot de passe",
+        "submitting": "Changement de mot de passe...",
+        "subtitle": "Votre compte requiert un changement de mot de passe avant de pouvoir continuer. Veuillez définir un nouveau mot de passe ci-dessous.",
+        "title": "Changement de mot de passe requis"
+      },
+      "newPassword": "Nouveau mot de passe",
+      "passwordHelp": "Le mot de passe doit contenir au moins 6 caractères et au moins une lettre et un chiffre."
+    }
+  },
+  "settings": {
+    "releaseNotes": {
+      "noChanges": "Aucun changement listé pour cette version",
+      "whatsNewSubtitle": "Voici ce qui a changé depuis votre dernière mise à jour"
+    }
+  },
+  "sponsor": {
+    "button": "Parrainer sur GitHub",
+    "buttonShort": "Parrainer",
+    "description": "HealthBox est gratuit et open source. Si vous trouvez l'application utile, envisagez de parrainer le projet pour aider à financer son développement."
+  },
+  "storage": {
+    "connectionRequired": "Connexion requise",
+    "defaultLocation": "Emplacement de stockage par défaut",
+    "filesCount": "{{count}} fichier(s)",
+    "filesCount_one": "{{count}} fichier",
+    "filesCount_other": "{{count}} fichiers",
+    "localDescription": "Les fichiers sont stockés directement sur ce serveur. Convient pour des installations simples sans services externes.",
+    "localStorage": "Stockage local",
+    "noUsageData": "Aucune donnée d'utilisation de stockage disponible",
+    "paperless": "Paperless-ngx",
+    "paperlessDescription": "Les fichiers sont téléversés vers votre serveur Paperless-ngx. Fournit de l'OCR, des étiquettes, et une gestion avancée des documents.",
+    "papra": "Papra",
+    "papraDescription": "Les fichiers sont stockés dans votre instance de Papra. Fournit une gestion organisée des documents avec un système d'organisations.",
+    "title": "Préférences de stockage",
+    "usageLabel": "Utilisation du stockage"
+  },
+  "system": {
+    "timezone": {
+      "title": "Fuseau horaire"
+    },
+    "version": {
+      "loading": "Chargement des informations de version...",
+      "title": "Version de l'application",
+      "unavailable": "Informations de version indisponibles",
+      "unknownApp": "Application inconnue",
+      "unknownVersion": "Version inconnue"
+    }
+  }
+}

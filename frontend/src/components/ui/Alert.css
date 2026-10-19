@@ -1,0 +1,121 @@
+.alert {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.alert-content {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  gap: 12px;
+}
+
+.alert-icon-wrapper {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.alert-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.alert-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.alert-message {
+  font-weight: 400;
+}
+
+.alert-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  margin-left: auto;
+}
+
+.alert-close:hover {
+  background-color: var(--color-bg-overlay);
+}
+
+.alert-close-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Success variant */
+.alert-success {
+  background-color: var(--color-success-light);
+  border-color: var(--color-success);
+  color: var(--color-success-dark);
+}
+
+.alert-success .alert-icon {
+  color: var(--color-success-dark);
+}
+
+.alert-success .alert-close:hover {
+  background-color: var(--color-bg-overlay);
+}
+
+/* Error variant */
+.alert-error {
+  background-color: var(--color-danger-light);
+  border-color: var(--color-danger);
+  color: var(--color-danger-dark);
+}
+
+.alert-error .alert-icon {
+  color: var(--color-danger);
+}
+
+.alert-error .alert-close:hover {
+  background-color: var(--color-bg-overlay);
+}
+
+/* Warning variant */
+.alert-warning {
+  background-color: var(--color-warning-light);
+  border-color: var(--color-warning);
+  color: var(--color-warning-dark);
+}
+
+.alert-warning .alert-icon {
+  color: var(--color-warning-dark);
+}
+
+.alert-warning .alert-close:hover {
+  background-color: var(--color-bg-overlay);
+}
+
+/* Info variant */
+.alert-info {
+  background-color: var(--color-info-light);
+  border-color: var(--color-info);
+  color: var(--color-info-dark);
+}
+
+.alert-info .alert-icon {
+  color: var(--color-info);
+}
+
+.alert-info .alert-close:hover {
+  background-color: var(--color-bg-overlay);
+}

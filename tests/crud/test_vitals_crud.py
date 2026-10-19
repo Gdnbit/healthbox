@@ -1,0 +1,630 @@
+"""
+Tests for Vitals CRUD operations.
+"""
+
+import pytest
+from datetime import datetime, timedelta, date
+from sqlalchemy.orm import Session
+
+from app.crud.vitals import vitals as vitals_crud
+from app.crud.patient import patient as patient_crud
+from app.models.models import Vitals
+from app.schemas.vitals import VitalsCreate, VitalsUpdate
+from app.schemas.patient import PatientCreate
+
+
+class TestVitalsCRUD:
+    """Test Vitals CRUD operations."""
+
+    @pytest.fixture
+    def test_patient(self, db_session: Session, test_user):
+        """Create a test patient for vitals tests."""
+        patient_data = PatientCreate(
+            first_name="John",
+            last_name="Doe",
+            birth_date=date(1990, 1, 1),
+            gender="M",
+            address="123 Main St",
+        )
+        return patient_crud.create_for_user(
+            db_session, user_id=test_user.id, patient_data=patient_data
+        )
+
+    def test_create_vitals(self, db_session: Session, test_patient):
+        """Test creating a vitals record."""
+        vitals_data = VitalsCreate(
+            patient_id=test_patient.id,
+            recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+            systolic_bp=120,
+            diastolic_bp=80,
+            heart_rate=72,
+            temperature=98.6,
+            weight=150.0,
+            height=68.0,
+            oxygen_saturation=98,
+        )
+
+        vital_signs = vitals_crud.create(db_session, obj_in=vitals_data)
+
+        assert vital_signs is not None
+        assert vital_signs.systolic_bp == 120
+        assert vital_signs.diastolic_bp == 80
+        assert vital_signs.heart_rate == 72
+        assert vital_signs.temperature == 98.6
+        assert vital_signs.weight == 150.0
+        assert vital_signs.height == 68.0
+        assert vital_signs.patient_id == test_patient.id
+
+    def test_create_with_bmi(self, db_session: Session, test_patient):
+        """Test creating vitals with automatic BMI calculation."""
+        vitals_data = VitalsCreate(
+            patient_id=test_patient.id,
+            recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+            systolic_bp=120,
+            diastolic_bp=80,
+            heart_rate=72,
+            temperature=98.6,
+            weight=150.0,
+            height=68.0,
+        )
+
+        vital_signs = vitals_crud.create_with_bmi(db_session, obj_in=vitals_data)
+
+        assert vital_signs is not None
+        assert vital_signs.weight == 150.0
+        assert vital_signs.height == 68.0
+        assert vital_signs.bmi is not None
+        # BMI = (150 / 68^2) * 703 ≈ 22.8
+        assert abs(vital_signs.bmi - 22.8) < 0.1
+
+    def test_calculate_bmi(self, db_session: Session):
+        """Test BMI calculation."""
+        # Test normal BMI calculation
+        bmi = vitals_crud.calculate_bmi(weight_lbs=150.0, height_inches=68.0)
+        assert abs(bmi - 22.8) < 0.1
+
+        # Test different values
+        bmi = vitals_crud.calculate_bmi(weight_lbs=200.0, height_inches=72.0)
+        assert abs(bmi - 27.1) < 0.1
+
+        # Test invalid values
+        with pytest.raises(ValueError):
+            vitals_crud.calculate_bmi(weight_lbs=0, height_inches=68.0)
+
+        with pytest.raises(ValueError):
+            vitals_crud.calculate_bmi(weight_lbs=150.0, height_inches=0)
+
+    def test_get_latest_by_patient(self, db_session: Session, test_patient):
+        """Test getting the latest vitals for a patient."""
+        # Create multiple vitals records
+        dates = [
+            datetime(2024, 1, 1, 10, 0, 0),
+            datetime(2024, 1, 2, 10, 0, 0),
+            datetime(2024, 1, 3, 10, 0, 0),
+        ]
+
+        created_vitals = []
+        for i, date in enumerate(dates):
+            vitals_data = VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=date,
+                systolic_bp=120 + i,
+                diastolic_bp=80 + i,
+                heart_rate=72 + i,
+                temperature=98.6,
+            )
+            created_vitals.append(vitals_crud.create(db_session, obj_in=vitals_data))
+
+        # Get latest vitals
+        latest_vitals = vitals_crud.get_latest_by_patient(
+            db_session, patient_id=test_patient.id
+        )
+
+        assert latest_vitals is not None
+        assert latest_vitals.id == created_vitals[2].id  # Most recent
+        assert latest_vitals.systolic_bp == 122
+
+    def test_get_by_vital_type(self, db_session: Session, test_patient):
+        """Test getting vitals by specific vital type."""
+        # Create vitals with different measurements
+        vitals_data = [
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+                systolic_bp=120,
+                diastolic_bp=80,
+                heart_rate=72,
+            ),
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 2, 10, 0, 0),
+                temperature=98.6,
+                weight=150.0,
+            ),
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 3, 10, 0, 0),
+                systolic_bp=125,
+                diastolic_bp=85,
+                oxygen_saturation=98,
+            ),
+        ]
+
+        for data in vitals_data:
+            vitals_crud.create(db_session, obj_in=data)
+
+        # Get blood pressure readings
+        bp_readings = vitals_crud.get_by_vital_type(
+            db_session, patient_id=test_patient.id, vital_type="blood_pressure"
+        )
+
+        assert len(bp_readings) == 2
+        assert all(v.systolic_bp is not None for v in bp_readings)
+        assert all(v.diastolic_bp is not None for v in bp_readings)
+
+    def test_get_by_patient_date_range(self, db_session: Session, test_patient):
+        """Test getting vitals within a date range."""
+        # Create vitals across different dates
+        dates = [
+            datetime(2024, 1, 1, 10, 0, 0),
+            datetime(2024, 1, 15, 10, 0, 0),
+            datetime(2024, 2, 1, 10, 0, 0),
+            datetime(2024, 2, 15, 10, 0, 0),
+        ]
+
+        for i, date in enumerate(dates):
+            vitals_data = VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=date,
+                systolic_bp=120 + i,
+                diastolic_bp=80 + i,
+                heart_rate=72 + i,
+            )
+            vitals_crud.create(db_session, obj_in=vitals_data)
+
+        # Get vitals for January 2024
+        january_vitals = vitals_crud.get_by_patient_date_range(
+            db_session,
+            patient_id=test_patient.id,
+            start_date=datetime(2024, 1, 1),
+            end_date=datetime(2024, 1, 31),
+        )
+
+        assert len(january_vitals) == 2
+        assert all(v.recorded_date.month == 1 for v in january_vitals)
+
+    def test_get_vitals_stats(self, db_session: Session, test_patient):
+        """Test getting vitals statistics."""
+        # Create multiple vitals records
+        vitals_data = [
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+                systolic_bp=120,
+                diastolic_bp=80,
+                heart_rate=72,
+                temperature=98.6,
+                weight=150.0,
+                height=68.0,
+            ),
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 2, 10, 0, 0),
+                systolic_bp=125,
+                diastolic_bp=85,
+                heart_rate=75,
+                temperature=99.0,
+                weight=152.0,
+                height=68.0,
+            ),
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 3, 10, 0, 0),
+                systolic_bp=115,
+                diastolic_bp=75,
+                heart_rate=70,
+                temperature=98.2,
+                weight=151.0,
+                height=68.0,
+            ),
+        ]
+
+        for data in vitals_data:
+            vitals_crud.create_with_bmi(db_session, obj_in=data)
+
+        # Get statistics
+        stats = vitals_crud.get_vitals_stats(db_session, patient_id=test_patient.id)
+
+        assert stats["total_readings"] == 3
+        assert stats["latest_reading_date"] is not None
+        assert abs(stats["avg_systolic_bp"] - 120.0) < 0.1  # (120+125+115)/3 = 120
+        assert abs(stats["avg_diastolic_bp"] - 80.0) < 0.1  # (80+85+75)/3 = 80
+        assert abs(stats["avg_heart_rate"] - 72.3) < 0.1  # (72+75+70)/3 = 72.33
+        assert stats["current_weight"] == 151.0  # Latest weight
+        assert stats["current_bmi"] is not None
+        assert abs(stats["weight_change"] - 1.0) < 0.1  # 151 - 150 = 1
+
+    def test_get_vitals_stats_empty(self, db_session: Session, test_patient):
+        """Test getting vitals statistics with no data."""
+        stats = vitals_crud.get_vitals_stats(db_session, patient_id=test_patient.id)
+
+        assert stats["total_readings"] == 0
+        assert stats["latest_reading_date"] is None
+        assert stats["avg_systolic_bp"] is None
+        assert stats["avg_diastolic_bp"] is None
+        assert stats["avg_heart_rate"] is None
+        assert stats["current_weight"] is None
+        assert stats["current_bmi"] is None
+
+    def test_get_recent_readings(self, db_session: Session, test_patient):
+        """Test getting recent vitals readings."""
+        # Create vitals across different time periods
+        dates = [
+            datetime.now() - timedelta(days=45),  # Too old
+            datetime.now() - timedelta(days=15),  # Recent
+            datetime.now() - timedelta(days=5),  # Recent
+            datetime.now() - timedelta(days=1),  # Recent
+        ]
+
+        for i, date in enumerate(dates):
+            vitals_data = VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=date,
+                systolic_bp=120 + i,
+                diastolic_bp=80 + i,
+                heart_rate=72 + i,
+            )
+            vitals_crud.create(db_session, obj_in=vitals_data)
+
+        # Get recent readings (last 30 days)
+        recent_vitals = vitals_crud.get_recent_readings(
+            db_session, patient_id=test_patient.id, days=30
+        )
+
+        assert len(recent_vitals) == 3  # Should exclude the 45-day old reading
+
+    def test_update_vitals(self, db_session: Session, test_patient):
+        """Test updating vitals."""
+        # Create vitals
+        vitals_data = VitalsCreate(
+            patient_id=test_patient.id,
+            recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+            systolic_bp=120,
+            diastolic_bp=80,
+            heart_rate=72,
+            temperature=98.6,
+        )
+
+        created_vitals = vitals_crud.create(db_session, obj_in=vitals_data)
+
+        # Update vitals
+        update_data = VitalsUpdate(
+            systolic_bp=125, diastolic_bp=85, notes="Updated blood pressure readings"
+        )
+
+        updated_vitals = vitals_crud.update(
+            db_session, db_obj=created_vitals, obj_in=update_data
+        )
+
+        assert updated_vitals.systolic_bp == 125
+        assert updated_vitals.diastolic_bp == 85
+        assert updated_vitals.notes == "Updated blood pressure readings"
+        assert updated_vitals.heart_rate == 72  # Unchanged
+
+    def test_delete_vitals(self, db_session: Session, test_patient):
+        """Test deleting vitals."""
+        # Create vitals
+        vitals_data = VitalsCreate(
+            patient_id=test_patient.id,
+            recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+            systolic_bp=120,
+            diastolic_bp=80,
+            heart_rate=72,
+        )
+
+        created_vitals = vitals_crud.create(db_session, obj_in=vitals_data)
+        vitals_id = created_vitals.id
+
+        # Delete vitals
+        deleted_vitals = vitals_crud.delete(db_session, id=vitals_id)
+
+        assert deleted_vitals is not None
+        assert deleted_vitals.id == vitals_id
+
+        # Verify vitals is deleted
+        retrieved_vitals = vitals_crud.get(db_session, id=vitals_id)
+        assert retrieved_vitals is None
+
+    def test_vitals_date_ordering(self, db_session: Session, test_patient):
+        """Test that vitals are properly ordered by date."""
+        # Create vitals with different dates
+        dates = [
+            datetime(2024, 1, 3, 10, 0, 0),
+            datetime(2024, 1, 1, 10, 0, 0),
+            datetime(2024, 1, 2, 10, 0, 0),
+        ]
+
+        created_vitals = []
+        for i, date in enumerate(dates):
+            vitals_data = VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=date,
+                systolic_bp=120 + i,
+                diastolic_bp=80 + i,
+                heart_rate=72 + i,
+            )
+            created_vitals.append(vitals_crud.create(db_session, obj_in=vitals_data))
+
+        # Get vitals by blood pressure type (should be ordered by date desc)
+        bp_readings = vitals_crud.get_by_vital_type(
+            db_session, patient_id=test_patient.id, vital_type="blood_pressure"
+        )
+
+        assert len(bp_readings) == 3
+        # Should be ordered by date descending (newest first)
+        assert bp_readings[0].recorded_date > bp_readings[1].recorded_date
+        assert bp_readings[1].recorded_date > bp_readings[2].recorded_date
+
+    def test_create_vitals_with_a1c(self, db_session: Session, test_patient):
+        """Test creating a vitals record with A1C."""
+        vitals_data = VitalsCreate(
+            patient_id=test_patient.id,
+            recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+            a1c=6.5,
+            blood_glucose=120.0,
+        )
+
+        vital_signs = vitals_crud.create(db_session, obj_in=vitals_data)
+
+        assert vital_signs is not None
+        assert vital_signs.a1c == 6.5
+        assert vital_signs.blood_glucose == 120.0
+        assert vital_signs.patient_id == test_patient.id
+
+    def test_get_by_vital_type_a1c(self, db_session: Session, test_patient):
+        """Test filtering vitals by A1C type."""
+        # Create vitals with different measurements
+        vitals_data = [
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+                a1c=5.7,
+                blood_glucose=100.0,
+            ),
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 2, 10, 0, 0),
+                blood_glucose=110.0,  # No A1C
+            ),
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 3, 10, 0, 0),
+                a1c=6.8,
+            ),
+        ]
+
+        for data in vitals_data:
+            vitals_crud.create(db_session, obj_in=data)
+
+        # Get A1C readings only
+        a1c_readings = vitals_crud.get_by_vital_type(
+            db_session, patient_id=test_patient.id, vital_type="a1c"
+        )
+
+        assert len(a1c_readings) == 2
+        assert all(v.a1c is not None for v in a1c_readings)
+
+    def test_update_vitals_with_a1c(self, db_session: Session, test_patient):
+        """Test updating vitals with A1C value."""
+        # Create vitals without A1C
+        vitals_data = VitalsCreate(
+            patient_id=test_patient.id,
+            recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+            blood_glucose=95.0,
+        )
+
+        created_vitals = vitals_crud.create(db_session, obj_in=vitals_data)
+        assert created_vitals.a1c is None
+
+        # Update with A1C
+        update_data = VitalsUpdate(a1c=5.4)
+
+        updated_vitals = vitals_crud.update(
+            db_session, db_obj=created_vitals, obj_in=update_data
+        )
+
+        assert updated_vitals.a1c == 5.4
+        assert updated_vitals.blood_glucose == 95.0  # Unchanged
+
+    def test_count_by_patient(self, db_session: Session, test_patient):
+        """Test counting vitals records for a patient."""
+        # Create multiple vitals records
+        for i in range(5):
+            vitals_data = VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 1 + i, 10, 0, 0),
+                systolic_bp=120 + i,
+                diastolic_bp=80 + i,
+                heart_rate=72 + i,
+            )
+            vitals_crud.create(db_session, obj_in=vitals_data)
+
+        # Test count
+        count = vitals_crud.count_by_patient(db_session, patient_id=test_patient.id)
+        assert count == 5
+
+    def test_count_by_patient_with_vital_type_filter(
+        self, db_session: Session, test_patient
+    ):
+        """Test counting vitals with vital type filter."""
+        # Create vitals with different measurements
+        vitals_data = [
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 1, 10, 0, 0),
+                systolic_bp=120,
+                diastolic_bp=80,
+                heart_rate=72,
+            ),
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 2, 10, 0, 0),
+                temperature=98.6,
+                weight=150.0,
+            ),
+            VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 3, 10, 0, 0),
+                systolic_bp=125,
+                diastolic_bp=85,
+                a1c=6.5,
+            ),
+        ]
+
+        for data in vitals_data:
+            vitals_crud.create(db_session, obj_in=data)
+
+        # Count blood pressure readings only
+        bp_count = vitals_crud.count_by_patient(
+            db_session, patient_id=test_patient.id, vital_type="blood_pressure"
+        )
+        assert bp_count == 2
+
+        # Count temperature readings only
+        temp_count = vitals_crud.count_by_patient(
+            db_session, patient_id=test_patient.id, vital_type="temperature"
+        )
+        assert temp_count == 1
+
+        # Count A1C readings only
+        a1c_count = vitals_crud.count_by_patient(
+            db_session, patient_id=test_patient.id, vital_type="a1c"
+        )
+        assert a1c_count == 1
+
+    def test_count_by_patient_empty(self, db_session: Session, test_patient):
+        """Test counting vitals when no records exist."""
+        count = vitals_crud.count_by_patient(db_session, patient_id=test_patient.id)
+        assert count == 0
+
+    def test_large_dataset_pagination(self, db_session: Session, test_patient):
+        """Test pagination with large dataset (>100 records)."""
+        num_records = 150
+
+        # Create 150 vitals records
+        for i in range(num_records):
+            vitals_data = VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 1, 10, 0, 0) + timedelta(hours=i),
+                systolic_bp=110 + (i % 30),
+                diastolic_bp=70 + (i % 20),
+                heart_rate=60 + (i % 40),
+            )
+            vitals_crud.create(db_session, obj_in=vitals_data)
+
+        # Verify total count
+        total_count = vitals_crud.count_by_patient(
+            db_session, patient_id=test_patient.id
+        )
+        assert total_count == num_records
+
+        # Test pagination - first page
+        page1 = vitals_crud.get_by_patient(
+            db_session, patient_id=test_patient.id, skip=0, limit=50
+        )
+        assert len(page1) == 50
+
+        # Test pagination - second page
+        page2 = vitals_crud.get_by_patient(
+            db_session, patient_id=test_patient.id, skip=50, limit=50
+        )
+        assert len(page2) == 50
+
+        # Test pagination - third page (full page, 150 records total)
+        page3 = vitals_crud.get_by_patient(
+            db_session, patient_id=test_patient.id, skip=100, limit=50
+        )
+        assert len(page3) == 50
+
+        # Verify no overlap between pages
+        page1_ids = {v.id for v in page1}
+        page2_ids = {v.id for v in page2}
+        page3_ids = {v.id for v in page3}
+        assert len(page1_ids & page2_ids) == 0
+        assert len(page2_ids & page3_ids) == 0
+        assert len(page1_ids & page3_ids) == 0
+
+    def test_large_dataset_count_with_date_filter(
+        self, db_session: Session, test_patient
+    ):
+        """Test counting large dataset with date range filter."""
+        # Create 200 records spread over 200 days
+        base_date = datetime(2024, 1, 1, 10, 0, 0)
+        for i in range(200):
+            vitals_data = VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=base_date + timedelta(days=i),
+                systolic_bp=110 + (i % 30),
+                diastolic_bp=70 + (i % 20),
+                heart_rate=60 + (i % 40),
+            )
+            vitals_crud.create(db_session, obj_in=vitals_data)
+
+        # Count all records
+        total_count = vitals_crud.count_by_patient(
+            db_session, patient_id=test_patient.id
+        )
+        assert total_count == 200
+
+        # Count records in first month (31 days)
+        first_month_count = vitals_crud.count_by_patient(
+            db_session,
+            patient_id=test_patient.id,
+            start_date=base_date,
+            end_date=base_date + timedelta(days=30),
+        )
+        assert first_month_count == 31
+
+        # Count records in specific date range
+        mid_range_count = vitals_crud.count_by_patient(
+            db_session,
+            patient_id=test_patient.id,
+            start_date=base_date + timedelta(days=50),
+            end_date=base_date + timedelta(days=100),
+        )
+        assert mid_range_count == 51  # Days 50-100 inclusive
+
+    def test_get_by_patient_respects_high_limit(
+        self, db_session: Session, test_patient
+    ):
+        """Test that get_by_patient can return more than 100 records when limit is specified."""
+        num_records = 250
+
+        # Create 250 vitals records
+        for i in range(num_records):
+            vitals_data = VitalsCreate(
+                patient_id=test_patient.id,
+                recorded_date=datetime(2024, 1, 1, 10, 0, 0) + timedelta(hours=i),
+                systolic_bp=110 + (i % 30),
+                diastolic_bp=70 + (i % 20),
+                heart_rate=60 + (i % 40),
+            )
+            vitals_crud.create(db_session, obj_in=vitals_data)
+
+        # Request all records with high limit (API endpoints pass limit=10000)
+        all_records = vitals_crud.get_by_patient(
+            db_session, patient_id=test_patient.id, skip=0, limit=500
+        )
+        assert len(all_records) == num_records
+
+        # Verify count method returns correct total
+        total_count = vitals_crud.count_by_patient(
+            db_session, patient_id=test_patient.id
+        )
+        assert total_count == num_records
+
+        # With limit=10000 (what API endpoints use), all records should be returned
+        api_limit_records = vitals_crud.get_by_patient(
+            db_session, patient_id=test_patient.id, skip=0, limit=10000
+        )
+        assert len(api_limit_records) == num_records

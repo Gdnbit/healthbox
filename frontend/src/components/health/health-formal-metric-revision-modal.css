@@ -1,0 +1,376 @@
+.health-revision-modal__surface {
+  border: 1px solid var(--hhp-border, #e2dfd7);
+  border-radius: var(--hhp-radius-shell, 1rem);
+  box-shadow: var(--hhp-shadow-shell, 0 14px 34px rgb(30 45 46 / 8%));
+  overflow: hidden;
+}
+
+.health-revision-modal__header {
+  align-items: flex-start;
+  padding: var(--hhp-space-5, 1.25rem) var(--hhp-space-6, 1.5rem);
+  border-bottom: 1px solid var(--hhp-border, #e2dfd7);
+}
+
+.health-revision-modal__body {
+  padding: var(--hhp-space-5, 1.25rem) var(--hhp-space-6, 1.5rem)
+    var(--hhp-space-6, 1.5rem);
+}
+
+.health-revision-modal__close {
+  min-width: var(--hhp-touch-target, 2.75rem);
+  min-height: var(--hhp-touch-target, 2.75rem);
+  border-radius: var(--hhp-radius-control, 0.625rem);
+}
+
+.health-revision-modal__title {
+  display: flex;
+  align-items: center;
+  gap: var(--hhp-space-3, 0.75rem);
+  color: var(--hhp-ink, #10202e);
+}
+
+.health-revision-modal__title-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  color: var(--hhp-teal-dark, #006b6c);
+  background: var(--hhp-teal-soft, #dff0ed);
+  border-radius: 0.75rem;
+}
+
+.health-revision-modal__title > span:last-child {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.health-revision-modal__title strong {
+  font-size: var(--hhp-font-title, 1.25rem);
+  font-weight: var(--hhp-weight-bold, 720);
+  line-height: var(--hhp-line-compact, 1.3);
+}
+
+.health-revision-modal__title small {
+  color: var(--hhp-muted, #5d6b70);
+  font-size: var(--hhp-font-small, 0.8125rem);
+  font-weight: 500;
+  line-height: var(--hhp-line-body, 1.55);
+}
+
+.health-revision-modal__layout {
+  display: grid;
+  gap: var(--hhp-space-5, 1.25rem);
+}
+
+.health-revision-modal__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--hhp-space-3, 0.75rem);
+}
+
+.health-revision-modal__summary > div {
+  display: grid;
+  gap: var(--hhp-space-1, 0.25rem);
+  min-width: 0;
+  padding: var(--hhp-space-3, 0.75rem);
+  background: var(--hhp-surface-soft, #f3f8f6);
+  border-radius: var(--hhp-radius-card, 0.875rem);
+}
+
+.health-revision-modal__summary span {
+  color: var(--hhp-muted, #5d6b70);
+  font-size: var(--hhp-font-caption, 0.75rem);
+  line-height: var(--hhp-line-body, 1.55);
+}
+
+.health-revision-modal__summary strong {
+  overflow: hidden;
+  color: var(--hhp-ink, #10202e);
+  font-size: var(--hhp-font-label, 0.9375rem);
+  font-weight: var(--hhp-weight-semibold, 650);
+  line-height: var(--hhp-line-body, 1.55);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.health-revision-modal__notice {
+  display: flex;
+  gap: var(--hhp-space-3, 0.75rem);
+  padding: var(--hhp-space-4, 1rem);
+  color: #385b56;
+  background: #edf7f4;
+  border: 1px solid #cfe7e1;
+  border-radius: var(--hhp-radius-card, 0.875rem);
+}
+
+.health-revision-modal__notice svg {
+  flex: 0 0 auto;
+  margin-top: 0.125rem;
+}
+
+.health-revision-modal__notice strong {
+  color: var(--hhp-teal-dark, #006b6c);
+  font-size: var(--hhp-font-label, 0.9375rem);
+  font-weight: var(--hhp-weight-semibold, 650);
+}
+
+.health-revision-modal__notice p {
+  margin: var(--hhp-space-1, 0.25rem) 0 0;
+  font-size: var(--hhp-font-small, 0.8125rem);
+  line-height: var(--hhp-line-body, 1.55);
+}
+
+.health-revision-modal__form {
+  display: grid;
+  gap: var(--hhp-space-4, 1rem);
+}
+
+.health-revision-modal__field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--hhp-space-4, 1rem);
+}
+
+.health-revision-modal__field-grid label {
+  display: grid;
+  align-content: start;
+  gap: var(--hhp-space-2, 0.5rem);
+  min-width: 0;
+}
+
+.health-revision-modal__field-grid label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.health-revision-modal__field-grid label > span {
+  color: var(--hhp-ink, #10202e);
+  font-size: var(--hhp-font-label, 0.9375rem);
+  font-weight: var(--hhp-weight-semibold, 650);
+  line-height: var(--hhp-line-compact, 1.3);
+}
+
+.health-revision-modal__field-grid input,
+.health-revision-modal__field-grid select,
+.health-revision-modal__field-grid textarea {
+  width: 100%;
+  min-height: var(--hhp-touch-target, 2.75rem);
+  padding: 0.6875rem 0.75rem;
+  color: var(--hhp-ink, #10202e);
+  font: inherit;
+  font-size: var(--hhp-font-body, 1rem);
+  line-height: var(--hhp-line-body, 1.55);
+  background: var(--hhp-surface-raised, #fff);
+  border: 1px solid var(--hhp-border-strong, #cbcfc9);
+  border-radius: var(--hhp-radius-control, 0.625rem);
+  outline: none;
+}
+
+.health-revision-modal__field-grid textarea {
+  resize: vertical;
+}
+
+.health-revision-modal__field-grid input:focus,
+.health-revision-modal__field-grid select:focus,
+.health-revision-modal__field-grid textarea:focus {
+  border-color: var(--hhp-teal, #078b89);
+  box-shadow: 0 0 0 3px rgb(7 139 137 / 14%);
+}
+
+.health-revision-modal__field-grid label > small {
+  color: var(--hhp-muted, #5d6b70);
+  font-size: var(--hhp-font-small, 0.8125rem);
+  line-height: var(--hhp-line-body, 1.55);
+}
+
+.health-revision-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--hhp-space-3, 0.75rem);
+}
+
+.health-revision-modal__actions button {
+  min-width: 7.5rem;
+  min-height: var(--hhp-touch-target, 2.75rem);
+  padding: 0.625rem 1rem;
+  font-size: var(--hhp-font-label, 0.9375rem);
+  font-weight: var(--hhp-weight-semibold, 650);
+  border-radius: var(--hhp-radius-control, 0.625rem);
+  cursor: pointer;
+}
+
+.health-revision-modal__actions button.is-secondary {
+  color: var(--hhp-ink, #10202e);
+  background: var(--hhp-surface-raised, #fff);
+  border: 1px solid var(--hhp-border-strong, #cbcfc9);
+}
+
+.health-revision-modal__actions button.is-primary {
+  color: #fff;
+  background: var(--hhp-teal-dark, #006b6c);
+  border: 1px solid var(--hhp-teal-dark, #006b6c);
+}
+
+.health-revision-modal__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.health-revision-modal__message,
+.health-revision-modal__state {
+  display: flex;
+  align-items: center;
+  gap: var(--hhp-space-2, 0.5rem);
+  min-height: var(--hhp-touch-target, 2.75rem);
+  padding: var(--hhp-space-3, 0.75rem);
+  font-size: var(--hhp-font-small, 0.8125rem);
+  line-height: var(--hhp-line-body, 1.55);
+  border-radius: var(--hhp-radius-control, 0.625rem);
+}
+
+.health-revision-modal__state {
+  justify-content: center;
+  min-height: 8rem;
+  color: var(--hhp-muted, #5d6b70);
+}
+
+.health-revision-modal__message.is-error,
+.health-revision-modal__state.is-error {
+  color: #8a342d;
+  background: #fff1ef;
+}
+
+.health-revision-modal__message.is-success {
+  color: #17634d;
+  background: #edf8f2;
+}
+
+.health-revision-modal__history {
+  overflow: hidden;
+  border: 1px solid var(--hhp-border, #e2dfd7);
+  border-radius: var(--hhp-radius-card, 0.875rem);
+}
+
+.health-revision-modal__history-toggle {
+  display: flex;
+  width: 100%;
+  min-height: var(--hhp-touch-target, 2.75rem);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--hhp-space-3, 0.75rem) var(--hhp-space-4, 1rem);
+  color: var(--hhp-ink, #10202e);
+  font-size: var(--hhp-font-label, 0.9375rem);
+  font-weight: var(--hhp-weight-semibold, 650);
+  background: var(--hhp-surface-soft, #f3f8f6);
+  border: 0;
+  cursor: pointer;
+}
+
+.health-revision-modal__history-toggle > span {
+  display: flex;
+  align-items: center;
+  gap: var(--hhp-space-2, 0.5rem);
+}
+
+.health-revision-modal__history-toggle > svg {
+  transition: transform 160ms ease;
+}
+
+.health-revision-modal__history-toggle > svg.is-expanded {
+  transform: rotate(180deg);
+}
+
+.health-revision-modal__history ol {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.health-revision-modal__history li {
+  display: grid;
+  gap: var(--hhp-space-1, 0.25rem);
+  padding: var(--hhp-space-4, 1rem);
+  border-top: 1px solid var(--hhp-border, #e2dfd7);
+}
+
+.health-revision-modal__history li > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--hhp-space-3, 0.75rem);
+}
+
+.health-revision-modal__history li strong {
+  display: flex;
+  align-items: center;
+  gap: var(--hhp-space-2, 0.5rem);
+  color: var(--hhp-ink, #10202e);
+  font-size: var(--hhp-font-label, 0.9375rem);
+}
+
+.health-revision-modal__history li em {
+  padding: 0.125rem 0.5rem;
+  color: var(--hhp-teal-dark, #006b6c);
+  font-size: var(--hhp-font-caption, 0.75rem);
+  font-style: normal;
+  background: var(--hhp-teal-soft, #dff0ed);
+  border-radius: 999px;
+}
+
+.health-revision-modal__history time,
+.health-revision-modal__history small {
+  color: var(--hhp-muted, #5d6b70);
+  font-size: var(--hhp-font-caption, 0.75rem);
+  line-height: var(--hhp-line-body, 1.55);
+}
+
+.health-revision-modal__history p {
+  margin: 0;
+  color: var(--hhp-ink, #10202e);
+  font-size: var(--hhp-font-body, 1rem);
+  font-weight: var(--hhp-weight-semibold, 650);
+  line-height: var(--hhp-line-body, 1.55);
+  overflow-wrap: anywhere;
+}
+
+.health-revision-modal__state .is-spinning {
+  animation: health-revision-spin 900ms linear infinite;
+}
+
+@keyframes health-revision-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (width <= 40rem) {
+  .health-revision-modal__header,
+  .health-revision-modal__body {
+    padding-right: var(--hhp-space-4, 1rem);
+    padding-left: var(--hhp-space-4, 1rem);
+  }
+
+  .health-revision-modal__summary,
+  .health-revision-modal__field-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .health-revision-modal__field-grid label.is-wide {
+    grid-column: auto;
+  }
+
+  .health-revision-modal__actions {
+    flex-direction: column-reverse;
+  }
+
+  .health-revision-modal__actions button {
+    width: 100%;
+  }
+
+  .health-revision-modal__history li > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--hhp-space-1, 0.25rem);
+  }
+}

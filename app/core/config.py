@@ -1,0 +1,425 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import hashlib
+import json
+import logging
+import os
+import secrets
+from pathlib import Path
+from urllib.parse import quote_plus
+
+from dotenv import load_dotenv
+
+from app.core.secrets import get_secret
+
+# Load environment variables from .env file
+# Use explicit path so this works regardless of working directory
+_env_path = Path(__file__).parents[2] / ".env"
+load_dotenv(dotenv_path=_env_path)
+
+
+def _get_windows_path_helper(path_type: str):
+    """
+    Lazy import helper to avoid circular dependencies.
+
+    Imports windows_config only when needed to get Windows-specific paths.
+    """
+    try:
+        from app.core.platform.windows_config import get_backups_path, get_logs_path, get_uploads_path, is_windows_exe
+
+        if not is_windows_exe():
+            return None
+
+        if path_type == "uploads":
+            return get_uploads_path()
+        if path_type == "logs":
+            return str(get_logs_path())
+        if path_type == "backups":
+            return get_backups_path()
+        return None
+    except ImportError:
+        # If windows_config can't be imported, fall back to default paths
+        return None
+
+
+# Database credentials (get_secret supports Docker _FILE pattern)
+_DB_USER_RAW = get_secret("DB_USER", "")
+_DB_PASS_RAW = get_secret("DB_PASSWORD", "")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "")
+
+# URL-encode credentials to handle special characters (@, :, /, #, etc.)
+# This prevents URL parsing issues when passwords contain these characters
+DB_USER = quote_plus(_DB_USER_RAW) if _DB_USER_RAW else ""
+DB_PASS = quote_plus(_DB_PASS_RAW) if _DB_PASS_RAW else ""
+
+
+_KNOWN_INSECURE_SECRETS = [
+    "your_default_secret_key",
+    "your-secret-key-here",
+    "change-me",
+    "secret",
+    "",
+]
+
+
+def _get_secret_key() -> str:
+    """Get SECRET_KEY, generating a random one if not configured.
+
+    Called once at module import time. If the configured key is missing,
+    empty, or matches a known insecure default, a random key is generated
+    for this process. JWT tokens and data/configs encrypted with keys
+    derived from SECRET_KEY will not survive restarts until a real,
+    stable SECRET_KEY is configured.
+    """
+    key = get_secret("SECRET_KEY", "")
+    if key in _KNOWN_INSECURE_SECRETS or len(key) < 32:
+        logger = logging.getLogger("app.core.config")
+        logger.warning(
+            "SECRET_KEY is not configured or uses an insecure default. "
+            "A random key has been generated for this process only. "
+            "Set a stable SECRET_KEY in your environment so JWT tokens "
+            "and encrypted data/configs remain valid across restarts."
+        )
+        return secrets.token_urlsafe(64)
+    return key
+
+
+_resolved_secret_key = _get_secret_key()
+
+
+def _derive_salt(purpose: str) -> str:
+    """Derive an integration salt from the secret key for a specific purpose.
+
+    Called at class definition time. Uses _resolved_secret_key to ensure
+    consistency with any ephemeral key that was generated.
+    """
+    env_name = f"{purpose.upper()}_SALT"
+    salt_from_env = get_secret(env_name, "")
+    known_default = f"{purpose}_integration_salt_v1"
+    if salt_from_env in (known_default, ""):
+        return hashlib.sha256(f"{_resolved_secret_key}:{purpose}".encode()).hexdigest()
+    return salt_from_env
+
+
+class Settings:  # App Info
+    APP_NAME: str = "HealthBox"
+    VERSION: str = "0.68.0"
+
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+
+    # Controls OpenAPI/Swagger docs visibility (decoupled from DEBUG)
+    ENABLE_API_DOCS: bool = os.getenv("ENABLE_API_DOCS", "False").lower() == "true"
+    # Database Configuration
+    DATABASE_URL: str = get_secret(
+        "DATABASE_URL",
+        (f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}" if all((DB_USER, DB_PASS, DB_NAME)) else ""),
+    )
+
+    # SSL Configuration
+    # Use standard paths - /app/certs/ for Docker containers, ./certs/ for local development
+    SSL_CERTFILE: str = os.getenv(
+        "SSL_CERTFILE",
+        ("/app/certs/localhost.crt" if os.path.exists("/app") else "./certs/localhost.crt"),
+    )
+    SSL_KEYFILE: str = os.getenv(
+        "SSL_KEYFILE",
+        ("/app/certs/localhost.key" if os.path.exists("/app") else "./certs/localhost.key"),
+    )
+    ENABLE_SSL: bool = os.getenv("ENABLE_SSL", "False").lower() == "true"
+
+    # Security Configuration
+    ALGORITHM: str = "HS256"
+    SECRET_KEY: str = _resolved_secret_key
+
+    # CORS Configuration
+    CORS_ALLOWED_ORIGINS: list = [
+        o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()
+    ]
+
+    # Token Settings
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))  # 8 hours
+
+    # HttpOnly Cookie Authentication (Option C)
+    AUTH_COOKIE_NAME: str = "medapp_session"
+    AUTH_COOKIE_HTTPONLY: bool = True
+    AUTH_COOKIE_SAMESITE: str = "lax"
+    AUTH_COOKIE_SECURE: bool = os.getenv("AUTH_COOKIE_SECURE", "False").lower() == "true"
+    AUTH_COOKIE_PATH: str = "/"
+    AUTH_COOKIE_DOMAIN: str | None = os.getenv("AUTH_COOKIE_DOMAIN", None) or None
+
+    # File Storage
+    # Use Windows AppData paths when running as EXE, otherwise use default paths
+    UPLOAD_DIR: Path = _get_windows_path_helper("uploads") or Path(os.getenv("UPLOAD_DIR", "./uploads"))
+    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", str(10 * 1024 * 1024)))  # 10MB
+
+    # Backup Configuration
+    # Note: Backups not supported in Windows EXE mode (SQLite-only, no PostgreSQL backups)
+    BACKUP_DIR: Path = _get_windows_path_helper("backups") or Path(os.getenv("BACKUP_DIR", "./backups"))
+    BACKUP_RETENTION_DAYS: int = int(os.getenv("BACKUP_RETENTION_DAYS", "7"))  # Keep it simple initially
+
+    # Enhanced Backup Retention Settings
+    BACKUP_MIN_COUNT: int = int(os.getenv("BACKUP_MIN_COUNT", "5"))  # Always keep at least 5 backups
+    BACKUP_MAX_COUNT: int = int(os.getenv("BACKUP_MAX_COUNT", "50"))  # Warning threshold for too many backups
+    # Optional second-copy target. A configured path is only a copy target; the
+    # application cannot prove that it resides on another physical device.
+    BACKUP_REPLICA_ENABLED: bool = os.getenv("BACKUP_REPLICA_ENABLED", "False").lower() == "true"
+    _backup_replica_dir = os.getenv("BACKUP_REPLICA_DIR", "").strip()
+    BACKUP_REPLICA_DIR: Path | None = Path(_backup_replica_dir) if _backup_replica_dir else None
+    BACKUP_REPLICA_LABEL: str = (
+        os.getenv("BACKUP_REPLICA_LABEL", "configured-copy-target").strip() or "configured-copy-target"
+    )[:100]
+
+    # Trash directory settings
+    _windows_uploads = _get_windows_path_helper("uploads")
+    TRASH_DIR: Path = (
+        (_windows_uploads / "trash") if _windows_uploads else Path(os.getenv("TRASH_DIR", "./uploads/trash"))
+    )
+    TRASH_RETENTION_DAYS: int = int(os.getenv("TRASH_RETENTION_DAYS", "30"))  # Keep deleted files for 30 days
+
+    # User Registration Control
+    ALLOW_USER_REGISTRATION: bool = (
+        os.getenv("ALLOW_USER_REGISTRATION", "False").lower() == "true"
+    )  # Household accounts are provisioned by the administrator.
+    HOUSEHOLD_ADMIN_PROVISIONING_ONLY: bool = os.getenv("HOUSEHOLD_ADMIN_PROVISIONING_ONLY", "True").lower() == "true"
+
+    # Legacy one-way patient/family-history sharing is not part of the
+    # household product. Keep the compatibility surface explicitly opt-in so
+    # old rows and invitation endpoints cannot silently grant broad access.
+    LEGACY_DIRECTIONAL_SHARING_ENABLED: bool = (
+        os.getenv("LEGACY_DIRECTIONAL_SHARING_ENABLED", "False").lower() == "true"
+    )
+
+    # Local-only households and offline acceptance environments may opt out of
+    # the GitHub release feed without disabling the rest of the application.
+    REMOTE_RELEASE_NOTES_ENABLED: bool = os.getenv("REMOTE_RELEASE_NOTES_ENABLED", "False").lower() == "true"
+
+    # Fresh-install bootstrap account configuration
+    ADMIN_DEFAULT_USERNAME: str = os.getenv("ADMIN_DEFAULT_USERNAME", "admin")
+    # Required only when bootstrapping an empty instance; never ship a shared password.
+    ADMIN_DEFAULT_PASSWORD: str = get_secret("ADMIN_DEFAULT_PASSWORD", "")
+
+    # SSO Configuration (Simple and Right-Sized)
+    SSO_ENABLED: bool = os.getenv("SSO_ENABLED", "False").lower() == "true"
+    SSO_PROVIDER_TYPE: str = os.getenv("SSO_PROVIDER_TYPE", "oidc")
+    SSO_CLIENT_ID: str = get_secret("SSO_CLIENT_ID", "")
+    SSO_CLIENT_SECRET: str = get_secret("SSO_CLIENT_SECRET", "")
+    SSO_ISSUER_URL: str = os.getenv("SSO_ISSUER_URL", "")
+    SSO_REDIRECT_URI: str = os.getenv("SSO_REDIRECT_URI", "")
+    SSO_ALLOWED_DOMAINS: list = json.loads(os.getenv("SSO_ALLOWED_DOMAINS", "[]"))
+
+    # Basic rate limiting (simple approach)
+    SSO_RATE_LIMIT_ATTEMPTS: int = int(os.getenv("SSO_RATE_LIMIT_ATTEMPTS", "10"))
+    SSO_RATE_LIMIT_WINDOW_MINUTES: int = int(os.getenv("SSO_RATE_LIMIT_WINDOW_MINUTES", "10"))
+
+    # Paperless-ngx Integration Configuration
+    PAPERLESS_REQUEST_TIMEOUT: int = int(os.getenv("PAPERLESS_REQUEST_TIMEOUT", "30"))  # seconds
+    PAPERLESS_CONNECT_TIMEOUT: int = int(os.getenv("PAPERLESS_CONNECT_TIMEOUT", "10"))  # seconds
+    # Extended timeout for upload operations specifically to handle large files
+    PAPERLESS_UPLOAD_TIMEOUT: int = int(os.getenv("PAPERLESS_UPLOAD_TIMEOUT", "300"))  # 5 minutes for uploads
+    # Timeout for monitoring processing status - how long to wait without status updates
+    PAPERLESS_PROCESSING_TIMEOUT: int = int(
+        os.getenv("PAPERLESS_PROCESSING_TIMEOUT", "1800")
+    )  # 30 minutes max processing time
+    # How often to check processing status
+    PAPERLESS_STATUS_CHECK_INTERVAL: int = int(
+        os.getenv("PAPERLESS_STATUS_CHECK_INTERVAL", "10")
+    )  # Check every 10 seconds
+    PAPERLESS_MAX_UPLOAD_SIZE: int = int(os.getenv("PAPERLESS_MAX_UPLOAD_SIZE", str(50 * 1024 * 1024)))  # 50MB
+    PAPERLESS_RETRY_ATTEMPTS: int = int(os.getenv("PAPERLESS_RETRY_ATTEMPTS", "3"))
+    PAPERLESS_SALT: str = _derive_salt("paperless")
+
+    # Papra Integration Configuration
+    PAPRA_REQUEST_TIMEOUT: int = int(os.getenv("PAPRA_REQUEST_TIMEOUT", "30"))  # seconds
+    PAPRA_CONNECT_TIMEOUT: int = int(os.getenv("PAPRA_CONNECT_TIMEOUT", "10"))  # seconds
+    PAPRA_UPLOAD_TIMEOUT: int = int(os.getenv("PAPRA_UPLOAD_TIMEOUT", "300"))  # 5 minutes for uploads
+    PAPRA_MAX_UPLOAD_SIZE: int = int(os.getenv("PAPRA_MAX_UPLOAD_SIZE", str(100 * 1024 * 1024)))  # 100MB
+    PAPRA_SALT: str = _derive_salt("papra")
+
+    # Logging Configuration
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_DIR: str = _get_windows_path_helper("logs") or os.getenv("LOG_DIR", "./logs")
+    LOG_RETENTION_DAYS: int = int(os.getenv("LOG_RETENTION_DAYS", "180"))
+    ENABLE_DEBUG_LOGS: bool = os.getenv("DEBUG", "False").lower() == "true"
+
+    # Log Rotation Configuration
+    LOG_ROTATION_METHOD: str = os.getenv("LOG_ROTATION_METHOD", "auto")  # auto|python|logrotate
+    LOG_ROTATION_SIZE: str = os.getenv("LOG_ROTATION_SIZE", "5M")  # Used by both methods
+    LOG_ROTATION_TIME: str = os.getenv(
+        "LOG_ROTATION_TIME", "daily"
+    )  # daily|weekly|monthly (logrotate only - Python uses size-based rotation only)
+    LOG_ROTATION_BACKUP_COUNT: int = int(os.getenv("LOG_ROTATION_BACKUP_COUNT", "30"))  # Used by both methods
+    LOG_COMPRESSION: bool = os.getenv("LOG_COMPRESSION", "True").lower() == "true"  # logrotate only
+
+    # Database Sequence Monitoring (configurable for different environments)
+    ENABLE_SEQUENCE_MONITORING: bool = os.getenv("ENABLE_SEQUENCE_MONITORING", "True").lower() == "true"
+    SEQUENCE_CHECK_ON_STARTUP: bool = os.getenv("SEQUENCE_CHECK_ON_STARTUP", "True").lower() == "true"
+    SEQUENCE_AUTO_FIX: bool = os.getenv("SEQUENCE_AUTO_FIX", "True").lower() == "true"
+    SEQUENCE_MONITOR_INTERVAL_HOURS: int = int(os.getenv("SEQUENCE_MONITOR_INTERVAL_HOURS", "24"))
+
+    # OCR Fallback Configuration
+    # Automatic quality-based OCR fallback for lab result PDFs
+    OCR_FALLBACK_ENABLED: bool = (
+        os.getenv("OCR_FALLBACK_ENABLED", "true").lower() == "true"
+    )  # Enable automatic OCR retry when parsing yields poor results
+    OCR_FALLBACK_MIN_TESTS: int = int(
+        os.getenv("OCR_FALLBACK_MIN_TESTS", "5")
+    )  # Minimum tests extracted to consider parsing successful
+    OCR_FALLBACK_MAX_RETRIES: int = 1  # Prevent infinite loops (fixed at 1)
+
+    # Household health AI question adapter. This first implementation is
+    # deliberately limited to a local OpenAI-compatible endpoint. External
+    # processors require a separate consent/configuration contract and remain
+    # disabled.
+    HEALTH_AI_ENABLED: bool = os.getenv("HEALTH_AI_ENABLED", "False").lower() == "true"
+    HEALTH_AI_PROVIDER: str = os.getenv("HEALTH_AI_PROVIDER", "local_openai_compatible").strip()
+    HEALTH_AI_BASE_URL: str = os.getenv("HEALTH_AI_BASE_URL", "").strip()
+    HEALTH_AI_MODEL: str = os.getenv("HEALTH_AI_MODEL", "").strip()
+    HEALTH_AI_API_KEY: str = get_secret("HEALTH_AI_API_KEY", "")
+    HEALTH_AI_TIMEOUT_SECONDS: float = float(os.getenv("HEALTH_AI_TIMEOUT_SECONDS", "45"))
+    HEALTH_AI_MAX_OUTPUT_TOKENS: int = int(os.getenv("HEALTH_AI_MAX_OUTPUT_TOKENS", "800"))
+    HEALTH_AI_MAX_INPUT_CHARS: int = int(os.getenv("HEALTH_AI_MAX_INPUT_CHARS", "24000"))
+    HEALTH_AI_MAX_RESPONSE_BYTES: int = int(os.getenv("HEALTH_AI_MAX_RESPONSE_BYTES", "256000"))
+    HEALTH_AI_TEST_PROVIDER_ALLOWED: bool = os.getenv("HEALTH_AI_TEST_PROVIDER_ALLOWED", "False").lower() == "true"
+    HEALTH_AI_RATE_LIMIT_REQUESTS: int = int(
+        os.getenv("HEALTH_AI_RATE_LIMIT_REQUESTS", "6")
+    )
+    HEALTH_AI_RATE_LIMIT_WINDOW_SECONDS: int = int(
+        os.getenv("HEALTH_AI_RATE_LIMIT_WINDOW_SECONDS", "600")
+    )
+    HEALTH_AI_LEASE_GRACE_SECONDS: int = int(
+        os.getenv("HEALTH_AI_LEASE_GRACE_SECONDS", "30")
+    )
+    HEALTH_AI_MAX_LEASE_SECONDS: int = int(
+        os.getenv("HEALTH_AI_MAX_LEASE_SECONDS", "150")
+    )
+    INSTANCE_DATA_CLASS: str = os.getenv("INSTANCE_DATA_CLASS", "private").strip().lower()
+
+    # Household activation/privacy notice. The household product defaults to
+    # enforcement; upstream/non-household test deployments can explicitly
+    # disable it without changing the notice contract.
+    HOUSEHOLD_PRIVACY_CONSENT_REQUIRED: bool = os.getenv("HOUSEHOLD_PRIVACY_CONSENT_REQUIRED", "True").lower() == "true"
+
+    # Notification Framework Configuration
+    NOTIFICATIONS_ENABLED: bool = (
+        os.getenv("NOTIFICATIONS_ENABLED", "True").lower() == "true"
+    )  # Enable/disable notification system
+    NOTIFICATION_RATE_LIMIT_PER_HOUR: int = int(
+        os.getenv("NOTIFICATION_RATE_LIMIT_PER_HOUR", "100")
+    )  # Max notifications per user per hour (TODO: enforce in send_notification)
+    NOTIFICATION_HISTORY_RETENTION_DAYS: int = int(
+        os.getenv("NOTIFICATION_HISTORY_RETENTION_DAYS", "90")
+    )  # How long to keep notification history (TODO: implement cleanup job)
+    # NOTIFICATION_ENCRYPTION_SALT: Derived from SECRET_KEY by default, or set explicitly via env var.
+    # Note: Rotating SECRET_KEY will invalidate existing channel configs (see property docstring).
+
+    def __init__(self):
+        # Ensure upload directory exists with proper error handling
+        self._ensure_directory_exists(self.UPLOAD_DIR, "upload")
+
+        # Ensure backup directory exists with proper error handling
+        self._ensure_directory_exists(self.BACKUP_DIR, "backup")
+
+    @property
+    def NOTIFICATION_ENCRYPTION_SALT(self) -> str:
+        """
+        Get notification encryption salt.
+
+        If NOTIFICATION_ENCRYPTION_SALT env var is set, use that value.
+        Otherwise, derive from SECRET_KEY using SHA-256.
+
+        Note: The encryption key is derived from BOTH SECRET_KEY and this salt
+        via PBKDF2. Changing SECRET_KEY will invalidate existing encrypted
+        channel configs regardless of this salt value. Setting an explicit salt
+        only prevents additional breakage if the default derivation changes.
+        """
+        explicit_salt = get_secret("NOTIFICATION_ENCRYPTION_SALT")
+        if explicit_salt:
+            return explicit_salt
+
+        # Derive from SECRET_KEY with a fixed context
+        derived = hashlib.sha256(f"{self.SECRET_KEY}:notification_channel_config".encode()).hexdigest()
+        return derived
+
+    @property
+    def public_registration_enabled(self) -> bool:
+        """Return the effective public-registration state for this deployment."""
+        return bool(self.ALLOW_USER_REGISTRATION and not self.HOUSEHOLD_ADMIN_PROVISIONING_ONLY)
+
+    @property
+    def sso_configured(self) -> bool:
+        """Check if SSO is properly configured"""
+        if not self.SSO_ENABLED:
+            return False
+
+        basic_config = bool(self.SSO_CLIENT_ID and self.SSO_CLIENT_SECRET and self.SSO_REDIRECT_URI)
+
+        # OIDC providers need issuer URL
+        if self.SSO_PROVIDER_TYPE in ["oidc", "authentik", "authelia", "keycloak"]:
+            return basic_config and bool(self.SSO_ISSUER_URL)
+
+        return basic_config
+
+    def validate_sso_config(self):
+        """Simple validation with clear error messages"""
+        if not self.SSO_ENABLED:
+            return
+
+        if self.SSO_PROVIDER_TYPE not in [
+            "google",
+            "github",
+            "oidc",
+            "authentik",
+            "authelia",
+            "keycloak",
+        ]:
+            raise ValueError(f"Unsupported SSO provider: {self.SSO_PROVIDER_TYPE}")
+
+        if not self.SSO_CLIENT_ID:
+            raise ValueError("SSO_CLIENT_ID is required when SSO is enabled")
+
+        if not self.SSO_CLIENT_SECRET:
+            raise ValueError("SSO_CLIENT_SECRET is required when SSO is enabled")
+
+        if not self.SSO_REDIRECT_URI:
+            raise ValueError("SSO_REDIRECT_URI is required when SSO is enabled")
+
+        if self.SSO_PROVIDER_TYPE in ["oidc", "authentik", "authelia", "keycloak"] and not self.SSO_ISSUER_URL:
+            raise ValueError("SSO_ISSUER_URL is required for OIDC providers")
+
+    def _ensure_directory_exists(self, directory: Path, directory_type: str) -> None:
+        """Ensure directory exists with proper permission error handling for Docker bind mounts."""
+        if not directory.exists():
+            try:
+                directory.mkdir(parents=True, exist_ok=True)
+                logging.info("Created %s directory: %s", directory_type, directory)
+            except PermissionError as e:
+                logging.error(
+                    "Permission denied creating %s directory: %s. "
+                    "This is likely a Docker bind mount permission issue. "
+                    "Please ensure the container has write permissions to the host directory. "
+                    "For bind mounts, you may need to: "
+                    "1. Set proper ownership: 'sudo chown -R 1000:1000 /host/path' "
+                    "2. Or use Docker volumes instead of bind mounts. "
+                    "Error: %s",
+                    directory_type,
+                    directory,
+                    e,
+                )
+                # Don't raise - allow the app to start; endpoints will handle errors at use time
+            except OSError as e:
+                logging.error(
+                    "Failed to create %s directory %s: %s",
+                    directory_type,
+                    directory,
+                    e,
+                )
+                # Don't raise - allow the app to start
+
+
+# Create global settings instance
+try:
+    settings = Settings()
+except Exception as e:
+    logging.error("Failed to initialize settings: %s", e)
+    raise

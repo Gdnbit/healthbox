@@ -1,0 +1,73 @@
+{
+  "contract_id": "household-privacy-access@1.0.0",
+  "endpoint": {
+    "method": "GET",
+    "path": "/api/v1/privacy-access/me",
+    "authenticated": true,
+    "subject_scope": "exactly_one_owned_subject",
+    "cross_subject_parameter": false,
+    "read_only": true
+  },
+  "current_visibility": {
+    "sole_administrator_global_read_disclosed": true,
+    "reciprocal_viewers_derived_from_current_structured_dashboard_access": true,
+    "internal_circle_names_and_identifiers_hidden": true,
+    "not_shared_by_default": [
+      "source_originals",
+      "report_narrative",
+      "edit_permission",
+      "export_permission",
+      "ai_permission"
+    ]
+  },
+  "history": {
+    "source": "activity_logs",
+    "ordered_newest_first": true,
+    "pagination": {
+      "offset": true,
+      "limit_max": 100
+    },
+    "visible_actions": [
+      "viewed",
+      "created",
+      "updated",
+      "deleted",
+      "uploaded",
+      "downloaded",
+      "exported",
+      "cancelled"
+    ],
+    "legacy_completeness_notice_required": true,
+    "application_delete_endpoint": false
+  },
+  "actor_labels": {
+    "self": "我",
+    "administrator": "系统管理员",
+    "member": "current_owned_subject_display_name",
+    "system": "系统",
+    "deleted_or_unresolved_member": "已停用账号"
+  },
+  "response_forbidden_fields": [
+    "health_values",
+    "report_text",
+    "source_file_content",
+    "activity_description",
+    "raw_activity_metadata",
+    "user_id",
+    "patient_id",
+    "entity_id",
+    "username",
+    "email",
+    "ip_address",
+    "user_agent",
+    "circle_id",
+    "membership_id"
+  ],
+  "ui": {
+    "route": "/privacy-access",
+    "entry": "我的/关系与隐私",
+    "language": "zh-CN",
+    "mobile_width_baseline_px": 390,
+    "plain_language_event_sentence": true
+  }
+}

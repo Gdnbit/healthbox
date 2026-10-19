@@ -1,0 +1,42 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+name: HealthBox Container Validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - name: Validate standalone Compose configuration
+        run: |
+          export DB_PASSWORD="$(openssl rand -hex 32)"
+          export SECRET_KEY="$(openssl rand -hex 32)"
+          export ADMIN_DEFAULT_PASSWORD="$(openssl rand -hex 32)"
+          docker compose -f compose.healthbox.yml config --quiet
+      - name: Build locally without publishing
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
+          DOCKER_BUILD_SUMMARY: 'false'
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: healthbox:ci
+          provenance: false
+      - name: Fresh PostgreSQL migration, startup and HTTP checks
+        run: bash scripts/healthbox-ci-docker-smoke.sh healthbox:ci

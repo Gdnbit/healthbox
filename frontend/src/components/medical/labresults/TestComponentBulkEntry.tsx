@@ -1,0 +1,1728 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+/**
+ * TestComponentBulkEntry component for bulk entry of lab test components
+ * Allows users to copy/paste lab results and parse them automatically
+ */
+
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import {
+  Card,
+  Stack,
+  Group,
+  Text,
+  Button,
+  Textarea,
+  Alert,
+  Table,
+  Badge,
+  ActionIcon,
+  ScrollArea,
+  Center,
+  Box,
+  Select,
+  NumberInput,
+  TextInput,
+  Switch,
+  Tabs,
+  Progress,
+} from '@mantine/core';
+import { DateInput } from '../../adapters/DateInput';
+import { Dropzone } from '@mantine/dropzone';
+import { useDebouncedValue } from '@mantine/hooks';
+import {
+  IconUpload,
+  IconTrash,
+  IconCheck,
+  IconX,
+  IconAlertCircle,
+  IconFileText,
+  IconTable,
+  IconWand,
+  IconCopy,
+  IconSettings,
+  IconLoader,
+} from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
+import { useTranslation } from 'react-i18next';
+import FormLoadingOverlay from '../../shared/FormLoadingOverlay';
+import {
+  LabTestComponentCreate,
+  LabTestComponent,
+  QualitativeValue,
+  labTestComponentApi,
+} from '../../../services/api/labTestComponentApi';
+import { apiService } from '../../../services/api';
+import { searchTests } from '../../../constants/testLibrary';
+import {
+  ComponentCategory,
+  ComponentStatus,
+  getQualitativeDisplayName,
+  getQualitativeColor,
+} from '../../../constants/labCategories';
+import logger from '../../../services/logger';
+import { MAX_REF_RANGE_TEXT_LENGTH } from '../../../utils/labTestComponentUtils';
+import { useDateFormat } from '../../../hooks/useDateFormat';
+
+/**
+ * Validates and normalizes a date value from DateInput.
+ * Returns a valid Date object or null if the value is invalid/missing.
+ * Handles edge cases where Mantine's DateInput may pass non-Date values.
+ */
+function getValidatedDate(value: Date | null | unknown): Date | null {
+  if (!value) return null;
+
+  const date =
+    value instanceof Date ? value : new Date(value as string | number);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Regex patterns for parsing various lab result formats.
+ *
+ * Supported formats:
+ * - FULL_PATTERN: "Test Name: Value Unit (Range)" or "Test Name: Value Unit (Ref: Range)"
+ * - TABULAR_PATTERN: "Test    Value    Unit    Range    Status" (tab or space-separated)
+ * - SIMPLE_PATTERN: "Test Value Unit"
+ * - CSV_PATTERN: "Test,Value,Unit,Range,Status"
+ *
+ * Examples:
+ * - "WBC: 7.5 x10E3/uL (Ref: 4.0-11.0)" → FULL_PATTERN
+ * - "Glucose    125    mg/dL    70-100    Normal" → TABULAR_PATTERN
+ * - "Hemoglobin 14.5 g/dL" → SIMPLE_PATTERN
+ * - "BUN,18,mg/dL,7-20,Normal" → CSV_PATTERN
+ */
+
+// Common unit pattern handles: standard units (mg/dL, g/dL, %), ratios (x10E3/uL), and special characters (μ)
+const UNIT_PATTERN = String.raw`[a-zA-Z0-9/%μ]+(?:/[a-zA-Z0-9]+)?|x10E\d+/[a-zA-Z]+`;
+
+// Pattern components for better readability
+const TEST_NAME = String.raw`(.+?)`;
+const NUMERIC_VALUE = String.raw`([0-9.,]+)`;
+const ONE_OR_MORE_SPACES = String.raw`\s+`;
+const ZERO_OR_MORE_SPACES = String.raw`\s*`;
+const RANGE_SEPARATOR = String.raw`[-–]`;
+const COMPARISON_OP = String.raw`[<>≤≥]`;
+const STATUS_VALUES = String.raw`(normal|high|low|critical|abnormal|borderline)?`;
+
+export const REGEX_PATTERNS = {
+  // Pattern 1: "Test Name: 123.4 mg/dL (Normal range: 70-100)" or "Test Name: 123.4 mg/dL (70-100)"
+  FULL_PATTERN: new RegExp(
+    String.raw`^${TEST_NAME}:${ZERO_OR_MORE_SPACES}${NUMERIC_VALUE}${ZERO_OR_MORE_SPACES}(${UNIT_PATTERN})?${ZERO_OR_MORE_SPACES}` +
+      String.raw`(?:\((?:.*?range.*?:${ZERO_OR_MORE_SPACES})?${NUMERIC_VALUE}${ZERO_OR_MORE_SPACES}${RANGE_SEPARATOR}${ZERO_OR_MORE_SPACES}${NUMERIC_VALUE}.*?\)|` +
+      String.raw`\((?:.*?range.*?:${ZERO_OR_MORE_SPACES})?(${COMPARISON_OP}${ZERO_OR_MORE_SPACES}[0-9.,]+)\)|` +
+      String.raw`\(Not\s+Estab\.?\)|` +
+      String.raw`(\([^)]*\)))?`,
+    'i'
+  ),
+
+  // Pattern 2: "Glucose    123.4    mg/dL    70-100    Normal"
+  TABULAR_PATTERN: new RegExp(
+    String.raw`^${TEST_NAME}${ONE_OR_MORE_SPACES}${NUMERIC_VALUE}${ONE_OR_MORE_SPACES}(${UNIT_PATTERN})${ONE_OR_MORE_SPACES}` +
+      String.raw`(?:${NUMERIC_VALUE}${ZERO_OR_MORE_SPACES}${RANGE_SEPARATOR}${ZERO_OR_MORE_SPACES}${NUMERIC_VALUE}|(${COMPARISON_OP}${ZERO_OR_MORE_SPACES}[0-9.,]+))${ZERO_OR_MORE_SPACES}` +
+      STATUS_VALUES,
+    'i'
+  ),
+
+  // Pattern 3: "Test Name  Value  Unit"
+  SIMPLE_PATTERN: new RegExp(
+    String.raw`^${TEST_NAME}${ONE_OR_MORE_SPACES}${NUMERIC_VALUE}${ONE_OR_MORE_SPACES}(${UNIT_PATTERN})`,
+    'i'
+  ),
+
+  // Pattern 4: CSV-like "Test,Value,Unit,Range,Status"
+  CSV_PATTERN: new RegExp(
+    String.raw`^${TEST_NAME}[,\t]+${NUMERIC_VALUE}[,\t]+(${UNIT_PATTERN})` +
+      String.raw`(?:[,\t]+${NUMERIC_VALUE}${ZERO_OR_MORE_SPACES}${RANGE_SEPARATOR}${ZERO_OR_MORE_SPACES}${NUMERIC_VALUE}` +
+      String.raw`|[,\t]+(${COMPARISON_OP}${ZERO_OR_MORE_SPACES}[0-9.,]+)` +
+      String.raw`|[,\t]+([^,\t]*?))?` +
+      String.raw`(?:[,\t]+${STATUS_VALUES})?$`,
+    'i'
+  ),
+};
+
+// Pattern for qualitative results: "Test Name: Positive", "HIV 1/2: Negative", "ANA: Detected"
+export const QUALITATIVE_PATTERN =
+  /^(.+?)[:]\s*(positive|negative|detected|undetected|reactive|non-reactive|not detected)\s*$/i;
+
+/** Normalize qualitative value strings to standard values. */
+function normalizeQualitativeValue(raw: string): string {
+  const lower = raw.toLowerCase().trim();
+  switch (lower) {
+    case 'reactive':
+      return 'positive';
+    case 'non-reactive':
+    case 'nonreactive':
+      return 'negative';
+    case 'not detected':
+      return 'undetected';
+    default:
+      return lower;
+  }
+}
+
+interface ParsedTestComponent {
+  test_name: string;
+  abbreviation?: string;
+  canonical_test_name?: string; // Standardized name for trending
+  value: number | null;
+  unit: string;
+  ref_range_min?: number | null;
+  ref_range_max?: number | null;
+  ref_range_text?: string;
+  status?: string;
+  category?: string;
+  loinc_code?: string;
+  result_type?: 'quantitative' | 'qualitative' | 'textual';
+  qualitative_value?: string;
+  textual_value?: string;
+  original_line: string;
+  confidence: number; // 0-1 score for parsing confidence
+  issues: string[];
+}
+
+interface TestComponentBulkEntryProps {
+  labResultId: number;
+  onComponentsAdded?: (_components: LabTestComponent[]) => void;
+  onComponentsParsed?: (_componentCount: number) => void; // Callback when components are parsed but not yet added
+  onLabResultUpdated?: () => void; // Callback to refresh lab result after updating completed_date
+  onError?: (_error: Error) => void;
+  disabled?: boolean;
+}
+
+// Memoized row component with local state to prevent parent re-renders on every keystroke
+const TableRow = React.memo<{
+  index: number;
+  component: ParsedTestComponent;
+  onEdit: (
+    _index: number,
+    _field: keyof ParsedTestComponent,
+    _value: any
+  ) => void;
+  onRemove: (_index: number) => void;
+  getConfidenceColor: (_confidence: number) => string;
+}>(({ index, component, onEdit, onRemove, getConfidenceColor }) => {
+  const { t } = useTranslation(['labresults', 'medical', 'common', 'shared']);
+
+  // Local state for inputs to avoid triggering parent re-renders on every keystroke
+  const [localTestName, setLocalTestName] = React.useState(component.test_name);
+  const [localUnit, setLocalUnit] = React.useState(component.unit);
+  const [localRefRangeText, setLocalRefRangeText] = React.useState(
+    component.ref_range_text || ''
+  );
+
+  // Update local state when component changes from parent
+  React.useEffect(() => {
+    setLocalTestName(component.test_name);
+  }, [component.test_name]);
+
+  React.useEffect(() => {
+    setLocalUnit(component.unit);
+  }, [component.unit]);
+
+  React.useEffect(() => {
+    setLocalRefRangeText(component.ref_range_text || '');
+  }, [component.ref_range_text]);
+
+  // Commit handlers - only update parent state on blur
+  const handleTestNameChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setLocalTestName(e.target.value);
+    },
+    []
+  );
+
+  const handleTestNameBlur = React.useCallback(() => {
+    if (localTestName !== component.test_name) {
+      onEdit(index, 'test_name', localTestName);
+    }
+  }, [localTestName, component.test_name, index, onEdit]);
+
+  const handleUnitChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setLocalUnit(e.target.value);
+    },
+    []
+  );
+
+  const handleUnitBlur = React.useCallback(() => {
+    if (localUnit !== component.unit) {
+      onEdit(index, 'unit', localUnit);
+    }
+  }, [localUnit, component.unit, index, onEdit]);
+
+  const handleRefRangeTextChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setLocalRefRangeText(e.target.value);
+    },
+    []
+  );
+
+  const handleRefRangeTextBlur = React.useCallback(() => {
+    const newValue = localRefRangeText || null;
+    if (newValue !== component.ref_range_text) {
+      onEdit(index, 'ref_range_text', newValue);
+    }
+  }, [localRefRangeText, component.ref_range_text, index, onEdit]);
+
+  return (
+    <Table.Tr>
+      <Table.Td style={{ width: '180px' }}>
+        <Stack gap={2}>
+          <TextInput
+            value={localTestName}
+            onChange={handleTestNameChange}
+            onBlur={handleTestNameBlur}
+            size="xs"
+          />
+          {component.abbreviation && (
+            <Badge size="xs" variant="outline">
+              {component.abbreviation}
+            </Badge>
+          )}
+          {component.canonical_test_name ? (
+            <Badge size="xs" variant="light" color="green">
+              {t('labresults:bulkEntry.linked', {
+                name: component.canonical_test_name,
+              })}
+            </Badge>
+          ) : (
+            <Text size="xs" c="dimmed">
+              {t('labresults:bulkEntry.noMatch')}
+            </Text>
+          )}
+        </Stack>
+      </Table.Td>
+      <Table.Td style={{ width: '100px' }}>
+        {component.result_type === 'qualitative' ? (
+          <Badge
+            size="sm"
+            variant="filled"
+            color={getQualitativeColor(component.qualitative_value || '')}
+          >
+            {getQualitativeDisplayName(component.qualitative_value || '')}
+          </Badge>
+        ) : (
+          <NumberInput
+            value={component.value || ''}
+            onChange={value => onEdit(index, 'value', value)}
+            size="xs"
+            styles={{ input: { width: 80 } }}
+          />
+        )}
+      </Table.Td>
+      <Table.Td style={{ width: '80px' }}>
+        {component.result_type === 'qualitative' ? (
+          <Text size="xs" c="dimmed">
+            -
+          </Text>
+        ) : (
+          <TextInput
+            value={localUnit}
+            onChange={handleUnitChange}
+            onBlur={handleUnitBlur}
+            size="xs"
+            styles={{ input: { width: 60 } }}
+          />
+        )}
+      </Table.Td>
+      <Table.Td style={{ width: '140px' }}>
+        <Stack gap={2}>
+          {component.ref_range_min !== null &&
+          component.ref_range_max !== null ? (
+            <Group gap={2}>
+              <NumberInput
+                value={component.ref_range_min}
+                onChange={value => onEdit(index, 'ref_range_min', value)}
+                size="xs"
+                styles={{ input: { width: 50 } }}
+                hideControls
+              />
+              <Text size="xs">-</Text>
+              <NumberInput
+                value={component.ref_range_max}
+                onChange={value => onEdit(index, 'ref_range_max', value)}
+                size="xs"
+                styles={{ input: { width: 50 } }}
+                hideControls
+              />
+            </Group>
+          ) : component.ref_range_text ? (
+            <TextInput
+              value={localRefRangeText}
+              onChange={handleRefRangeTextChange}
+              onBlur={handleRefRangeTextBlur}
+              maxLength={MAX_REF_RANGE_TEXT_LENGTH}
+              size="xs"
+              styles={{ input: { width: 100 } }}
+            />
+          ) : (
+            <TextInput
+              placeholder="Not detected"
+              value={localRefRangeText}
+              onChange={handleRefRangeTextChange}
+              onBlur={handleRefRangeTextBlur}
+              maxLength={MAX_REF_RANGE_TEXT_LENGTH}
+              size="xs"
+              styles={{ input: { width: 100 } }}
+            />
+          )}
+        </Stack>
+      </Table.Td>
+      <Table.Td style={{ width: '120px' }}>
+        <Select
+          value={component.status || ''}
+          onChange={value => onEdit(index, 'status', value)}
+          data={[
+            { value: '', label: 'None' },
+            { value: 'normal', label: 'Normal' },
+            { value: 'high', label: 'High' },
+            { value: 'low', label: 'Low' },
+            { value: 'critical', label: 'Critical' },
+            { value: 'abnormal', label: 'Abnormal' },
+            { value: 'borderline', label: 'Borderline' },
+          ]}
+          size="xs"
+          styles={{ input: { width: 100 } }}
+        />
+      </Table.Td>
+      <Table.Td style={{ width: '100px' }}>
+        <Badge
+          size="xs"
+          variant="light"
+          color={component.category === 'other' ? 'gray' : 'blue'}
+        >
+          {component.category || 'other'}
+        </Badge>
+      </Table.Td>
+      <Table.Td style={{ width: '90px' }}>
+        <Badge size="xs" color={getConfidenceColor(component.confidence)}>
+          {Math.round(component.confidence * 100)}%
+        </Badge>
+      </Table.Td>
+      <Table.Td style={{ width: '150px' }}>
+        {component.issues.length > 0 ? (
+          <Text size="xs" c="dimmed">
+            {component.issues.join(', ')}
+          </Text>
+        ) : (
+          // eslint-disable-next-line i18next/no-literal-string -- unicode symbol
+          <Text size="xs" c="green">
+            {'\u2713'}
+          </Text>
+        )}
+      </Table.Td>
+      <Table.Td style={{ width: '60px' }}>
+        <ActionIcon
+          size="xs"
+          color="red"
+          variant="subtle"
+          onClick={() => onRemove(index)}
+        >
+          <IconTrash size={12} />
+        </ActionIcon>
+      </Table.Td>
+    </Table.Tr>
+  );
+});
+
+TableRow.displayName = 'TableRow';
+
+const TestComponentBulkEntry: React.FC<TestComponentBulkEntryProps> = ({
+  labResultId,
+  onComponentsAdded,
+  onComponentsParsed,
+  onLabResultUpdated,
+  onError,
+}) => {
+  const { t } = useTranslation(['labresults', 'medical', 'common', 'shared']);
+  const { dateInputFormat, dateParser } = useDateFormat();
+
+  const [rawText, setRawText] = useState('');
+  const [debouncedText] = useDebouncedValue(rawText, 300);
+  const [parsedComponents, setParsedComponents] = useState<
+    ParsedTestComponent[]
+  >([]);
+  const [failedLineCount, setFailedLineCount] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [parseMode, setParseMode] = useState<'auto' | 'manual'>('auto');
+  const [parseSettings, setParseSettings] = useState({
+    detectHeaders: true,
+    assumeFirstColumnIsName: true,
+    detectUnits: true,
+    detectRanges: true,
+    skipEmptyLines: true,
+    caseSensitive: false,
+  });
+
+  // PDF Upload state
+  const [, setPdfFile] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [processingMessage, setProcessingMessage] = useState('');
+  const [extractedText, setExtractedText] = useState('');
+  const [extractionMetadata, setExtractionMetadata] = useState<any>(null);
+  const [extractionError, setExtractionError] = useState('');
+  const [completedDate, setCompletedDate] = useState<Date | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('input');
+
+  const handleError = useCallback(
+    (error: Error, context: string) => {
+      logger.error('test_component_bulk_entry_error', {
+        message: `Error in TestComponentBulkEntry: ${context}`,
+        labResultId,
+        error: error.message,
+        component: 'TestComponentBulkEntry',
+      });
+
+      if (onError) {
+        onError(error);
+      }
+    },
+    [labResultId, onError]
+  );
+
+  // Notify user of failed parse lines (moved to useEffect for proper React lifecycle)
+  useEffect(() => {
+    if (failedLineCount > 0 && parsedComponents.length > 0) {
+      notifications.show({
+        title: 'Some Lines Could Not Be Parsed',
+        message: `${failedLineCount} line(s) could not be parsed. Check the Preview tab to review and edit the parsed results.`,
+        color: 'yellow',
+        autoClose: 6000,
+      });
+    }
+  }, [failedLineCount, parsedComponents.length]);
+
+  // Notify parent when components are parsed (for data loss warnings)
+  useEffect(() => {
+    if (onComponentsParsed) {
+      onComponentsParsed(parsedComponents.length);
+    }
+  }, [parsedComponents.length, onComponentsParsed]);
+
+  // Parse text into test components
+  const parseText = useCallback(
+    (
+      text: string
+    ): { components: ParsedTestComponent[]; failedLineCount: number } => {
+      const lines = text
+        .split('\n')
+        .filter(line =>
+          parseSettings.skipEmptyLines ? line.trim().length > 0 : true
+        );
+
+      const components: ParsedTestComponent[] = [];
+      let failedLineCount = 0;
+
+      // Common patterns for parsing lab results
+      const patterns = {
+        // Pattern 1: "Test Name: 123.4 mg/dL (Normal range: 70-100)" or "Test Name: 123.4 mg/dL (70-100)"
+        fullPattern: REGEX_PATTERNS.FULL_PATTERN,
+
+        // Pattern 2: "Glucose    123.4    mg/dL    70-100    Normal"
+        tabularPattern: REGEX_PATTERNS.TABULAR_PATTERN,
+
+        // Pattern 3: "Test Name  Value  Unit  RefRange  Status"
+        simplePattern: REGEX_PATTERNS.SIMPLE_PATTERN,
+
+        // Pattern 4: CSV-like "Test,Value,Unit,Range,Status"
+        csvPattern: REGEX_PATTERNS.CSV_PATTERN,
+      };
+
+      lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) return;
+
+        // Skip header lines if enabled
+        if (parseSettings.detectHeaders && index === 0) {
+          const headerKeywords = [
+            'test',
+            'name',
+            'value',
+            'result',
+            'unit',
+            'range',
+            'status',
+            'reference',
+          ];
+          const isHeader = headerKeywords.some(keyword =>
+            trimmedLine.toLowerCase().includes(keyword)
+          );
+          if (isHeader) return;
+        }
+
+        let parsed: ParsedTestComponent | null = null;
+        let confidence = 0;
+        const issues: string[] = [];
+
+        // Try qualitative pattern first (before numeric patterns)
+        const qualMatch = trimmedLine.match(QUALITATIVE_PATTERN);
+        if (qualMatch) {
+          const testName = qualMatch[1].trim().replace(/[,;:]+$/, '');
+          const rawValue = qualMatch[2];
+          const normalizedValue = normalizeQualitativeValue(rawValue);
+
+          if (testName) {
+            parsed = {
+              test_name: testName,
+              value: null,
+              unit: '',
+              original_line: trimmedLine,
+              confidence: 0.8,
+              issues: [],
+              result_type: 'qualitative',
+              qualitative_value: normalizedValue,
+            };
+
+            // Auto-calculate status
+            if (
+              normalizedValue === 'positive' ||
+              normalizedValue === 'detected'
+            ) {
+              parsed.status = 'abnormal';
+            } else {
+              parsed.status = 'normal';
+            }
+          }
+        }
+
+        // Try numeric patterns in order of specificity (only if not already parsed as qualitative)
+        if (!parsed)
+          for (const [patternName, pattern] of Object.entries(patterns)) {
+            const match = trimmedLine.match(pattern);
+            if (match) {
+              const testName = match[1]?.trim().replace(/[,;:]+$/, ''); // Remove trailing punctuation
+              const valueStr = match[2]?.replace(/,/g, '');
+              const unit = match[3]?.trim() || '';
+
+              if (!testName || !valueStr) continue;
+
+              const value = parseFloat(valueStr);
+              if (isNaN(value)) {
+                issues.push('Could not parse numeric value');
+                continue;
+              }
+
+              parsed = {
+                test_name: testName,
+                value,
+                unit,
+                original_line: trimmedLine,
+                confidence: 0,
+                issues: [],
+              };
+
+              // Set confidence based on pattern completeness
+              confidence = 0.5; // Base confidence
+              if (unit) confidence += 0.2;
+              if (patternName === 'fullPattern') confidence += 0.3;
+
+              // Parse reference range if available
+              // match[4] and match[5] are min/max for numeric ranges like (3.4-10.8)
+              // match[6] is for special ranges like (>39)
+              // match[7] is catch-all for other parenthetical content
+              if (match[4] && match[5]) {
+                const rangeMin = parseFloat(match[4].replace(/,/g, ''));
+                const rangeMax = parseFloat(match[5].replace(/,/g, ''));
+                if (!isNaN(rangeMin) && !isNaN(rangeMax)) {
+                  parsed.ref_range_min = rangeMin;
+                  parsed.ref_range_max = rangeMax;
+                  confidence += 0.2;
+                }
+              } else if (match[6]) {
+                // Handle special ranges like "< 0.41", "> 39"
+                const compText = match[6].trim();
+                parsed.ref_range_text = compText;
+
+                // Extract numeric bound from comparison operator
+                const compMatch = compText.match(
+                  /^([<>\u2264\u2265])\s*([0-9.,]+)$/
+                );
+                if (compMatch) {
+                  const op = compMatch[1];
+                  const num = parseFloat(compMatch[2].replace(/,/g, ''));
+                  if (!isNaN(num)) {
+                    if (op === '<' || op === '\u2264') {
+                      parsed.ref_range_max = num;
+                    } else if (op === '>' || op === '\u2265') {
+                      parsed.ref_range_min = num;
+                    }
+                  }
+                }
+                confidence += 0.1;
+              } else if (match[7]) {
+                // Fallback for other content in parentheses
+                parsed.ref_range_text = match[7].replace(/[()]/g, '').trim();
+                confidence += 0.05;
+              }
+
+              // Check if "Not Estab." appears anywhere in the line
+              if (
+                !parsed.ref_range_min &&
+                !parsed.ref_range_max &&
+                !parsed.ref_range_text
+              ) {
+                const notEstabMatch = trimmedLine.match(/\(Not\s+Estab\.?\)/i);
+                if (notEstabMatch) {
+                  parsed.ref_range_text = 'Not Estab.';
+                  confidence += 0.1;
+                }
+              }
+
+              // Parse status - check for [High], [Low], etc. first, then plain text
+              let statusMatch = trimmedLine.match(
+                /\[(high|low|critical|abnormal|borderline)\]/i
+              );
+              if (statusMatch) {
+                parsed.status = statusMatch[1].toLowerCase();
+                confidence += 0.1;
+              } else {
+                // Fallback to plain text status (less common)
+                statusMatch = trimmedLine.match(
+                  /\b(normal|high|low|critical|abnormal|borderline)\b/i
+                );
+                if (statusMatch) {
+                  parsed.status = statusMatch[1].toLowerCase();
+                  confidence += 0.05;
+                }
+              }
+
+              // Auto-detect abbreviations
+              const abbreviationMatch = testName.match(/\(([A-Z0-9]+)\)/);
+              if (abbreviationMatch) {
+                parsed.abbreviation = abbreviationMatch[1];
+                parsed.test_name = testName.replace(/\s*\([^)]+\)/, '').trim();
+                confidence += 0.05;
+              }
+
+              // Auto-calculate status if not already set and we have reference range data
+              if (!parsed.status && parsed.value !== null) {
+                if (
+                  typeof parsed.ref_range_min === 'number' &&
+                  typeof parsed.ref_range_max === 'number'
+                ) {
+                  // Full range
+                  if (parsed.value > parsed.ref_range_max)
+                    parsed.status = 'high';
+                  else if (parsed.value < parsed.ref_range_min)
+                    parsed.status = 'low';
+                  else parsed.status = 'normal';
+                } else if (typeof parsed.ref_range_max === 'number') {
+                  // Upper bound only (e.g., "< 0.41")
+                  parsed.status =
+                    parsed.value > parsed.ref_range_max ? 'high' : 'normal';
+                } else if (typeof parsed.ref_range_min === 'number') {
+                  // Lower bound only (e.g., "> 39")
+                  parsed.status =
+                    parsed.value < parsed.ref_range_min ? 'low' : 'normal';
+                }
+              }
+
+              parsed.confidence = Math.min(confidence, 1.0);
+              break;
+            }
+          }
+
+        if (!parsed) {
+          // Fallback: try to extract at least test name and value
+          const fallbackMatch = trimmedLine.match(/^(.+?)\s+([0-9.,]+)/);
+          if (fallbackMatch) {
+            const value = parseFloat(fallbackMatch[2].replace(/,/g, ''));
+            if (!isNaN(value)) {
+              parsed = {
+                test_name: fallbackMatch[1].trim().replace(/[,;:]+$/, ''), // Remove trailing punctuation
+                value,
+                unit: '',
+                original_line: trimmedLine,
+                confidence: 0.2,
+                issues: [
+                  'Could not detect unit',
+                  'Could not detect reference range',
+                ],
+              };
+            }
+          }
+        }
+
+        if (parsed) {
+          // Note: Test matching happens later via enrichWithStandardizedTests()
+          // We don't do it here to keep parseText synchronous
+
+          // Validate parsed data
+          if (parsed.test_name.length < 2) {
+            parsed.issues.push('Test name too short');
+            parsed.confidence = Math.max(0, parsed.confidence - 0.3);
+          }
+
+          if (!parsed.unit) {
+            parsed.issues.push('Unit not detected');
+          }
+
+          if (
+            !parsed.ref_range_min &&
+            !parsed.ref_range_max &&
+            !parsed.ref_range_text
+          ) {
+            parsed.issues.push('Reference range not detected');
+          }
+
+          // Reduce confidence based on number of issues
+          if (parsed.issues.length > 0) {
+            const issueReduction = Math.min(parsed.issues.length * 0.15, 0.5);
+            parsed.confidence = Math.max(
+              0.1,
+              parsed.confidence - issueReduction
+            );
+          }
+
+          components.push(parsed);
+        } else {
+          // Track failed lines for user feedback
+          failedLineCount++;
+        }
+      });
+
+      return { components, failedLineCount };
+    },
+    [parseSettings]
+  );
+
+  // Enrich parsed components with standardized test data from testLibrary.ts
+  const enrichWithStandardizedTests = useCallback(
+    (components: ParsedTestComponent[]): ParsedTestComponent[] => {
+      return components.map(component => {
+        // Match against testLibrary.ts using fuzzy search (synchronous, no API call)
+        // searchTests() checks test_name, abbreviation, AND common_names
+        const matches = searchTests(component.test_name, 1);
+        const standardizedTest = matches.length > 0 ? matches[0] : null;
+
+        if (standardizedTest) {
+          // IMPORTANT: Keep original test_name (what the lab PDF said)
+          // Set canonical_test_name to the standardized name for trending
+          component.canonical_test_name = standardizedTest.test_name;
+
+          // If no abbreviation was parsed, use the standardized one
+          if (!component.abbreviation && standardizedTest.abbreviation) {
+            component.abbreviation = standardizedTest.abbreviation;
+          }
+
+          // If no unit was detected, use the standardized unit
+          if (!component.unit && standardizedTest.default_unit) {
+            component.unit = standardizedTest.default_unit;
+            // Remove the "unit not detected" issue if we found it
+            const unitIssueIndex =
+              component.issues.indexOf('Unit not detected');
+            if (unitIssueIndex > -1) {
+              component.issues.splice(unitIssueIndex, 1);
+            }
+          }
+
+          // Set category from standardized test
+          if (standardizedTest.category) {
+            component.category = standardizedTest.category;
+          }
+
+          // Test-library entries only define quantitative or qualitative results.
+          if (standardizedTest.result_type && !component.result_type) {
+            component.result_type = standardizedTest.result_type;
+          }
+
+          // Store LOINC code for reference
+          if (standardizedTest.test_code) {
+            component.loinc_code = standardizedTest.test_code;
+          }
+        }
+        // Note: We don't mark as "not found" - let the user decide if they want to keep it
+
+        return component;
+      });
+    },
+    []
+  );
+
+  // Auto-parse when debounced text changes
+  useEffect(() => {
+    if (parseMode === 'auto' && debouncedText.trim()) {
+      const { components, failedLineCount: failedCount } =
+        parseText(debouncedText);
+      setFailedLineCount(failedCount);
+
+      // Enrich with standardized test data (synchronous)
+      const enriched = enrichWithStandardizedTests(components);
+      setParsedComponents(enriched);
+    } else if (parseMode === 'auto' && !debouncedText.trim()) {
+      // Clear parsed components when text is empty
+      setParsedComponents([]);
+      setFailedLineCount(0);
+    }
+  }, [debouncedText, parseMode, parseText, enrichWithStandardizedTests]);
+
+  const handleManualParse = useCallback(() => {
+    if (!rawText.trim()) {
+      notifications.show({
+        title: 'No Text to Parse',
+        message: 'Please enter some text first',
+        color: 'orange',
+      });
+      return;
+    }
+
+    const { components, failedLineCount: failedCount } = parseText(rawText);
+    setFailedLineCount(failedCount);
+
+    // Enrich with standardized test data (synchronous)
+    const enriched = enrichWithStandardizedTests(components);
+    setParsedComponents(enriched);
+
+    notifications.show({
+      title: 'Text Parsed',
+      message: `Found ${enriched.length} potential test results`,
+      color: 'blue',
+    });
+  }, [rawText, parseText, enrichWithStandardizedTests]);
+
+  const handleComponentEdit = useCallback(
+    (index: number, field: keyof ParsedTestComponent, value: any) => {
+      setParsedComponents(prev => {
+        // Only update if value actually changed to prevent unnecessary re-renders
+        if (prev[index]?.[field] === value) return prev;
+
+        const updated = [...prev];
+        updated[index] = { ...updated[index], [field]: value };
+        return updated;
+      });
+    },
+    []
+  );
+
+  const handleComponentRemove = useCallback((index: number) => {
+    setParsedComponents(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (parsedComponents.length === 0) {
+      notifications.show({
+        title: 'No Components to Add',
+        message:
+          'Please paste and parse your lab results first before submitting.',
+        color: 'red',
+        autoClose: 5000,
+      });
+      return;
+    }
+
+    // Validate completed_date is provided and valid
+    // Defensive: Mantine's DateInput may occasionally pass non-Date values in edge cases
+    const validatedDate = getValidatedDate(completedDate);
+
+    if (!validatedDate) {
+      notifications.show({
+        title: 'Date Required',
+        message:
+          'Please specify a valid test completed date. This is required for tracking trends over time.',
+        color: 'orange',
+        autoClose: 6000,
+      });
+      return;
+    }
+
+    if (validatedDate > new Date()) {
+      notifications.show({
+        title: 'Invalid Date',
+        message: 'Test completed date cannot be in the future.',
+        color: 'orange',
+        autoClose: 6000,
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Format date for API - validatedDate is guaranteed valid at this point
+      const formattedDate = validatedDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      logger.info('Updating lab result with completed_date', {
+        component: 'TestComponentBulkEntry',
+        labResultId,
+        completedDate: formattedDate,
+      });
+
+      const updateResponse = await apiService.put(
+        `/lab-results/${labResultId}`,
+        {
+          completed_date: formattedDate,
+        }
+      );
+
+      logger.info('Lab result updated successfully', {
+        component: 'TestComponentBulkEntry',
+        responseCompletedDate: updateResponse?.completed_date,
+      });
+
+      // Notify parent to refresh lab result data
+      if (onLabResultUpdated) {
+        onLabResultUpdated();
+      }
+
+      const componentsToCreate: LabTestComponentCreate[] = parsedComponents
+        .filter(
+          comp =>
+            (comp.result_type === 'qualitative'
+              ? !!comp.qualitative_value
+              : comp.result_type === 'textual'
+                ? !!comp.textual_value
+                : comp.value !== null) && comp.test_name.trim()
+        )
+        .map((comp, index) => {
+          const rt = comp.result_type || 'quantitative';
+          const isQual = rt === 'qualitative';
+          const isText = rt === 'textual';
+          return {
+            lab_result_id: labResultId,
+            test_name: comp.test_name,
+            abbreviation: comp.abbreviation || null,
+            canonical_test_name: comp.canonical_test_name || null,
+            test_code: null,
+            value: isQual || isText ? null : (comp.value as number),
+            unit: isQual || isText ? null : (comp.unit || '').trim() || 'ratio',
+            ref_range_min: isQual || isText ? null : comp.ref_range_min,
+            ref_range_max: isQual || isText ? null : comp.ref_range_max,
+            ref_range_text:
+              isQual || isText ? null : comp.ref_range_text || null,
+            status: (comp.status as ComponentStatus | null) || null,
+            category: (comp.category as ComponentCategory | null) || null,
+            display_order: index + 1,
+            notes:
+              comp.issues.length > 0
+                ? `Parsing notes: ${comp.issues.join(', ')}`
+                : null,
+            result_type: rt,
+            qualitative_value: isQual
+              ? (comp.qualitative_value as QualitativeValue | null) || null
+              : null,
+            textual_value: isText ? comp.textual_value || null : null,
+          };
+        });
+
+      // Call the API to create components in bulk
+      const response = await labTestComponentApi.createBulkForLabResult(
+        labResultId,
+        componentsToCreate,
+        null // patientId is handled by the API
+      );
+
+      notifications.show({
+        title: 'Success!',
+        message: `Successfully added ${response.created_count} test component${response.created_count !== 1 ? 's' : ''} from bulk entry`,
+        color: 'green',
+        autoClose: 4000,
+      });
+
+      if (onComponentsAdded) {
+        onComponentsAdded(response.components);
+      }
+
+      // Reset form after successful submission
+      setRawText('');
+      setParsedComponents([]);
+      setCompletedDate(null);
+    } catch (error) {
+      handleError(error as Error, 'submit_bulk');
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to add test components. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [
+    parsedComponents,
+    labResultId,
+    completedDate,
+    onComponentsAdded,
+    handleError,
+    onLabResultUpdated,
+  ]);
+
+  // PDF Upload handlers
+  const handlePdfDrop = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) return;
+
+      const file = files[0];
+      setPdfFile(file);
+      setExtractedText('');
+      setExtractionError('');
+      setIsProcessing(true);
+      setProcessingProgress(0);
+      setProcessingMessage('Uploading PDF...');
+
+      try {
+        // Upload to OCR endpoint
+        const formData = new FormData();
+        formData.append('file', file);
+
+        setProcessingMessage('Extracting text from PDF...');
+        setProcessingProgress(30);
+
+        const response = await apiService.post(
+          `/lab-results/${labResultId}/ocr-parse`,
+          formData,
+          {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          }
+        );
+
+        setProcessingProgress(80);
+        setProcessingMessage('Text extracted successfully!');
+
+        // Store extracted text (apiService.post returns the response directly, not wrapped in .data)
+        setExtractedText(response?.extracted_text || '');
+        setExtractionMetadata(response?.metadata || null);
+
+        setProcessingProgress(100);
+
+        logger.info('PDF text extracted successfully', {
+          component: 'TestComponentBulkEntry',
+          event: 'pdf_ocr_extraction_success',
+          method: response.metadata.method,
+          charCount: response.metadata.char_count,
+          testDate: response.metadata.test_date,
+        });
+
+        // Set completed date if extracted from PDF
+        if (response.metadata.test_date) {
+          setCompletedDate(new Date(response.metadata.test_date));
+        }
+
+        notifications.show({
+          title: 'PDF Processed',
+          message: `Extracted ${response.metadata.char_count} characters using ${response.metadata.method} method${response.metadata.test_date ? `. Test Date: ${response.metadata.test_date}` : ''}`,
+          color: 'green',
+        });
+      } catch (error: any) {
+        setExtractionError(
+          error.response?.data?.detail ||
+            'Failed to extract text from PDF. Please try manual entry.'
+        );
+
+        logger.error('pdf_ocr_extraction_error', {
+          component: 'TestComponentBulkEntry',
+          error: error.message,
+        });
+
+        notifications.show({
+          title: 'Extraction Failed',
+          message: error.response?.data?.detail || 'Failed to process PDF',
+          color: 'red',
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [labResultId]
+  );
+
+  const handleParseExtractedText = useCallback(() => {
+    if (!extractedText) return;
+
+    // Feed to existing parseText function! ✅ REUSE
+    const { components, failedLineCount: failedCount } =
+      parseText(extractedText);
+    setFailedLineCount(failedCount);
+
+    // Enrich with standardized test data (synchronous)
+    const enriched = enrichWithStandardizedTests(components);
+    setParsedComponents(enriched);
+
+    notifications.show({
+      title: 'PDF Parsed',
+      message: `Found ${enriched.length} test results`,
+      color: 'green',
+    });
+
+    logger.info('Extracted text parsed into components', {
+      component: 'TestComponentBulkEntry',
+      event: 'pdf_text_parsed',
+      componentCount: enriched.length,
+      failedLines: failedCount,
+    });
+  }, [extractedText, parseText, enrichWithStandardizedTests]);
+
+  const validComponents = useMemo(() => {
+    return parsedComponents.filter(
+      comp =>
+        (comp.result_type === 'qualitative'
+          ? !!comp.qualitative_value
+          : comp.result_type === 'textual'
+            ? !!comp.textual_value
+            : comp.value !== null) && comp.test_name.trim()
+    );
+  }, [parsedComponents]);
+
+  const averageConfidence = useMemo(() => {
+    if (parsedComponents.length === 0) return 0;
+    return (
+      parsedComponents.reduce((sum, comp) => sum + comp.confidence, 0) /
+      parsedComponents.length
+    );
+  }, [parsedComponents]);
+
+  const getConfidenceColor = useCallback((confidence: number): string => {
+    if (confidence >= 0.8) return 'green';
+    if (confidence >= 0.6) return 'yellow';
+    if (confidence >= 0.4) return 'orange';
+    return 'red';
+  }, []);
+
+  const exampleTexts = {
+    format1: `Glucose: 125 mg/dL (Normal range: 70-100)
+Cholesterol: 195 mg/dL (Normal range: <200)
+Triglycerides: 150 mg/dL (Normal range: <150)
+HDL: 45 mg/dL (Normal range: >40)`,
+
+    format2: `Test Name          Value    Unit     Range       Status
+Hemoglobin         14.2     g/dL     12.0-15.5   Normal
+Hematocrit         42.1     %        36.0-46.0   Normal
+WBC Count          7.5      K/uL     4.5-11.0    Normal
+Platelet Count     275      K/uL     150-450     Normal`,
+
+    format3: `Glucose,125,mg/dL,70-100,Normal
+BUN,18,mg/dL,7-20,Normal
+Creatinine,1.0,mg/dL,0.6-1.2,Normal
+Sodium,140,mEq/L,136-145,Normal`,
+
+    format4: `HIV 1/2: Negative
+Hepatitis B Surface Antibody: Positive
+ANA: Detected
+VDRL: Non-Reactive
+SARS-CoV-2: Not Detected`,
+  };
+
+  return (
+    <Box style={{ position: 'relative' }}>
+      <FormLoadingOverlay
+        visible={isSubmitting}
+        message="Adding test components..."
+        submessage="Processing bulk entry data"
+      />
+
+      <Tabs
+        value={activeTab}
+        onChange={value => setActiveTab(value || 'input')}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="input" leftSection={<IconFileText size={16} />}>
+            {t('labresults:bulkEntry.textInput')}
+          </Tabs.Tab>
+          <Tabs.Tab value="pdf-upload" leftSection={<IconUpload size={16} />}>
+            {t('labresults:bulkEntry.pdfUpload')}
+          </Tabs.Tab>
+          <Tabs.Tab value="preview" leftSection={<IconTable size={16} />}>
+            {t('labresults:bulkEntry.previewCount', {
+              count: parsedComponents.length,
+            })}
+          </Tabs.Tab>
+          <Tabs.Tab value="examples" leftSection={<IconCopy size={16} />}>
+            {t('labresults:bulkEntry.examples')}
+          </Tabs.Tab>
+          <Tabs.Tab value="settings" leftSection={<IconSettings size={16} />}>
+            {t('labresults:bulkEntry.parseSettings')}
+          </Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value="input">
+          <Stack gap="md" mt="md">
+            <Group justify="space-between">
+              <Select
+                label={t('labresults:bulkEntry.parseMode')}
+                value={parseMode}
+                onChange={value => setParseMode(value as 'auto' | 'manual')}
+                data={[
+                  {
+                    value: 'auto',
+                    label: t('labresults:bulkEntry.autoParseDescription'),
+                  },
+                  {
+                    value: 'manual',
+                    label: t('labresults:bulkEntry.manualParsing'),
+                  },
+                ]}
+                style={{ width: 200 }}
+              />
+              {parseMode === 'manual' && (
+                <Button
+                  leftSection={<IconWand size={16} />}
+                  onClick={handleManualParse}
+                  variant="light"
+                >
+                  {t('labresults:bulkEntry.parseText')}
+                </Button>
+              )}
+            </Group>
+
+            <Textarea
+              label={t('labresults:bulkEntry.labResultsText')}
+              placeholder={t('labresults:bulkEntry.pastePlaceholder')}
+              value={rawText}
+              onChange={event => setRawText(event.currentTarget.value)}
+              minRows={12}
+              maxRows={20}
+              description={t('labresults:bulkEntry.copyDescription')}
+            />
+
+            {parsedComponents.length > 0 && (
+              <Group gap="md">
+                <Badge color={getConfidenceColor(averageConfidence)}>
+                  {t('labresults:bulkEntry.confidence', {
+                    percent: Math.round(averageConfidence * 100),
+                  })}
+                </Badge>
+                <Badge color="blue">
+                  {t('labresults:bulkEntry.validComponents', {
+                    count: validComponents.length,
+                  })}
+                </Badge>
+                {parsedComponents.length !== validComponents.length && (
+                  <Badge color="orange">
+                    {t('labresults:bulkEntry.withIssues', {
+                      count: parsedComponents.length - validComponents.length,
+                    })}
+                  </Badge>
+                )}
+              </Group>
+            )}
+          </Stack>
+        </Tabs.Panel>
+
+        {/* PDF Upload Tab */}
+        <Tabs.Panel value="pdf-upload">
+          <Stack gap="md" mt="md">
+            {/* Dropzone - Consistent with FileUploadZone pattern */}
+            <Dropzone
+              onDrop={handlePdfDrop}
+              accept={{ 'application/pdf': ['.pdf'] }}
+              maxFiles={1}
+              maxSize={15 * 1024 * 1024}
+              disabled={isProcessing}
+            >
+              <Group
+                justify="center"
+                gap="xl"
+                mih={150}
+                style={{ pointerEvents: 'none' }}
+              >
+                <Dropzone.Accept>
+                  <IconUpload
+                    size={52}
+                    color="var(--mantine-color-blue-6)"
+                    stroke={1.5}
+                  />
+                </Dropzone.Accept>
+                <Dropzone.Reject>
+                  <IconX
+                    size={52}
+                    color="var(--mantine-color-red-6)"
+                    stroke={1.5}
+                  />
+                </Dropzone.Reject>
+                <Dropzone.Idle>
+                  <IconFileText
+                    size={52}
+                    color="var(--mantine-color-dimmed)"
+                    stroke={1.5}
+                  />
+                </Dropzone.Idle>
+
+                <div style={{ textAlign: 'center' }}>
+                  <Text size="xl" inline>
+                    {t('labresults:bulkEntry.dropPdf')}
+                  </Text>
+                  <Text size="sm" c="dimmed" mt={7}>
+                    {t('labresults:bulkEntry.pdfAutoExtract')}
+                  </Text>
+                  <Text size="xs" c="dimmed" mt="xs">
+                    {t('labresults:bulkEntry.pdfAccepted')}
+                  </Text>
+                </div>
+              </Group>
+            </Dropzone>
+
+            {/* Processing State - Consistent with DocumentManager */}
+            {isProcessing && (
+              <Alert color="blue" icon={<IconLoader size={16} />}>
+                <Stack gap="xs">
+                  <Text size="sm" fw={500}>
+                    Processing PDF...
+                  </Text>
+                  <Progress
+                    value={processingProgress}
+                    size="sm"
+                    striped
+                    animated
+                  />
+                  <Text size="xs" c="dimmed">
+                    {processingMessage}
+                  </Text>
+                </Stack>
+              </Alert>
+            )}
+
+            {/* Success State - Consistent */}
+            {extractedText && !isProcessing && (
+              <Alert color="green" icon={<IconCheck size={16} />}>
+                <Stack gap="sm">
+                  <Group justify="space-between">
+                    <div>
+                      <Text size="sm" fw={500}>
+                        {t('labresults:bulkEntry.textExtracted')}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {t('labresults:bulkEntry.extractedChars', {
+                          charCount: extractionMetadata.char_count,
+                          pageCount: extractionMetadata.page_count,
+                          count: extractionMetadata.page_count,
+                        })}
+                      </Text>
+                      <Badge
+                        size="xs"
+                        mt={4}
+                        variant="light"
+                        color={
+                          extractionMetadata.method === 'native'
+                            ? 'blue'
+                            : 'orange'
+                        }
+                      >
+                        {extractionMetadata.method === 'native'
+                          ? 'Fast Extraction'
+                          : 'OCR Extraction'}
+                      </Badge>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={handleParseExtractedText}
+                      leftSection={<IconWand size={16} />}
+                    >
+                      {t('labresults:bulkEntry.parseResults')}
+                    </Button>
+                  </Group>
+
+                  {/* Preview of extracted text */}
+                  <Box
+                    style={{
+                      maxHeight: 150,
+                      overflow: 'auto',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: 4,
+                      padding: 8,
+                    }}
+                  >
+                    <Text
+                      size="xs"
+                      ff="monospace"
+                      c="dimmed"
+                      style={{ whiteSpace: 'pre-wrap' }}
+                    >
+                      {extractedText.slice(0, 500)}
+                      {extractedText.length > 500 && '...'}
+                    </Text>
+                  </Box>
+                </Stack>
+              </Alert>
+            )}
+
+            {/* After Parsing - Show Preview Button */}
+            {parsedComponents.length > 0 && (
+              <Alert color="blue" icon={<IconTable size={16} />}>
+                <Group justify="space-between" align="center">
+                  <div>
+                    <Text size="sm" fw={500}>
+                      {t('labresults:bulkEntry.parsingComplete')}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {t('labresults:bulkEntry.foundComponents', {
+                        count: validComponents.length,
+                      })}
+                    </Text>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setActiveTab('preview')}
+                    leftSection={<IconTable size={16} />}
+                  >
+                    {t('labresults:bulkEntry.previewComponents', {
+                      count: validComponents.length,
+                    })}
+                  </Button>
+                </Group>
+              </Alert>
+            )}
+
+            {/* Error State - Consistent with DocumentManager */}
+            {extractionError && (
+              <Alert color="red" icon={<IconAlertCircle size={16} />}>
+                <Stack gap="xs">
+                  <Text size="sm" fw={500}>
+                    {t('labresults:bulkEntry.errorProcessingPdf')}
+                  </Text>
+                  <Text size="xs">{extractionError}</Text>
+                  <Text size="xs" c="dimmed" fs="italic">
+                    {t('labresults:bulkEntry.tryTextInput')}
+                  </Text>
+                </Stack>
+              </Alert>
+            )}
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="preview">
+          <Stack gap="md" mt="md">
+            {/* Test Completed Date - required for trends */}
+            <Alert
+              color="blue"
+              title={t('labresults:bulkEntry.testDate')}
+              icon={<IconAlertCircle />}
+            >
+              <Stack gap="xs">
+                <Text size="sm">
+                  {t('labresults:bulkEntry.completedDateDescription')}
+                </Text>
+                <DateInput
+                  value={completedDate}
+                  onChange={setCompletedDate}
+                  label={t('labresults:bulkEntry.completedDate')}
+                  placeholder={dateInputFormat}
+                  valueFormat={dateInputFormat}
+                  dateParser={dateParser}
+                  clearable
+                  required
+                  allowDeselect={false}
+                  maxDate={new Date()}
+                  styles={{ input: { maxWidth: 250 } }}
+                  popoverProps={{ withinPortal: true, zIndex: 3100 }}
+                />
+              </Stack>
+            </Alert>
+
+            {parsedComponents.length === 0 ? (
+              <Center p="xl">
+                <Stack align="center" gap="md">
+                  <IconTable size={48} color="var(--mantine-color-gray-5)" />
+                  <Text size="lg" c="dimmed">
+                    {t('labresults:bulkEntry.noParsedComponents')}
+                  </Text>
+                  <Text size="sm" c="dimmed" ta="center">
+                    {t('labresults:bulkEntry.noParsedDescription')}
+                  </Text>
+                </Stack>
+              </Center>
+            ) : (
+              <ScrollArea h={500}>
+                <Table striped>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th style={{ width: '180px' }}>
+                        {t('shared:fields.testName')}
+                      </Table.Th>
+                      <Table.Th style={{ width: '100px' }}>
+                        {t('shared:labels.value')}
+                      </Table.Th>
+                      <Table.Th style={{ width: '80px' }}>
+                        {t('labresults:testComponents.editModal.fields.unit')}
+                      </Table.Th>
+                      <Table.Th style={{ width: '140px' }}>
+                        {t(
+                          'labresults:testComponents.editModal.fields.referenceRange'
+                        )}
+                      </Table.Th>
+                      <Table.Th style={{ width: '120px' }}>
+                        {t('shared:fields.status')}
+                      </Table.Th>
+                      <Table.Th style={{ width: '100px' }}>
+                        {t('shared:labels.category')}
+                      </Table.Th>
+                      <Table.Th style={{ width: '90px' }}>
+                        {t('labresults:bulkEntry.confidenceLabel')}
+                      </Table.Th>
+                      <Table.Th style={{ width: '150px' }}>
+                        {t('shared:labels.warnings')}
+                      </Table.Th>
+                      <Table.Th style={{ width: '60px' }}>
+                        {t('shared:labels.actions')}
+                      </Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {parsedComponents.map((component, index) => (
+                      <TableRow
+                        key={index}
+                        index={index}
+                        component={component}
+                        onEdit={handleComponentEdit}
+                        onRemove={handleComponentRemove}
+                        getConfidenceColor={getConfidenceColor}
+                      />
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </ScrollArea>
+            )}
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="examples">
+          <Stack gap="md" mt="md">
+            <Text size="sm">{t('labresults:bulkEntry.tryExamples')}</Text>
+
+            {Object.entries(exampleTexts).map(([key, text]) => (
+              <Card key={key} withBorder p="sm">
+                <Stack gap="xs">
+                  <Group justify="space-between">
+                    <Text size="sm" fw={500}>
+                      {key === 'format1'
+                        ? t('labresults:bulkEntry.colonSeparated')
+                        : key === 'format2'
+                          ? t('labresults:bulkEntry.tabularFormat')
+                          : key === 'format3'
+                            ? t('labresults:bulkEntry.csvFormat')
+                            : t('labresults:bulkEntry.qualitativeResults')}
+                    </Text>
+                    <Button
+                      size="xs"
+                      variant="light"
+                      leftSection={<IconCopy size={12} />}
+                      onClick={() => setRawText(text)}
+                    >
+                      {t('labresults:bulkEntry.useExample')}
+                    </Button>
+                  </Group>
+                  <Text
+                    size="xs"
+                    ff="monospace"
+                    c="dimmed"
+                    style={{ whiteSpace: 'pre-line' }}
+                  >
+                    {text}
+                  </Text>
+                </Stack>
+              </Card>
+            ))}
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="settings">
+          <Stack gap="md" mt="md">
+            <Text size="sm" fw={500}>
+              {t('labresults:bulkEntry.parseSettings')}
+            </Text>
+
+            <Stack gap="sm">
+              <Switch
+                label={t('labresults:bulkEntry.detectHeaders')}
+                description={t('labresults:bulkEntry.detectHeadersDesc')}
+                checked={parseSettings.detectHeaders}
+                onChange={event =>
+                  setParseSettings(prev => ({
+                    ...prev,
+                    detectHeaders: event.currentTarget.checked,
+                  }))
+                }
+              />
+
+              <Switch
+                label={t('labresults:bulkEntry.firstColumnName')}
+                description={t('labresults:bulkEntry.firstColumnNameDesc')}
+                checked={parseSettings.assumeFirstColumnIsName}
+                onChange={event =>
+                  setParseSettings(prev => ({
+                    ...prev,
+                    assumeFirstColumnIsName: event.currentTarget.checked,
+                  }))
+                }
+              />
+
+              <Switch
+                label={t('labresults:bulkEntry.detectUnits')}
+                description={t('labresults:bulkEntry.detectUnitsDesc')}
+                checked={parseSettings.detectUnits}
+                onChange={event =>
+                  setParseSettings(prev => ({
+                    ...prev,
+                    detectUnits: event.currentTarget.checked,
+                  }))
+                }
+              />
+
+              <Switch
+                label={t('labresults:bulkEntry.detectRanges')}
+                description={t('labresults:bulkEntry.detectRangesDesc')}
+                checked={parseSettings.detectRanges}
+                onChange={event =>
+                  setParseSettings(prev => ({
+                    ...prev,
+                    detectRanges: event.currentTarget.checked,
+                  }))
+                }
+              />
+
+              <Switch
+                label={t('labresults:bulkEntry.skipEmptyLines')}
+                description={t('labresults:bulkEntry.skipEmptyLinesDesc')}
+                checked={parseSettings.skipEmptyLines}
+                onChange={event =>
+                  setParseSettings(prev => ({
+                    ...prev,
+                    skipEmptyLines: event.currentTarget.checked,
+                  }))
+                }
+              />
+            </Stack>
+          </Stack>
+        </Tabs.Panel>
+      </Tabs>
+
+      {/* Action Buttons */}
+      <Group justify="space-between" mt="md">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setRawText('');
+            setParsedComponents([]);
+            setExtractedText('');
+            setExtractionMetadata(null);
+            setExtractionError('');
+          }}
+          disabled={isSubmitting}
+        >
+          {t('labresults:bulkEntry.clearAll')}
+        </Button>
+        {activeTab !== 'preview' ? (
+          <Button
+            onClick={() => setActiveTab('preview')}
+            disabled={validComponents.length === 0}
+            leftSection={<IconTable size={16} />}
+          >
+            {t('labresults:bulkEntry.previewComponents', {
+              count: validComponents.length,
+            })}
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || validComponents.length === 0}
+            loading={isSubmitting}
+            leftSection={<IconCheck size={16} />}
+          >
+            {t('labresults:bulkEntry.addComponents', {
+              count: validComponents.length,
+            })}
+          </Button>
+        )}
+      </Group>
+    </Box>
+  );
+};
+
+export default TestComponentBulkEntry;

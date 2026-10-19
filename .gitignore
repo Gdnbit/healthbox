@@ -1,0 +1,211 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+.env
+.venv/
+venv/
+ENV/
+env/
+instance/
+.mypy_cache/
+.pytest_cache/
+*.cover
+*.coverage
+coverage.xml
+
+# FastAPI Uvicorn log
+*.uvicorn.log
+
+# Node/React
+node_modules/
+build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# package-lock.json should be committed for reproducible builds
+yarn.lock
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+!/app/scripts
+
+# Editor and system files
+.DS_Store
+*.swp
+*.swo
+*.bak
+*.tmp
+*_debug.txt
+nul
+.vscode/
+.idea/
+*.iml
+
+# MacOS
+._*
+
+cookies.txt
+audit.log.*
+
+# Test Files
+uploads/
+
+# Testing Scripts
+./scripts/
+
+
+# NPM
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+test-report.html
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+frontend/README.md
+DEVELOPMENT_SETUP.md
+/_working
+medical_records.db-wal
+medical_records.db-shm
+docs/SEQUENCE_MONITORING_GUIDE.md
+
+docker/dev/dev-docker-compose.yml
+docs/AUTH_SYSTEM_DOCUMENTATION.md
+docs/IMPLEMENTATION_CHECKLIST.md
+scripts/migrate-auth.js
+scripts/sequence_monitor_task.bat
+scripts/sequence_monitor.py
+scripts/start-backend.bat
+scripts/start-backend.ps1
+scripts/start-dev.bat
+
+/dev_docker
+debug_routes_fixed.py
+test_fixed_endpoints.py
+test_lab_result_files_debug.py
+test_trailing_slash.py
+test_download.py
+
+
+docker/dev/dev-docker-compose.yml
+docs/working_docs/
+
+/logs
+.cursor/rules/venv.mdc
+
+backups/
+
+# Coverage reports
+/coverage/
+/lcov-report/
+*.lcov
+frontend/coverage/
+
+# Coverage
+frontend/coverage
+
+.claude/
+.claude/settings.local.json
+CLAUDE.md
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+*.log
+
+# Runtime directories
+/temp/
+
+# Keep repository policy tracked.
+test_database.db-shm
+test_database.db-wal
+report.html
+
+audit/
+docs/superpowers/
+
+# Local AI execution artifacts
+.ai/tmp-*.txt
+.ai/*-full-*.json
+.ai/audits/**/*.png
+
+# Private GitHub sync exclusions
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+node_modules/
+dist/
+build/
+target/
+.gradle/
+.idea/
+*.tsbuildinfo
+local.properties
+keystore.properties
+*.keystore
+*.jks
+*.pem
+*.key
+*.p12
+*.pfx
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.log
+.env
+.env.*
+!.env.example
+!.env.prod.example
+!.env.production.example
+!.env.template
+.local-work/
+.codex/
+.agents/
+.superpowers/
+.qa-*/
+.codex-qa-*/
+.codebase-memory/
+
+# Public-source policy: runtime and private development artifacts never ship.
+/.ai/
+/handoff/
+/.healthbox-local/
+/.release-private/
+/healthbox-public-candidate/
+!.gitignore
+!scripts/healthbox-*.py

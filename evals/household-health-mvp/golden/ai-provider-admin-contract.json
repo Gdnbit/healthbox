@@ -1,0 +1,228 @@
+{
+  "contract_id": "household-ai-provider-admin@1.0.0",
+  "status": "implemented_and_isolated_synthetic_oracle_candidate_verified",
+  "authorization": {
+    "allowed_actor": "sole_active_administrator_with_verified_admin_session",
+    "ordinary_member_allowed": false,
+    "second_active_administrator_fails_closed": true,
+    "member_capability_exposes_endpoint_model_gate_or_secret": false,
+    "actual_model_id_visible_only_to_admin_settings_connection_test_and_server_storage": true
+  },
+  "configuration": {
+    "optimistic_revision_required": true,
+    "selected_modes": [
+      "off",
+      "test",
+      "local"
+    ],
+    "provider_names": {
+      "off": "disabled",
+      "test": "dynamic_test",
+      "local": "local_openai_compatible"
+    },
+    "api_key_request_field_allowed": false,
+    "api_key_database_field_allowed": false,
+    "api_key_source": "server_secret_only",
+    "api_key_response": "configured_boolean_only",
+    "admin_web_fields": [
+      "mode",
+      "base_url",
+      "model",
+      "expected_revision",
+      "reason"
+    ],
+    "endpoint_scope": "loopback_or_host_docker_internal_only",
+    "redirects_allowed": false,
+    "environment_proxy_inheritance": false,
+    "external_processing_allowed": false,
+    "off_blocks_new_requests_immediately": true,
+    "off_cancels_in_flight_local_provider_request": false,
+    "in_flight_local_provider_request_may_complete_after_off": true
+  },
+  "local_revision_verification": {
+    "required_before_member_record_processing": true,
+    "test_fixture": "fixed_synthetic_records_only",
+    "verification_contract_version": "health-ai-provider-verification@3",
+    "answer_template_version": "household-ai-answer@1.1.0",
+    "verified_revision_must_equal_configuration_revision": true,
+    "endpoint_or_model_change_invalidates": true,
+    "server_api_key_change_invalidates": true,
+    "verification_contract_or_answer_template_change_invalidates": true,
+    "concurrent_configuration_change_during_test": "409_without_marking_new_revision_verified",
+    "verification_binding": {
+      "configuration_revision": [
+        "endpoint",
+        "model"
+      ],
+      "server_only_non_reversible_fingerprint": [
+        "verification_contract_version",
+        "answer_template_version",
+        "server_api_key"
+      ]
+    },
+    "effective_verification_binding": [
+      "verification_contract_version",
+      "answer_template_version",
+      "endpoint",
+      "model",
+      "server_api_key"
+    ],
+    "verification_fingerprint_exposed": false
+  },
+  "connection_test": {
+    "uses_member_health_data": false,
+    "uses_fixed_synthetic_records": true,
+    "creates_answer_history": false,
+    "writes_formal_health_fact": false,
+    "validates": [
+      "transport",
+      "strict_response_contract",
+      "citation_allowlist",
+      "all_record_explicit_anchor_grounding",
+      "quantitative_Rn_equals_value_unit_grounding",
+      "known_safety_gates"
+    ],
+    "proves_medical_correctness": false,
+    "connection_test_response_visible_or_persisted_as_member_answer": false,
+    "success_and_failure_audit_are_metadata_only": true
+  },
+  "dynamic_test_provider": {
+    "provider_name": "dynamic_test",
+    "server_gate": "HEALTH_AI_TEST_PROVIDER_ALLOWED=true",
+    "instance_gate": "INSTANCE_DATA_CLASS=synthetic",
+    "both_gates_required": true,
+    "default_enabled": false,
+    "is_language_model": false,
+    "required_disclosure": "虚构数据测试 · 非模型回答",
+    "groups_by": "metric_id",
+    "orders_by": [
+      "date",
+      "record_id"
+    ],
+    "output_changes_with_authorized_record": true,
+    "input_order_invariant": true,
+    "single_record_claims_trend": false,
+    "uses_only_existing_status": true,
+    "maximum_answer_items": 8,
+    "tools_available": [],
+    "provider_result_is_direct_test_answer": true
+  },
+  "lightweight_runtime": {
+    "model_id_admin_configurable": true,
+    "runtime_model_brand_hardcoded": false,
+    "editable_starting_preset": {
+      "label": "填入本机地址",
+      "base_url": "http://host.docker.internal:11434/v1",
+      "model": null,
+      "prefills_model": false,
+      "endorses_or_recommends_model": false,
+      "form_prefill_only": true,
+      "downloads_or_starts_runtime": false,
+      "persists_configuration": false,
+      "changes_mode_or_enables_ai": false,
+      "proves_runtime_installed_or_reachable": false,
+      "explicit_admin_save_and_revision_connection_test_still_required": true
+    },
+    "temperature": 0,
+    "maximum_request_records": 200,
+    "maximum_input_characters": 24000,
+    "maximum_response_bytes": 256000,
+    "maximum_output_tokens": 800,
+    "record_omission_disclosed": true,
+    "character_or_response_over_budget_behavior": "reject_without_silent_truncation"
+  },
+  "model_output": {
+    "answer_template_version": "household-ai-answer@1.1.0",
+    "strict_schema_required": true,
+    "answer_item_citation_union_covers_all_fixed_test_records": true,
+    "every_selected_record_requires_explicit_anchor": "R#=<primary_value><unit>",
+    "dual_reading_anchor": "R#=<primary_value>/<secondary_value><unit>",
+    "citation_id_without_explicit_value_binding_is_rejected": true,
+    "same_value_from_unrelated_record_is_rejected": true,
+    "date_or_record_count_number_coincidence_rejected": true,
+    "missing_cited_primary_value": {
+      "http_status": 502,
+      "error_code": "health_ai_ungrounded_model_output",
+      "visible": false,
+      "persisted": false
+    },
+    "prompt_injection_defense_must_not_label_records_data_or_results_untrusted_or_unreliable": true,
+    "validated_provider_answer_visible": true,
+    "validated_provider_answer_persisted_in_separate_history": true,
+    "unvalidated_provider_response_visible": false,
+    "unvalidated_provider_response_persisted": false,
+    "user_visible_output": "validated_provider_answer_with_server_fixed_disclosures",
+    "can_write_formal_health_facts_originals_or_trends": false,
+    "tools_available": [],
+    "user_visible_output_proves_medical_correctness": false,
+    "server_fixed_disclosures": [
+      "selected_data_scope",
+      "non_diagnostic_and_no_health_safety_guarantee",
+      "cross_institution_method_reference_range_comparability"
+    ],
+    "required_fixed_comparability_limitation": "不同机构、检测方法或参考范围的结果可能不可直接比较；请结合原报告或由专业医疗人员判断。"
+  },
+  "audit_excludes": [
+    "base_url",
+    "model",
+    "model_id",
+    "actual_model_id",
+    "api_key",
+    "api_key_fingerprint",
+    "synthetic_test_payload",
+    "provider_answer_text",
+    "question",
+    "answer",
+    "metric_label",
+    "health_value"
+  ],
+  "runtime": {
+    "supported_in_app_question_ids": [
+      "recent_changes"
+    ],
+    "canonical_in_app_questions": {
+      "recent_changes": "最近有哪些变化？"
+    },
+    "question_text_mismatch": {
+      "http_status": 422,
+      "error_code": "health_ai_question_text_mismatch",
+      "provider_calls": 0,
+      "answer_history_writes": 0
+    },
+    "provider_payload_and_history_use_server_canonical_text": true,
+    "member_capability_model": null,
+    "member_processing_model_labels": {
+      "local_openai_compatible": "家庭服务器安全整理器",
+      "dynamic_test": "虚构规则测试器（非模型）"
+    },
+    "member_success_or_delete_audit_includes_actual_model_id": false,
+    "handoff_only_question_ids": [
+      "doctor_questions",
+      "term_or_custom",
+      "custom"
+    ],
+    "mobile_or_browser_direct_database_access": false,
+    "ai_can_write_formal_health_data": false,
+    "answer_history_is_separate_write": true,
+    "shared_archive_generate_copy_or_in_app_call_allowed": false,
+    "history_read_after_disable": true
+  },
+  "release_boundary": {
+    "new_output_contract_implementation_verified": true,
+    "candidate_selected_mode": "test",
+    "candidate_effective_mode": "test",
+    "candidate_effective_provider": "dynamic_test",
+    "candidate_answer_source": "deterministic_non_model_oracle",
+    "real_local_model_calls_completed": true,
+    "approved_local_model": null,
+    "local_model_observations": {
+      "qwen3_0_6b": "failed_household_ai_answer_1_1_0_explicit_all_record_binding_gate",
+      "qwen3_1_7b": "failed_household_ai_answer_1_1_0_explicit_all_record_binding_gate",
+      "qwen3_4b": "cpu_warmup_not_completed_within_10_minutes"
+    },
+    "historical_18_23_second_result": "superseded_weaker_pre_1_1_0_gate_only",
+    "model_language_quality_verified": false,
+    "medical_risk_or_screening_completed": false,
+    "public_production_ready": false
+  }
+}

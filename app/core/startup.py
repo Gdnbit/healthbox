@@ -1,0 +1,207 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import os
+
+from app.core.config import settings
+from app.core.database.database import (
+    check_database_connection,
+    check_sequences_on_startup,
+    create_default_user,
+    database_migrations,
+)
+from app.core.database.migrations import run_startup_data_migrations
+from app.core.events import get_event_registry, setup_event_system
+from app.core.logging.config import get_logger
+from app.core.logging.constants import LogFields
+from app.core.utils.datetime_utils import set_application_startup_time
+from app.services.notification_handlers import create_notification_handler
+
+logger = get_logger(__name__, "app")
+
+
+async def startup_event():
+    """Initialize database tables on startup"""
+    # Record the actual application startup time
+    set_application_startup_time()
+
+    logger.info(
+        "Application starting up",
+        extra={
+            LogFields.CATEGORY: "app",
+            LogFields.EVENT: "application_startup",
+            "version": settings.VERSION,
+        },
+    )
+
+    # Initialize the event system (event registry and bus)
+    event_bus = setup_event_system()
+    logger.info("Event system initialized")
+
+    # Subscribe notification handler to all registered events
+    from app.core.database.database import SessionLocal
+
+    registry = get_event_registry()
+    notification_handler = create_notification_handler(SessionLocal)
+
+    event_count = 0
+    for event_metadata in registry.all():
+        event_bus.subscribe(event_metadata.event_type, notification_handler)
+        event_count += 1
+
+    logger.info(
+        "Notification handler subscribed to events",
+        extra={
+            LogFields.CATEGORY: "app",
+            LogFields.EVENT: "event_subscriptions_initialized",
+            "event_count": event_count,
+        },
+    )
+
+    # Initialize and validate timezone configuration
+    from app.core.utils.datetime_utils import get_facility_timezone
+
+    try:
+        tz = get_facility_timezone()
+        logger.info(f"Timezone configured successfully: {tz}")
+    except Exception as e:
+        logger.warning(f"Timezone configuration warning: {e}, using UTC fallback")
+
+    # Skip database operations if in test mode
+    skip_migrations = os.getenv("SKIP_MIGRATIONS", "false").lower() == "true"
+
+    if skip_migrations:
+        logger.info("⏭️ Skipping database operations (test mode)")
+        logger.info("Application startup completed (test mode)")
+        return
+
+    # Check if database connection is valid
+    db_check_result = check_database_connection()
+
+    if not db_check_result:
+        error_msg = "STARTUP FAILED: Cannot connect to database"
+
+        # Provide helpful troubleshooting information
+        if settings.DATABASE_URL.startswith("postgresql"):
+            error_msg += "\n   Database backend: PostgreSQL (connection details omitted)"
+            error_msg += "\n   💡 Possible solutions:"
+            error_msg += "\n      • Start your PostgreSQL database container: docker-compose up -d postgres"
+            error_msg += (
+                "\n      • Check if PostgreSQL is running on the specified host/port"
+            )
+            error_msg += "\n      • Verify database credentials in your .env file"
+        elif settings.DATABASE_URL.startswith("sqlite"):
+            error_msg += "\n   Database backend: SQLite (file path omitted)"
+            error_msg += "\n   💡 Check if the SQLite database file path is accessible"
+
+        logger.error(error_msg)
+
+        # Instead of sys.exit(1), raise a more informative startup error
+        raise RuntimeError(
+            "Database connection failed. See logs above for troubleshooting steps."
+        )
+
+        logger.info("Database connection established")
+
+    # Run database migrations
+    migration_success = database_migrations()
+    if not migration_success:
+        error_msg = "STARTUP FAILED: Database migrations failed"
+        error_msg += "\n   💡 Possible solutions:"
+        error_msg += "\n      • Check if the database schema is compatible"
+        error_msg += "\n      • Verify Alembic migration files are present"
+        error_msg += "\n      • Ensure proper database permissions"
+
+        logger.error(error_msg)
+
+        # Instead of sys.exit(1), raise a more informative startup error
+        raise RuntimeError("Database migrations failed. See logs above for details.")
+
+    # Create default user if not exists
+    create_default_user()
+    await check_sequences_on_startup()
+
+    # Run data migrations (after users/database setup is complete)
+    run_startup_data_migrations()
+
+    # Load admin-toggleable settings persisted in system_settings (e.g.
+    # allow_user_registration, backup/trash retention). The env-var defaults
+    # from app.core.config.Settings were already loaded at import time; any
+    # persisted value overrides them here.
+    try:
+        from app.core.persisted_settings import load_persisted_settings
+
+        db = SessionLocal()
+        try:
+            load_persisted_settings(db)
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning(f"Could not load persisted admin settings: {e}")
+        # Non-fatal - app falls back to env-var defaults already in memory
+
+    # Initialize standardized tests from LOINC
+    try:
+        from app.core.utils.test_initialization import ensure_tests_initialized
+
+        db = SessionLocal()
+        try:
+            ensure_tests_initialized(db)
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning(f"Could not initialize standardized tests: {e}")
+        # Non-fatal - app can still function without pre-loaded tests
+
+    # Initialize activity tracking
+    # NOTE: Automatic activity tracking disabled to prevent double logging
+    # Manual activity logging is used instead via app.api.activity_logging
+    logger.info("Activity tracking initialization skipped (using manual logging)")
+
+    # Initialize auto-backup scheduler
+    try:
+        from app.services.backup_scheduler_service import BackupSchedulerService
+
+        scheduler = BackupSchedulerService.get_instance()
+        await scheduler.start()
+    except Exception as e:
+        logger.warning(f"Could not initialize auto-backup scheduler: {e}")
+        # Non-fatal - app can still function without auto-backups
+
+    # Initialize medication reminder scheduler
+    try:
+        from app.services.medication_reminder_scheduler import (
+            MedicationReminderSchedulerService,
+        )
+
+        med_scheduler = MedicationReminderSchedulerService.get_instance()
+        await med_scheduler.start()
+    except Exception as e:
+        logger.warning(f"Could not initialize medication reminder scheduler: {e}")
+        # Non-fatal - app still functions without reminders
+
+    # Initialize durable local source parsing worker. The production entrypoint
+    # intentionally runs one Uvicorn process; queued work remains in PostgreSQL
+    # and interrupted work is requeued by this worker on the next startup.
+    try:
+        from app.services.health_source_parse_worker import (
+            HealthSourceParseWorkerService,
+        )
+
+        parse_worker = HealthSourceParseWorkerService.get_instance()
+        await parse_worker.start()
+    except Exception as e:
+        logger.warning(f"Could not initialize local source parse worker: {e}")
+        # Non-fatal - request-scoped fallback still safely processes new tasks.
+
+    # Complete archive exports use the same durable single-process pattern.
+    try:
+        from app.services.health_archive_export_worker import (
+            HealthArchiveExportWorkerService,
+        )
+
+        archive_worker = HealthArchiveExportWorkerService.get_instance()
+        await archive_worker.start()
+    except Exception as e:
+        logger.warning(f"Could not initialize health archive export worker: {e}")
+        # Non-fatal - request-scoped fallback safely processes new tasks.
+
+    logger.info("Application startup completed")

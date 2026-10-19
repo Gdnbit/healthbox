@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.3",
+  "capabilities": {
+    "owner_global_read": {
+      "allowed_actor": "sole_active_administrator",
+      "explicit_request_value": "global_read",
+      "allowed_methods": [
+        "GET",
+        "HEAD"
+      ],
+      "required_context": [
+        "target_patient_id",
+        "resource",
+        "purpose"
+      ],
+      "required_response_context": [
+        "access_basis",
+        "permission_level"
+      ],
+      "required_audit_fields": [
+        "actor_user_id",
+        "target_patient_id",
+        "access_basis",
+        "resource",
+        "purpose",
+        "request_method",
+        "request_path",
+        "result"
+      ],
+      "resource_audit_contracts": {
+        "source_document_download": {
+          "action": "downloaded",
+          "entity_type": "health_source_document",
+          "required_audit_fields": [
+            "source_document_id"
+          ],
+          "audit_after": [
+            "source_document_exists",
+            "entity_file_binding_matches",
+            "local_file_exists"
+          ]
+        },
+        "source_document_preview": {
+          "action": "viewed",
+          "entity_type": "health_source_document",
+          "allowed_mime_types": [
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+          ],
+          "required_audit_fields": [
+            "source_document_id"
+          ],
+          "audit_after": [
+            "source_document_exists",
+            "entity_file_binding_matches",
+            "local_file_exists",
+            "source_and_entity_file_mime_match",
+            "preview_mime_is_allowed"
+          ],
+          "required_response_properties": [
+            "inline_content_disposition",
+            "no_store",
+            "nosniff",
+            "sandbox_content_security_policy"
+          ]
+        },
+        "dashboard_export": {
+          "action": "exported",
+          "entity_type": "patient",
+          "allowed_handoff_kinds": [
+            "clipboard",
+            "csv",
+            "print"
+          ],
+          "forbidden_handoff_kinds": [
+            "clipboard_ai"
+          ],
+          "allowed_scopes": [
+            "all-loaded",
+            "latest-report",
+            "recent-five-years"
+          ],
+          "required_audit_fields": [
+            "handoff_kind",
+            "handoff_scope",
+            "include_reports",
+            "metric_count",
+            "report_count"
+          ],
+          "authorization_response_must_not_include": [
+            "health_values",
+            "metric_ids",
+            "report_ids",
+            "report_titles"
+          ],
+          "client_handoff_after": [
+            "dashboard_reads_succeeded",
+            "authorization_audit_succeeded"
+          ]
+        }
+      }
+    },
+    "member_access_reset": {
+      "allowed_actor": "sole_active_administrator",
+      "allowed_target": "active_ordinary_local_or_hybrid_member",
+      "temporary_credential_ttl_minutes": 60,
+      "required_request_fields": [
+        "confirm_username",
+        "reason"
+      ],
+      "required_response_fields": [
+        "target_user_id",
+        "target_username",
+        "temporary_password",
+        "expires_at",
+        "must_change_password",
+        "sessions_revoked",
+        "result"
+      ],
+      "required_audit_fields": [
+        "actor_user_id",
+        "target_user_id",
+        "reason",
+        "expires_at",
+        "sessions_revoked",
+        "must_change_password",
+        "result"
+      ]
+    }
+  },
+  "forbidden_audit_fields": [
+    "health_values",
+    "old_password",
+    "new_password",
+    "temporary_password",
+    "password_hash",
+    "access_token",
+    "refresh_token",
+    "mfa_secret",
+    "recovery_codes"
+  ],
+  "invariants": [
+    "administrator global read is separate from ordinary sharing and is never inferred from a shared-patient write permission",
+    "administrator global read is fail-closed unless the caller is the sole active administrator and explicitly requests global_read with a bounded purpose",
+    "administrator global read never grants create, update, delete, upload, review, commit, void, withdraw, or delegated-upload authority",
+    "every cross-subject global read, original-file view or download, and export handoff creates an audit record without copying health values",
+    "cross-subject dashboard clipboard, CSV, and print handoff is limited to the already-loaded dashboard snapshot and fails closed before client output when the audit authorization is unavailable",
+    "browser preview reuses the retained original, allows only explicitly listed PDF and image MIME types, revokes the client object URL on close, and audits only after source and file validation",
+    "cross-subject AI transfer and complete server-archive batch export remain unavailable through the dashboard handoff capability",
+    "ordinary members cannot discover or invoke administrator global-read or member-reset capabilities",
+    "member reset never accepts an administrator target and never reactivates a deactivated account",
+    "the server generates the temporary password, returns it once with no-store caching, stores only a formal password hash, and never writes the credential to logs or audit metadata",
+    "member reset advances auth_version, revokes old sessions, forces a password change, expires after 60 minutes, and can be used for at most one login",
+    "wrong target confirmation, unsupported authentication method, multiple active administrators, or any persistence failure causes a full rollback"
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "contract_version": "1.0.0",
+  "contract_id": "household-synthetic-six-account-e2e",
+  "case_id": "CASE-MVP-SYNTHETIC-SIX-ACCOUNT-E2E",
+  "actors": {
+    "A": "sole_administrator",
+    "B": "ordinary_member_family_one",
+    "C": "ordinary_member_family_two",
+    "D": "ordinary_member_friend_one",
+    "E": "ordinary_member_friend_two",
+    "F": "ordinary_member_friend_three"
+  },
+  "active_circles": [
+    ["A", "B", "C"],
+    ["A", "D"],
+    ["A", "E", "F"]
+  ],
+  "expected_visible_subjects": {
+    "A": ["A", "B", "C", "D", "E", "F"],
+    "B": ["A", "B", "C"],
+    "C": ["A", "B", "C"],
+    "D": ["A", "D"],
+    "E": ["A", "E", "F"],
+    "F": ["A", "E", "F"]
+  },
+  "cross_circle_direct_request_status": 404,
+  "circle_lifecycle": {
+    "transition": ["active", "paused", "active"],
+    "final_active_circles": 3,
+    "final_active_memberships": 8
+  },
+  "ordinary_directory_forbidden_fields": [
+    "circle_id",
+    "circle_name",
+    "membership_id",
+    "account_id",
+    "username"
+  ],
+  "shared_dashboard_forbidden_fields": [
+    "source_document_id",
+    "source_filename",
+    "facility",
+    "notes",
+    "report_text",
+    "circle_id",
+    "circle_name",
+    "export",
+    "write",
+    "ai"
+  ],
+  "synthetic_source_flow": [
+    "durable_originals",
+    "exact_duplicate_rejected",
+    "parse_candidates_only",
+    "explicit_review",
+    "separate_commit",
+    "two_point_trends",
+    "owner_exports",
+    "source_withdrawal",
+    "source_restoration"
+  ],
+  "formal_write_before_commit": 0,
+  "expected_final_counts": {
+    "accounts": 6,
+    "owned_subjects": 6,
+    "current_consents": 6,
+    "archive_circles": 3,
+    "active_memberships": 8,
+    "source_documents": 2,
+    "successful_parse_tasks": 2,
+    "committed_import_batches": 2,
+    "lab_results": 2,
+    "formal_lab_components": 4,
+    "dashboard_metrics": 2,
+    "points_per_metric": 2
+  },
+  "source_withdrawal_invariant": "committed_formal_trends_remain",
+  "visual_invariants": [
+    "no_horizontal_document_overflow_at_1440x900",
+    "no_horizontal_document_overflow_at_390x844",
+    "all_iso_date_ticks_stay_inside_chart_bounds",
+    "smoothing_does_not_invent_observations"
+  ],
+  "safety_boundaries": [
+    "synthetic_data_only",
+    "no_external_processing",
+    "no_real_health_paths",
+    "no_stable_8005_mutation",
+    "not_public_release_evidence"
+  ]
+}

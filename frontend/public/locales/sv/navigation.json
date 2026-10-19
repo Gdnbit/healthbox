@@ -1,0 +1,123 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "activity": {
+    "actions": {
+      "added": "Tillagd",
+      "deleted": "Raderad",
+      "modified": "Ändrad",
+      "removed": "Borttagen",
+      "scheduled": "Schemalagd",
+      "updated": "Uppdaterad",
+      "viewed": "Visad"
+    }
+  },
+  "dashboard": {
+    "activity": {
+      "lastUpdated": "Senast uppdaterad",
+      "noActivity": "Ingen senaste aktivitet",
+      "noActivityDescription": "Dina journalaktiviteter visas här"
+    },
+    "hello": "Hej",
+    "loading": "Laddar din medicinska instrumentpanel...",
+    "modules": {
+      "exportRecords": "Exportera journaler",
+      "visitHistory": "Besökshistorik"
+    },
+    "search": {
+      "advancedSearch": "Avancerad sökning",
+      "placeholder": "Sök i journaler..."
+    },
+    "sections": {
+      "additionalResources": "Ytterligare resurser",
+      "coreMedical": "Medicinsk kärninfo",
+      "healthMonitoring": "Hälsoövervakning",
+      "prevention": "Prevention och historik",
+      "recentActivity": "Senaste aktivitet",
+      "treatments": "Behandlingar och ingrepp"
+    },
+    "stats": {
+      "activeMedications": "Aktiva mediciner"
+    },
+    "subtitle": "Hantera din hälsoinformation säkert",
+    "title": "HealthBox Instrumentpanel"
+  },
+  "invitations": {
+    "acceptButton": "Godkänn inbjudan",
+    "confirmDescription": "Genom att godkänna får du tillgång att se den delade medicinska informationen.",
+    "confirmQuestion": "Är du säker på att du vill godkänna denna inbjudan?",
+    "confirmTitle": "Bekräfta godkännande av inbjudan",
+    "from": "Från",
+    "lastUpdated": "Senast uppdaterad",
+    "manageAll": "Hantera alla inbjudningar",
+    "noPending": "Inga väntande inbjudningar",
+    "noPendingDescription": "Nya delningsinbjudningar visas här",
+    "sharePatient": "Dela patient",
+    "title": "Inbjudningar",
+    "types": {
+      "patientRecord": "Patientjournal"
+    }
+  },
+  "menu": {
+    "account": "Konto",
+    "backToDashboard": "Tillbaka till instrumentpanelen",
+    "darkMode": "Mörkt läge",
+    "help": "Hjälp",
+    "lightMode": "Ljust läge",
+    "logout": "Logga ut",
+    "patients": "Patienter",
+    "profile": "Profil",
+    "reports": "Rapporter",
+    "userActions": "Användaråtgärder"
+  },
+  "pages": {
+    "help": "Hjälp och support",
+    "medicalHistory": "Sjukdomshistorik",
+    "patientDetails": "Patientdetaljer",
+    "patientList": "Patientlista",
+    "preferences": "Preferenser",
+    "reports": "Rapporter",
+    "userProfile": "Användarprofil"
+  },
+  "sections": {
+    "personalInfo": "Personlig information",
+    "preferences": "Preferenser"
+  },
+  "sidebarNav": {
+    "items": {
+      "adminDashboard": "Administrationspanel",
+      "allergies": "Allergier",
+      "backupManagement": "Backup-hantering",
+      "conditions": "Tillstånd",
+      "customReports": "Anpassade rapporter",
+      "dataModels": "Datamodeller",
+      "emergencyContacts": "Nödkontakter",
+      "exportRecords": "Exportera journaler",
+      "familyHistory": "Familjehistorik",
+      "immunizations": "Vaccinationer",
+      "injuries": "Skador",
+      "insurance": "Försäkring",
+      "labResults": "Laboratorieresultat",
+      "language": "Språk",
+      "medicalEquipment": "Medicinsk utrustning",
+      "medications": "Mediciner",
+      "patientInfo": "Patientinfo",
+      "pharmacies": "Apotek",
+      "practitioners": "Vårdgivare",
+      "procedures": "Ingrepp",
+      "settings": "Inställningar",
+      "symptoms": "Symptom",
+      "systemHealth": "Systemhälsa",
+      "tagManagement": "Tagghantering",
+      "theme": "Tema",
+      "treatments": "Behandlingar",
+      "visitHistory": "Besökshistorik",
+      "vitalSigns": "Vitalparametrar"
+    },
+    "sections": {
+      "administration": "Administration",
+      "careAndTreatment": "Vård och behandling",
+      "misc": "Övrigt",
+      "tools": "Verktyg"
+    }
+  }
+}

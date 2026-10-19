@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-07-22T06:00:00.000Z",
+  "patient_label": "合成家庭成员",
+  "trend_response": {
+    "test_name": "Synthetic Marker",
+    "unit": "mmol/L",
+    "category": "chemistry",
+    "result_type": "quantitative",
+    "is_aggregated": false,
+    "statistics": {
+      "count": 3,
+      "trend_direction": "stable",
+      "normal_count": 2,
+      "abnormal_count": 1,
+      "result_type": "quantitative"
+    },
+    "data_points": [
+      {
+        "id": 103,
+        "value": 6.2,
+        "unit": "mmol/L",
+        "status": "high",
+        "ref_range_min": 3.9,
+        "ref_range_max": 6.1,
+        "recorded_date": "2026-03-01",
+        "created_at": "2026-03-02T01:00:00Z",
+        "result_type": "quantitative",
+        "lab_result": {"id": 13, "test_name": "Synthetic Annual Panel", "completed_date": "2026-03-01"}
+      },
+      {
+        "id": 101,
+        "value": 5.2,
+        "unit": "mmol/L",
+        "status": "normal",
+        "ref_range_text": "3.9–6.1",
+        "recorded_date": "2024-03-01",
+        "created_at": "2024-03-02T01:00:00Z",
+        "result_type": "quantitative",
+        "lab_result": {"id": 11, "test_name": "Synthetic Baseline Panel", "completed_date": "2024-03-01"}
+      },
+      {
+        "id": 102,
+        "value": 5.4,
+        "unit": "mmol/L",
+        "status": "normal",
+        "ref_range_min": 3.9,
+        "ref_range_max": 6.1,
+        "recorded_date": "2025-03-01",
+        "created_at": "2025-03-02T01:00:00Z",
+        "result_type": "quantitative",
+        "lab_result": {"id": 12, "test_name": "Synthetic Follow-up Panel", "completed_date": "2025-03-01"}
+      }
+    ]
+  },
+  "malicious_text": "=HYPERLINK(\"https://invalid.example\")<script>alert(1)</script>&"
+}

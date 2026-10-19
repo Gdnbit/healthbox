@@ -1,0 +1,133 @@
+/**
+ * Family Member form field configuration
+ */
+
+export const familyMemberFormFields = [
+  {
+    name: 'name',
+    type: 'text',
+    labelKey: 'shared:fields.fullName',
+    placeholderKey: 'medical:familyHistory.form.member.name.placeholder',
+    required: true,
+    descriptionKey: 'medical:familyHistory.form.member.name.description',
+    gridColumn: 6,
+  },
+  {
+    name: 'relationship',
+    type: 'select',
+    labelKey: 'medical:familyHistory.form.member.relationship.label',
+    placeholderKey: 'shared:fields.selectRelationship',
+    required: true,
+    descriptionKey:
+      'medical:familyHistory.form.member.relationship.description',
+    gridColumn: 6,
+    searchable: true,
+    options: [
+      {
+        value: 'father',
+        labelKey:
+          'medical:familyHistory.form.member.relationshipOptions.father',
+      },
+      {
+        value: 'mother',
+        labelKey:
+          'medical:familyHistory.form.member.relationshipOptions.mother',
+      },
+      {
+        value: 'brother',
+        labelKey:
+          'medical:familyHistory.form.member.relationshipOptions.brother',
+      },
+      {
+        value: 'sister',
+        labelKey:
+          'medical:familyHistory.form.member.relationshipOptions.sister',
+      },
+      {
+        value: 'paternal_grandfather',
+        labelKey:
+          'medical:familyHistory.form.member.relationshipOptions.paternalGrandfather',
+      },
+      {
+        value: 'paternal_grandmother',
+        labelKey:
+          'medical:familyHistory.form.member.relationshipOptions.paternalGrandmother',
+      },
+      {
+        value: 'maternal_grandfather',
+        labelKey:
+          'medical:familyHistory.form.member.relationshipOptions.maternalGrandfather',
+      },
+      {
+        value: 'maternal_grandmother',
+        labelKey:
+          'medical:familyHistory.form.member.relationshipOptions.maternalGrandmother',
+      },
+      {
+        value: 'uncle',
+        labelKey: 'medical:familyHistory.form.member.relationshipOptions.uncle',
+      },
+      {
+        value: 'aunt',
+        labelKey: 'medical:familyHistory.form.member.relationshipOptions.aunt',
+      },
+      {
+        value: 'cousin',
+        labelKey:
+          'medical:familyHistory.form.member.relationshipOptions.cousin',
+      },
+      { value: 'other', labelKey: 'shared:fields.other' },
+    ],
+  },
+  {
+    name: 'gender',
+    type: 'select',
+    labelKey: 'medical:familyHistory.form.member.gender.label',
+    placeholderKey: 'shared:fields.selectGender',
+    descriptionKey: 'medical:familyHistory.form.member.gender.description',
+    gridColumn: 4,
+    clearable: true,
+    options: [
+      { value: 'male', labelKey: 'shared:fields.male' },
+      { value: 'female', labelKey: 'shared:fields.female' },
+      { value: 'other', labelKey: 'shared:fields.other' },
+    ],
+  },
+  {
+    name: 'birth_year',
+    type: 'number',
+    labelKey: 'medical:familyHistory.form.member.birthYear.label',
+    placeholderKey: 'medical:familyHistory.form.member.birthYear.placeholder',
+    descriptionKey: 'medical:familyHistory.form.member.birthYear.description',
+    gridColumn: 4,
+    min: 1900,
+    max: new Date().getFullYear(),
+  },
+  {
+    name: 'is_deceased',
+    type: 'checkbox',
+    labelKey: 'medical:familyHistory.form.member.deceased.label',
+    descriptionKey: 'medical:familyHistory.form.member.deceased.description',
+    gridColumn: 4,
+  },
+  {
+    name: 'death_year',
+    type: 'number',
+    labelKey: 'medical:familyHistory.form.member.deathYear.label',
+    placeholderKey: 'medical:familyHistory.form.member.deathYear.placeholder',
+    descriptionKey: 'medical:familyHistory.form.member.deathYear.description',
+    gridColumn: 6,
+    min: 1900,
+    max: new Date().getFullYear(),
+  },
+  {
+    name: 'notes',
+    type: 'textarea',
+    labelKey: 'shared:tabs.notes',
+    placeholderKey: 'medical:familyHistory.form.member.notes.placeholder',
+    descriptionKey: 'medical:familyHistory.form.member.notes.description',
+    gridColumn: 12,
+    minRows: 3,
+    maxRows: 6,
+  },
+];

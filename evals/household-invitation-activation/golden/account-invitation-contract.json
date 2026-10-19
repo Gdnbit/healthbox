@@ -1,0 +1,109 @@
+{
+  "contract_id": "household-account-invitation@1.0.0",
+  "scope": "invited_ordinary_member_account_activation",
+  "issuer": {
+    "role": "sole_active_administrator",
+    "ordinary_member_forbidden": true,
+    "public_registration_remains_disabled": true,
+    "second_administrator_invitation_forbidden": true
+  },
+  "delivery": {
+    "mode": "administrator_copies_link",
+    "email_sms_push": false,
+    "path_template": "/activate#token=<single-display-secret>",
+    "api_token_transport": "json_body_only",
+    "token_removed_from_address_bar_after_capture": true
+  },
+  "token": {
+    "minimum_random_bits": 256,
+    "stored_form": "sha256_only",
+    "plaintext_returned_once": true,
+    "default_ttl_hours": 72,
+    "allowed_ttl_hours": [
+      24,
+      72,
+      168
+    ],
+    "single_use": true
+  },
+  "states": [
+    "pending",
+    "activated",
+    "declined",
+    "cancelled",
+    "expired"
+  ],
+  "terminal_states": [
+    "activated",
+    "declined",
+    "cancelled",
+    "expired"
+  ],
+  "public_unavailable_states_share_one_error": true,
+  "activation_input": [
+    "token",
+    "username",
+    "display_name",
+    "birth_date",
+    "gender",
+    "password",
+    "privacy_notice_version",
+    "privacy_notice_accepted"
+  ],
+  "client_forbidden_activation_input": [
+    "role",
+    "email",
+    "user_id",
+    "patient_id",
+    "owner_user_id",
+    "archive_circle_id",
+    "is_active",
+    "auth_version"
+  ],
+  "activation_transaction": [
+    "lock_and_revalidate_invitation",
+    "lock_issuer_and_revalidate_capacity",
+    "create_role_user_account",
+    "create_one_owned_self_subject",
+    "set_active_subject",
+    "record_current_privacy_notice_acceptance",
+    "mark_invitation_activated",
+    "append_redacted_audit",
+    "commit_once"
+  ],
+  "rollback_invariant": "all_or_nothing",
+  "capacity": {
+    "maximum_active_accounts": 20,
+    "pending_invitations_reserve_capacity": true,
+    "activation_rechecks_capacity": true
+  },
+  "privacy": {
+    "current_version_required": true,
+    "sole_administrator_global_read_disclosed": true,
+    "reciprocal_structured_dashboard_configuration_disclosed": true,
+    "external_processing_consent_included": false
+  },
+  "success": {
+    "role": "user",
+    "owned_subject_count": 1,
+    "auto_login": false,
+    "archive_circle_membership_created": false,
+    "external_request_sent": false
+  },
+  "audit_forbidden_values": [
+    "plaintext_token",
+    "token_hash",
+    "password",
+    "password_hash",
+    "birth_date",
+    "health_values",
+    "report_content",
+    "internal_email"
+  ],
+  "ui": {
+    "locale": "zh-CN",
+    "desktop": true,
+    "mobile_viewport": "390x844",
+    "ordinary_member_mfa_controls": false
+  }
+}

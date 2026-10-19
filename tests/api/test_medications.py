@@ -1,0 +1,826 @@
+"""
+Tests for Medication API endpoints.
+"""
+
+import pytest
+from datetime import date
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.crud.patient import patient as patient_crud
+from app.models.clinical import Medication
+from app.schemas.patient import PatientCreate
+from tests.utils.user import create_random_user, create_user_token_headers
+
+
+class TestMedicationAPI:
+    """Test Medication API endpoints."""
+
+    @pytest.fixture
+    def user_with_patient(self, db_session: Session):
+        """Create a user with patient record for testing."""
+        user_data = create_random_user(db_session)
+        patient_data = PatientCreate(
+            first_name="John",
+            last_name="Doe",
+            birth_date=date(1990, 1, 1),
+            gender="M",
+            address="123 Main St",
+        )
+        patient = patient_crud.create_for_user(
+            db_session, user_id=user_data["user"].id, patient_data=patient_data
+        )
+        # Set as active patient for multi-patient system
+        user_data["user"].active_patient_id = patient.id
+        db_session.commit()
+        db_session.refresh(user_data["user"])
+        return {**user_data, "patient": patient}
+
+    @pytest.fixture
+    def authenticated_headers(self, user_with_patient):
+        """Create authentication headers."""
+        return create_user_token_headers(user_with_patient["user"].username)
+
+    def test_create_medication_success(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test successful medication creation."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "frequency": "once daily",
+            "route": "oral",
+            "effective_period_start": "2024-01-01",
+            "status": "active",
+            "indication": "Pain relief",
+        }
+
+        response = client.post(
+            "/api/v1/medications/", json=medication_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["medication_name"] == "Aspirin"
+        assert data["dosage"] == "100mg"
+        assert data["frequency"] == "once daily"
+        assert data["route"] == "oral"
+        assert data["status"] == "active"
+        assert data["patient_id"] == user_with_patient["patient"].id
+
+    def test_create_medication_unauthorized(self, client: TestClient):
+        """Test medication creation without authentication."""
+        medication_data = {
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "frequency": "once daily",
+        }
+
+        response = client.post("/api/v1/medications/", json=medication_data)
+        assert response.status_code == 401
+
+    def test_create_medication_invalid_data(
+        self, client: TestClient, authenticated_headers
+    ):
+        """Test medication creation with invalid data."""
+        medication_data = {
+            "dosage": "100mg",  # Missing required medication_name
+            "frequency": "once daily",
+        }
+
+        response = client.post(
+            "/api/v1/medications/", json=medication_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 422
+
+    def test_get_medications_list(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test getting list of medications."""
+        # First create a medication
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "frequency": "once daily",
+            "route": "oral",
+            "status": "active",
+        }
+
+        client.post(
+            "/api/v1/medications/", json=medication_data, headers=authenticated_headers
+        )
+
+        # Get medications list
+        response = client.get("/api/v1/medications/", headers=authenticated_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 1
+        assert data[0]["medication_name"] == "Aspirin"
+
+    def test_get_medications_returns_more_than_100(
+        self,
+        client: TestClient,
+        user_with_patient,
+        authenticated_headers,
+        db_session: Session,
+    ):
+        """Regression test for issue #843: list endpoint must not cap at 100 records."""
+        patient_id = user_with_patient["patient"].id
+        # Must exceed the previous 100-record cap that caused the bug.
+        bulk_count = 105
+        db_session.add_all(
+            [
+                Medication(
+                    medication_name=f"BulkMed{i:03d}",
+                    patient_id=patient_id,
+                    status="active",
+                )
+                for i in range(bulk_count)
+            ]
+        )
+        db_session.commit()
+
+        response = client.get("/api/v1/medications/", headers=authenticated_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == bulk_count, (
+            f"Expected {bulk_count} medications, got {len(data)} - "
+            "pagination cap may have regressed"
+        )
+
+    def test_get_medication_by_id(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test getting a specific medication by ID."""
+        # Create medication
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "frequency": "once daily",
+            "route": "oral",
+            "status": "active",
+        }
+
+        create_response = client.post(
+            "/api/v1/medications/", json=medication_data, headers=authenticated_headers
+        )
+
+        medication_id = create_response.json()["id"]
+
+        # Get medication by ID
+        response = client.get(
+            f"/api/v1/medications/{medication_id}", headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == medication_id
+        assert data["medication_name"] == "Aspirin"
+
+    def test_get_medication_nonexistent(
+        self, client: TestClient, authenticated_headers
+    ):
+        """Test getting a non-existent medication."""
+        response = client.get(
+            "/api/v1/medications/99999", headers=authenticated_headers
+        )
+        assert response.status_code == 404
+
+    def test_update_medication(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test updating a medication."""
+        # Create medication
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "frequency": "once daily",
+            "route": "oral",
+            "status": "active",
+        }
+
+        create_response = client.post(
+            "/api/v1/medications/", json=medication_data, headers=authenticated_headers
+        )
+
+        medication_id = create_response.json()["id"]
+
+        # Update medication
+        update_data = {
+            "dosage": "200mg",
+            "frequency": "twice daily",
+            "indication": "Updated dosage per doctor",
+        }
+
+        response = client.put(
+            f"/api/v1/medications/{medication_id}",
+            json=update_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["dosage"] == "200mg"
+        assert data["frequency"] == "twice daily"
+        assert data["indication"] == "Updated dosage per doctor"
+        assert data["medication_name"] == "Aspirin"  # Unchanged
+
+    def test_delete_medication(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test deleting a medication."""
+        # Create medication
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "frequency": "once daily",
+            "route": "oral",
+            "status": "active",
+        }
+
+        create_response = client.post(
+            "/api/v1/medications/", json=medication_data, headers=authenticated_headers
+        )
+
+        medication_id = create_response.json()["id"]
+
+        # Delete medication
+        response = client.delete(
+            f"/api/v1/medications/{medication_id}", headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+
+        # Verify deletion
+        get_response = client.get(
+            f"/api/v1/medications/{medication_id}", headers=authenticated_headers
+        )
+        assert get_response.status_code == 404
+
+    def test_medication_patient_isolation(
+        self, client: TestClient, db_session: Session
+    ):
+        """Test that users can only access their own medications."""
+        # Create first user with patient and medication
+        user1_data = create_random_user(db_session)
+        patient1_data = PatientCreate(
+            first_name="User", last_name="One", birth_date=date(1990, 1, 1), gender="M"
+        )
+        patient1 = patient_crud.create_for_user(
+            db_session, user_id=user1_data["user"].id, patient_data=patient1_data
+        )
+        # Set active patient for multi-patient system
+        user1_data["user"].active_patient_id = patient1.id
+        db_session.commit()
+        db_session.refresh(user1_data["user"])
+        headers1 = create_user_token_headers(user1_data["user"].username)
+
+        # Create second user with patient
+        user2_data = create_random_user(db_session)
+        patient2_data = PatientCreate(
+            first_name="User", last_name="Two", birth_date=date(1990, 1, 1), gender="F"
+        )
+        patient2 = patient_crud.create_for_user(
+            db_session, user_id=user2_data["user"].id, patient_data=patient2_data
+        )
+        # Set active patient for multi-patient system
+        user2_data["user"].active_patient_id = patient2.id
+        db_session.commit()
+        db_session.refresh(user2_data["user"])
+        headers2 = create_user_token_headers(user2_data["user"].username)
+
+        # User1 creates a medication
+        medication_data = {
+            "patient_id": patient1.id,
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "frequency": "once daily",
+        }
+
+        create_response = client.post(
+            "/api/v1/medications/", json=medication_data, headers=headers1
+        )
+
+        medication_id = create_response.json()["id"]
+
+        # User2 tries to access User1's medication - should fail
+        response = client.get(f"/api/v1/medications/{medication_id}", headers=headers2)
+        assert response.status_code == 404
+
+        # User2 tries to update User1's medication - should fail with 404
+        update_response = client.put(
+            f"/api/v1/medications/{medication_id}",
+            json={"dosage": "200mg"},
+            headers=headers2,
+        )
+        assert (
+            update_response.status_code == 404
+        ), "User2 should NOT be able to update User1's medication"
+
+    def test_medication_search_and_filtering(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test medication search and filtering capabilities."""
+        # Create multiple medications with different statuses
+        medications = [
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "medication_name": "Aspirin",
+                "dosage": "100mg",
+                "status": "active",
+            },
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "medication_name": "Ibuprofen",
+                "dosage": "200mg",
+                "status": "active",
+            },
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "medication_name": "Acetaminophen",
+                "dosage": "500mg",
+                "status": "stopped",
+            },
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "medication_name": "Aspirin Low Dose",
+                "dosage": "81mg",
+                "status": "stopped",
+            },
+        ]
+
+        created_ids = []
+        for med_data in medications:
+            response = client.post(
+                "/api/v1/medications/", json=med_data, headers=authenticated_headers
+            )
+            if response.status_code == 200:
+                created_ids.append(response.json()["id"])
+
+        # Test status filtering - should return only active medications
+        response = client.get(
+            "/api/v1/medications/?status=active", headers=authenticated_headers
+        )
+        assert response.status_code == 200
+        data = response.json()
+        # Should only return active medications
+        active_meds = [med for med in data if med["status"] == "active"]
+        assert len(active_meds) >= 2
+        # Verify all returned medications are active
+        for med in data:
+            assert med["status"] == "active"
+
+        # Test name filtering - should return only medications matching the name
+        response = client.get(
+            "/api/v1/medications/?name=Aspirin", headers=authenticated_headers
+        )
+        assert response.status_code == 200
+        data = response.json()
+        # Should return only medications with "Aspirin" in the name
+        assert len(data) >= 2  # Both Aspirin (active) and Aspirin Low Dose (stopped)
+        for med in data:
+            assert "aspirin" in med["medication_name"].lower()
+
+        # Test COMBINED filtering: name + status=active
+        # Should return only active medications with "Aspirin" in the name
+        response = client.get(
+            "/api/v1/medications/?name=Aspirin&status=active",
+            headers=authenticated_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 1
+        for med in data:
+            assert "aspirin" in med["medication_name"].lower()
+            assert med["status"] == "active"
+
+        # Test COMBINED filtering: name + status=stopped
+        # Should return only stopped medications with "Aspirin" in the name
+        response = client.get(
+            "/api/v1/medications/?name=Aspirin&status=stopped",
+            headers=authenticated_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 1
+        for med in data:
+            assert "aspirin" in med["medication_name"].lower()
+            assert med["status"] == "stopped"
+
+    def test_medication_pagination(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test medication pagination."""
+        # Create multiple medications
+        for i in range(5):
+            medication_data = {
+                "patient_id": user_with_patient["patient"].id,
+                "medication_name": f"Medication_{i}",
+                "dosage": "100mg",
+                "status": "active",
+            }
+            client.post(
+                "/api/v1/medications/",
+                json=medication_data,
+                headers=authenticated_headers,
+            )
+
+        # Test pagination
+        response = client.get(
+            "/api/v1/medications/?skip=2&limit=2", headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 2
+
+    def test_medication_with_dates(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test medication creation and updates with date fields."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "frequency": "once daily",
+            "effective_period_start": "2024-01-01",
+            "effective_period_end": "2024-12-31",
+            "status": "active",
+        }
+
+        response = client.post(
+            "/api/v1/medications/", json=medication_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["effective_period_start"] == "2024-01-01"
+        assert data["effective_period_end"] == "2024-12-31"
+
+    def test_medication_validation_errors(
+        self, client: TestClient, authenticated_headers
+    ):
+        """Test various validation error scenarios."""
+        # Test with invalid status
+        invalid_data = {
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "status": "invalid_status",
+        }
+
+        response = client.post(
+            "/api/v1/medications/", json=invalid_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 422
+
+        # Test with invalid date format
+        invalid_date_data = {
+            "medication_name": "Aspirin",
+            "dosage": "100mg",
+            "effective_period_start": "invalid-date",
+        }
+
+        response = client.post(
+            "/api/v1/medications/",
+            json=invalid_date_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+
+    def test_create_medication_with_notes(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test creating a medication with notes and side_effects fields."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Metformin",
+            "dosage": "500mg",
+            "frequency": "twice daily",
+            "notes": "Take with food",
+            "side_effects": "Nausea",
+        }
+
+        response = client.post(
+            "/api/v1/medications/",
+            json=medication_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["notes"] == "Take with food"
+        assert data["side_effects"] == "Nausea"
+
+    def test_create_medication_notes_max_length(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that notes exceeding 1000 characters fail validation."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "notes": "x" * 1001,
+        }
+
+        response = client.post(
+            "/api/v1/medications/",
+            json=medication_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+
+    def test_update_medication_notes(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test updating notes and side_effects on an existing medication."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Lisinopril",
+            "dosage": "10mg",
+            "status": "active",
+        }
+
+        create_response = client.post(
+            "/api/v1/medications/",
+            json=medication_data,
+            headers=authenticated_headers,
+        )
+        medication_id = create_response.json()["id"]
+
+        update_data = {
+            "notes": "Take in the morning",
+            "side_effects": "Dry cough",
+        }
+
+        response = client.put(
+            f"/api/v1/medications/{medication_id}",
+            json=update_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["notes"] == "Take in the morning"
+        assert data["side_effects"] == "Dry cough"
+        assert data["medication_name"] == "Lisinopril"  # Unchanged
+
+    def test_create_medication_notes_empty_string_becomes_null(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that an empty string for notes is stored as null."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "notes": "",
+        }
+
+        response = client.post(
+            "/api/v1/medications/",
+            json=medication_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["notes"] is None
+
+    # --- Alternative Name Tests ---
+
+    def test_create_medication_with_alternative_name(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test creating a medication with alternative_name set."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Acetaminophen",
+            "alternative_name": "Paracetamol",
+            "route": "oral",
+            "status": "active",
+        }
+
+        response = client.post(
+            "/api/v1/medications/",
+            json=medication_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["medication_name"] == "Acetaminophen"
+        assert data["alternative_name"] == "Paracetamol"
+
+    def test_create_medication_alternative_name_optional(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test creating a medication without alternative_name succeeds and field is None."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Ibuprofen",
+            "route": "oral",
+            "status": "active",
+        }
+
+        response = client.post(
+            "/api/v1/medications/",
+            json=medication_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("alternative_name") is None
+
+    def test_update_medication_alternative_name(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test updating a medication's alternative_name."""
+        create_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Metformin",
+            "route": "oral",
+            "status": "active",
+        }
+        create_response = client.post(
+            "/api/v1/medications/",
+            json=create_data,
+            headers=authenticated_headers,
+        )
+        assert create_response.status_code == 200
+        medication_id = create_response.json()["id"]
+
+        update_data = {"alternative_name": "Glucophage"}
+        update_response = client.put(
+            f"/api/v1/medications/{medication_id}",
+            json=update_data,
+            headers=authenticated_headers,
+        )
+
+        assert update_response.status_code == 200
+        assert update_response.json()["alternative_name"] == "Glucophage"
+
+    def test_create_medication_alternative_name_too_short(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that a 1-character alternative_name is rejected."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "alternative_name": "A",
+            "route": "oral",
+        }
+
+        response = client.post(
+            "/api/v1/medications/",
+            json=medication_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+
+    def test_create_medication_alternative_name_too_long(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that a 101-character alternative_name is rejected."""
+        medication_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "medication_name": "Aspirin",
+            "alternative_name": "A" * 101,
+            "route": "oral",
+        }
+
+        response = client.post(
+            "/api/v1/medications/",
+            json=medication_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+
+
+class TestMedicationReminderTestEndpoint:
+    """POST /medications/{id}/reminders/test fires an immediate test reminder.
+
+    Uses the shared user_with_patient / authenticated_headers fixtures from
+    tests/api/conftest.py.
+    """
+
+    def _create_medication(
+        self,
+        client,
+        headers,
+        patient_id,
+        *,
+        reminder_enabled=True,
+        reminder_times=None,
+    ):
+        payload = {
+            "patient_id": patient_id,
+            "medication_name": "Aspirin",
+            "status": "active",
+            "reminder_enabled": reminder_enabled,
+            "reminder_times": reminder_times or ["08:00"],
+        }
+        response = client.post("/api/v1/medications/", json=payload, headers=headers)
+        assert response.status_code == 200, response.text
+        return response.json()["id"]
+
+    def _add_channel_and_preference(self, db_session, user_id):
+        """Insert a notification channel + an enabled preference for the event."""
+        from app.models.notifications import (
+            NotificationChannel,
+            NotificationPreference,
+        )
+
+        channel = NotificationChannel(
+            user_id=user_id,
+            name="test-ntfy",
+            channel_type="ntfy",
+            config_encrypted="not-really-encrypted",
+            is_enabled=True,
+        )
+        db_session.add(channel)
+        db_session.commit()
+        db_session.refresh(channel)
+
+        pref = NotificationPreference(
+            user_id=user_id,
+            channel_id=channel.id,
+            event_type="medication_reminder_due",
+            is_enabled=True,
+        )
+        db_session.add(pref)
+        db_session.commit()
+        return channel, pref
+
+    def test_returns_204_when_preference_enabled(
+        self,
+        client: TestClient,
+        db_session: Session,
+        user_with_patient,
+        authenticated_headers,
+    ):
+        med_id = self._create_medication(
+            client, authenticated_headers, user_with_patient["patient"].id
+        )
+        self._add_channel_and_preference(db_session, user_with_patient["user"].id)
+
+        response = client.post(
+            f"/api/v1/medications/{med_id}/reminders/test",
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 204
+
+    def test_returns_400_when_reminders_disabled(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        med_id = self._create_medication(
+            client,
+            authenticated_headers,
+            user_with_patient["patient"].id,
+            reminder_enabled=False,
+        )
+
+        response = client.post(
+            f"/api/v1/medications/{med_id}/reminders/test",
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 400
+
+    def test_returns_422_when_no_channel_enabled(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        med_id = self._create_medication(
+            client, authenticated_headers, user_with_patient["patient"].id
+        )
+
+        response = client.post(
+            f"/api/v1/medications/{med_id}/reminders/test",
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+
+    def test_returns_404_for_unknown_medication(
+        self, client: TestClient, authenticated_headers
+    ):
+        response = client.post(
+            "/api/v1/medications/999999/reminders/test",
+            headers=authenticated_headers,
+        )
+        assert response.status_code == 404
+
+    def test_requires_authentication(self, client: TestClient):
+        response = client.post("/api/v1/medications/1/reminders/test")
+        assert response.status_code == 401

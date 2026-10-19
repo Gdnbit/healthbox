@@ -1,0 +1,70 @@
+{
+  "schema_version": "admin-cross-subject-action-v1",
+  "access_basis": "owner_cross_subject_action",
+  "sole_active_administrator_required": true,
+  "self_archive_uses_self_service": true,
+  "reason": {
+    "required": true,
+    "min_length": 3,
+    "max_length": 200,
+    "single_line": true
+  },
+  "capabilities": {
+    "owner_record_revise": [
+      "revise_health_background",
+      "revise_health_coverage"
+    ],
+    "owner_record_void": [
+      "void_health_background",
+      "void_health_coverage"
+    ],
+    "owner_source_withdraw": [
+      "inspect_source_dependencies_for_withdraw",
+      "withdraw_source_document"
+    ],
+    "owner_source_restore": [
+      "inspect_source_dependencies_for_restore",
+      "restore_source_document"
+    ]
+  },
+  "required_audit_fields": [
+    "actor_user_id",
+    "target_patient_id",
+    "access_basis",
+    "capability",
+    "reason",
+    "operation",
+    "object_type",
+    "object_id",
+    "result"
+  ],
+  "completed_record_audit_fields": [
+    "previous_record_id",
+    "previous_version_number",
+    "previous_status",
+    "resulting_record_id",
+    "resulting_version_number",
+    "resulting_status"
+  ],
+  "scope_restrictions": [
+    "read_requires_separate_owner_global_read",
+    "exact_capability_must_match_endpoint",
+    "object_must_belong_to_target_subject",
+    "withdraw_does_not_delete_binary_or_void_derived_records",
+    "no_create_lab_vital_parse_review_commit_export_ai_or_general_write",
+    "no_impersonation_or_shared_editor_inheritance",
+    "multiple_active_administrators_fail_closed"
+  ],
+  "audit_excludes": [
+    "health_values",
+    "narrative",
+    "notes",
+    "category",
+    "absence_reason",
+    "verification_status",
+    "file_content",
+    "passwords",
+    "tokens",
+    "server_paths"
+  ]
+}

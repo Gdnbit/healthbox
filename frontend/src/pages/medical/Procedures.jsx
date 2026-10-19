@@ -1,0 +1,609 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useMedicalData } from '../../hooks/useMedicalData';
+import { useDataManagement } from '../../hooks/useDataManagement';
+import { useEntityFileCounts } from '../../hooks/useEntityFileCounts';
+import { useViewModalNavigation } from '../../hooks/useViewModalNavigation';
+import { apiService } from '../../services/api';
+import { useDateFormat } from '../../hooks/useDateFormat';
+import { usePractitioners } from '../../hooks/useGlobalData';
+import { getMedicalPageConfig } from '../../utils/medicalPageConfigs';
+import { getEntityFormatters } from '../../utils/tableFormatters';
+import { PageHeader } from '../../components';
+import { withResponsive } from '../../hoc/withResponsive';
+import { useResponsive } from '../../hooks/useResponsive';
+import { usePersistedViewMode } from '../../hooks/usePersistedViewMode';
+import { usePagination } from '../../hooks/usePagination';
+import logger from '../../services/logger';
+import { ERROR_MESSAGES } from '../../constants/errorMessages';
+import MedicalPageFilters from '../../components/shared/MedicalPageFilters';
+import { ResponsiveTable } from '../../components/adapters';
+import MedicalPageActions from '../../components/shared/MedicalPageActions';
+import FormLoadingOverlay from '../../components/shared/FormLoadingOverlay';
+import EmptyState from '../../components/shared/EmptyState';
+import MedicalPageAlerts from '../../components/shared/MedicalPageAlerts';
+import MedicalPageLoading from '../../components/shared/MedicalPageLoading';
+import AnimatedCardGrid from '../../components/shared/AnimatedCardGrid';
+import PaginationControls from '../../components/shared/PaginationControls';
+import ProcedureCard from '../../components/medical/procedures/ProcedureCard';
+import ProcedureViewModal from '../../components/medical/procedures/ProcedureViewModal';
+import ProcedureFormWrapper from '../../components/medical/procedures/ProcedureFormWrapper';
+import { useFormSubmissionWithUploads } from '../../hooks/useFormSubmissionWithUploads';
+import { usePatientPermissions } from '../../hooks/usePatientPermissions';
+import { Button, Stack, Container, Paper } from '@mantine/core';
+
+const INITIAL_FORM_DATA = {
+  procedure_name: '',
+  procedure_type: '',
+  procedure_code: '',
+  description: '',
+  procedure_date: '',
+  status: 'scheduled',
+  outcome: '',
+  notes: '',
+  facility: '',
+  procedure_setting: '',
+  procedure_complications: '',
+  procedure_duration: '',
+  practitioner_id: '',
+  anesthesia_type: '',
+  anesthesia_notes: '',
+  tags: [],
+};
+
+const Procedures = () => {
+  const { t } = useTranslation(['common', 'shared']);
+  const { isViewOnly, viewOnlyTooltip } = usePatientPermissions();
+  const { formatDate } = useDateFormat();
+  const navigate = useNavigate();
+  const responsive = useResponsive();
+  const [viewMode, setViewMode] = usePersistedViewMode('procedures');
+  const {
+    page,
+    setPage,
+    pageSize,
+    handlePageSizeChange,
+    paginateData,
+    totalPages,
+    resetPage,
+    clampPage,
+    PAGE_SIZE_OPTIONS,
+  } = usePagination();
+
+  // Get practitioners data
+  const { practitioners } = usePractitioners();
+
+  // Get standardized formatters for procedures with linking support
+  const formatters = getEntityFormatters(
+    'procedures',
+    practitioners,
+    navigate,
+    null,
+    formatDate
+  );
+
+  // Modern data management with useMedicalData
+  const {
+    items: procedures,
+    currentPatient,
+    loading,
+    error,
+    successMessage,
+    createItem,
+    updateItem,
+    deleteItem,
+    refreshData,
+    clearError,
+    setError,
+  } = useMedicalData({
+    entityName: 'procedure',
+    apiMethodsConfig: {
+      getAll: signal => apiService.getProcedures(signal),
+      getByPatient: (patientId, signal) =>
+        apiService.getPatientProcedures(patientId, signal),
+      create: (data, signal) => apiService.createProcedure(data, signal),
+      update: (id, data, signal) =>
+        apiService.updateProcedure(id, data, signal),
+      delete: (id, signal) => apiService.deleteProcedure(id, signal),
+    },
+    requiresPatient: true,
+  });
+
+  // Get standardized configuration
+  const config = getMedicalPageConfig('procedures');
+
+  // Use standardized data management
+  const dataManagement = useDataManagement(procedures, config);
+
+  // File count management for cards
+  const { fileCounts, fileCountsLoading, cleanupFileCount, refreshFileCount } =
+    useEntityFileCounts('procedure', procedures);
+
+  // View modal navigation with URL deep linking
+  const {
+    isOpen: showViewModal,
+    viewingItem: viewingProcedure,
+    openModal: handleViewProcedure,
+    closeModal: handleCloseViewModal,
+  } = useViewModalNavigation({
+    items: procedures,
+    loading,
+    onClose: procedure => {
+      if (procedure) {
+        refreshFileCount(procedure.id);
+      }
+    },
+  });
+
+  // Form state
+  const [showModal, setShowModal] = useState(false);
+  const [editingProcedure, setEditingProcedure] = useState(null);
+  const [formData, setFormData] = useState({ ...INITIAL_FORM_DATA });
+
+  // Document management state
+  const [documentManagerMethods, setDocumentManagerMethods] = useState(null);
+
+  // Track if we need to refresh after form submission (but not after uploads)
+  const needsRefreshAfterSubmissionRef = useRef(false);
+
+  // Form submission with uploads hook
+  const {
+    startSubmission,
+    completeFormSubmission,
+    startFileUpload,
+    completeFileUpload,
+    handleSubmissionFailure,
+    resetSubmission,
+    isBlocking,
+    canSubmit,
+    statusMessage,
+  } = useFormSubmissionWithUploads({
+    entityType: 'procedure',
+    onSuccess: () => {
+      // Reset form and close modal on complete success
+      setShowModal(false);
+      setEditingProcedure(null);
+      setFormData({ ...INITIAL_FORM_DATA });
+
+      // Only refresh if we created a new procedure during form submission
+      // Don't refresh after uploads complete to prevent resource exhaustion
+      if (needsRefreshAfterSubmissionRef.current) {
+        needsRefreshAfterSubmissionRef.current = false;
+        refreshData();
+      }
+    },
+    onError: error => {
+      logger.error('procedures_form_error', {
+        message: 'Form submission error in procedures',
+        error,
+        component: 'Procedures',
+      });
+    },
+    component: 'Procedures',
+  });
+
+  const handleAddProcedure = () => {
+    resetSubmission();
+    setEditingProcedure(null);
+    setFormData({ ...INITIAL_FORM_DATA });
+    setShowModal(true);
+  };
+
+  const handleEditProcedure = procedure => {
+    resetSubmission();
+    setEditingProcedure(procedure);
+    setFormData({
+      procedure_name: procedure.procedure_name || '',
+      procedure_type: procedure.procedure_type || '',
+      procedure_code: procedure.procedure_code || '',
+      description: procedure.description || '',
+      procedure_date: procedure.date || '',
+      status: procedure.status || 'scheduled',
+      outcome: procedure.outcome || '',
+      notes: procedure.notes || '',
+      facility: procedure.facility || '',
+      procedure_setting: procedure.procedure_setting || '',
+      procedure_complications: procedure.procedure_complications || '',
+      procedure_duration: procedure.procedure_duration || '',
+      practitioner_id: procedure.practitioner_id
+        ? String(procedure.practitioner_id)
+        : '',
+      anesthesia_type: procedure.anesthesia_type || '',
+      anesthesia_notes: procedure.anesthesia_notes || '',
+      tags: procedure.tags || [],
+    });
+    setShowModal(true);
+  };
+
+  const handleDeleteProcedure = async procedureId => {
+    const success = await deleteItem(procedureId);
+    if (success) {
+      cleanupFileCount(procedureId);
+    }
+  };
+
+  const handleInputChange = e => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+
+    // Basic validation
+    if (!formData.procedure_name.trim()) {
+      setError(ERROR_MESSAGES.REQUIRED_FIELD_MISSING);
+      return;
+    }
+
+    if (!formData.procedure_date) {
+      setError(ERROR_MESSAGES.INVALID_DATE);
+      return;
+    }
+
+    if (!currentPatient?.id) {
+      setError(ERROR_MESSAGES.PATIENT_NOT_SELECTED);
+      return;
+    }
+
+    // Start submission process
+    startSubmission();
+
+    // Prevent double submission - check after startSubmission() to avoid race condition
+    if (!canSubmit) {
+      return;
+    }
+
+    const procedureData = {
+      procedure_name: formData.procedure_name,
+      procedure_type: formData.procedure_type || null,
+      procedure_code: formData.procedure_code || null,
+      description: formData.description,
+      date: formData.procedure_date || null,
+      status: formData.status,
+      outcome: formData.outcome || null,
+      notes: formData.notes || null,
+      facility: formData.facility || null,
+      procedure_setting: formData.procedure_setting || null,
+      procedure_complications: formData.procedure_complications || null,
+      procedure_duration: formData.procedure_duration
+        ? parseInt(formData.procedure_duration)
+        : null,
+      practitioner_id: formData.practitioner_id
+        ? parseInt(formData.practitioner_id)
+        : null,
+      anesthesia_type: formData.anesthesia_type || null,
+      anesthesia_notes: formData.anesthesia_notes || null,
+      tags: formData.tags || [],
+      patient_id: currentPatient.id,
+    };
+
+    try {
+      let success;
+      let resultId;
+
+      // Submit form data
+      if (editingProcedure) {
+        success = await updateItem(editingProcedure.id, procedureData);
+        resultId = editingProcedure.id;
+        // No refresh needed for updates - user stays on same page
+      } else {
+        const result = await createItem(procedureData);
+        success = !!result;
+        resultId = result?.id;
+        // Set flag to refresh after new procedure creation (but only after form submission, not uploads)
+        if (success) {
+          needsRefreshAfterSubmissionRef.current = true;
+        }
+      }
+
+      // Complete form submission
+      completeFormSubmission(success, resultId);
+
+      if (success && resultId) {
+        // Check if we have files to upload
+        const hasPendingFiles = documentManagerMethods?.hasPendingFiles?.();
+
+        if (hasPendingFiles) {
+          logger.info('procedures_starting_file_upload', {
+            message: 'Starting file upload process',
+            procedureId: resultId,
+            pendingFilesCount: documentManagerMethods.getPendingFilesCount(),
+            component: 'Procedures',
+          });
+
+          const pendingCount = documentManagerMethods.getPendingFilesCount();
+
+          // Start file upload process
+          startFileUpload();
+
+          try {
+            // Upload files with progress tracking
+            await documentManagerMethods.uploadPendingFiles(resultId);
+
+            // File upload completed successfully
+            completeFileUpload(true, pendingCount, 0);
+
+            // Refresh file count
+            refreshFileCount(resultId);
+          } catch (uploadError) {
+            logger.error('procedures_file_upload_error', {
+              message: 'File upload failed',
+              procedureId: resultId,
+              error: uploadError.message,
+              component: 'Procedures',
+            });
+
+            // File upload failed
+            completeFileUpload(false, 0, pendingCount);
+          }
+        } else {
+          // No files to upload, complete immediately
+          completeFileUpload(true, 0, 0);
+        }
+      } else {
+        handleSubmissionFailure(
+          new Error(ERROR_MESSAGES.FORM_SUBMISSION_FAILED),
+          'form'
+        );
+      }
+    } catch (error) {
+      logger.error('procedures_submission_error', {
+        message: 'Form submission failed',
+        error: error.message,
+        component: 'Procedures',
+      });
+
+      handleSubmissionFailure(error, 'form');
+    }
+  };
+
+  // Get processed data from data management
+  const filteredProcedures = dataManagement.data;
+  const paginatedProcedures = paginateData(filteredProcedures);
+
+  useEffect(() => {
+    resetPage();
+  }, [dataManagement.hasActiveFilters, resetPage]);
+  useEffect(() => {
+    clampPage(filteredProcedures.length);
+  }, [filteredProcedures.length, clampPage]);
+
+  if (loading) {
+    return (
+      <MedicalPageLoading
+        message={t('procedures.loadingProcedures', 'Loading procedures...')}
+        hint={t(
+          'shared:labels.ifThisTakesTooLongPleaseRefreshThePage',
+          'If this takes too long, please refresh the page'
+        )}
+      />
+    );
+  }
+
+  return (
+    <>
+      <Container size="xl" py="sm">
+        <PageHeader
+          title={t('shared:categories.procedures', 'Procedures')}
+          icon="🔬"
+        />
+
+        <Stack gap="sm" mt="md">
+          <MedicalPageAlerts
+            error={error}
+            successMessage={successMessage}
+            onClearError={clearError}
+          />
+
+          <MedicalPageActions
+            primaryAction={{
+              label: t('procedures.addProcedure', '+ Add Procedure'),
+              onClick: handleAddProcedure,
+              size: 'sm',
+              disabled: isViewOnly,
+              tooltip: viewOnlyTooltip,
+            }}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            viewToggleSize="sm"
+            mb={0}
+          />
+
+          {/* Mantine Filter Controls */}
+          <MedicalPageFilters dataManagement={dataManagement} config={config} />
+
+          {filteredProcedures.length === 0 ? (
+            <EmptyState
+              emoji="🔬"
+              title={t('procedures.noProceduresFound', 'No Procedures Found')}
+              hasActiveFilters={dataManagement.hasActiveFilters}
+              filteredMessage={t(
+                'shared:emptyStates.adjustSearch',
+                'Try adjusting your search or filter criteria.'
+              )}
+              noDataMessage={t(
+                'procedures.startAdding',
+                'Start by adding your first procedure.'
+              )}
+              actionButton={
+                <Button
+                  variant="filled"
+                  onClick={handleAddProcedure}
+                  disabled={isViewOnly}
+                >
+                  {t(
+                    'procedures.addFirstProcedure',
+                    'Add Your First Procedure'
+                  )}
+                </Button>
+              }
+            />
+          ) : viewMode === 'cards' ? (
+            <AnimatedCardGrid
+              items={paginatedProcedures}
+              columns={{ base: 12, sm: 6, lg: 4 }}
+              renderCard={procedure => (
+                <ProcedureCard
+                  procedure={procedure}
+                  onEdit={handleEditProcedure}
+                  onDelete={() => handleDeleteProcedure(procedure.id)}
+                  onView={handleViewProcedure}
+                  practitioners={practitioners}
+                  fileCount={fileCounts[procedure.id] || 0}
+                  fileCountLoading={fileCountsLoading[procedure.id] || false}
+                  navigate={navigate}
+                  disableActions={isViewOnly}
+                  disableActionsTooltip={viewOnlyTooltip}
+                />
+              )}
+            />
+          ) : (
+            <Paper shadow="sm" radius="md" withBorder>
+              <ResponsiveTable
+                persistKey="procedures"
+                data={paginatedProcedures}
+                pagination={false}
+                disableEdit={isViewOnly}
+                disableDelete={isViewOnly}
+                disableActionsTooltip={viewOnlyTooltip}
+                columns={[
+                  {
+                    header: t('shared:fields.procedureName'),
+                    accessor: 'procedure_name',
+                    priority: 'high',
+                    width: 200,
+                  },
+                  {
+                    header: t('shared:labels.type'),
+                    accessor: 'procedure_type',
+                    priority: 'medium',
+                    width: 120,
+                  },
+                  {
+                    header: t('procedures.table.code'),
+                    accessor: 'procedure_code',
+                    priority: 'low',
+                    width: 100,
+                  },
+                  {
+                    header: t('shared:labels.date'),
+                    accessor: 'date',
+                    priority: 'high',
+                    width: 120,
+                  },
+                  {
+                    header: t('shared:fields.status'),
+                    accessor: 'status',
+                    priority: 'high',
+                    width: 100,
+                  },
+                  {
+                    header: t('shared:labels.setting'),
+                    accessor: 'procedure_setting',
+                    priority: 'low',
+                    width: 120,
+                  },
+                  {
+                    header: t('shared:labels.facility'),
+                    accessor: 'facility',
+                    priority: 'medium',
+                    width: 150,
+                  },
+                  {
+                    header: t('shared:fields.practitioner'),
+                    accessor: 'practitioner_name',
+                    priority: 'medium',
+                    width: 150,
+                  },
+                  {
+                    header: t('shared:labels.description'),
+                    accessor: 'description',
+                    priority: 'low',
+                    width: 200,
+                  },
+                ]}
+                patientData={currentPatient}
+                tableName="Procedures"
+                onView={handleViewProcedure}
+                onEdit={handleEditProcedure}
+                onDelete={handleDeleteProcedure}
+                formatters={formatters}
+                dataType="medical"
+                responsive={responsive}
+              />
+            </Paper>
+          )}
+          {filteredProcedures.length > 0 && (
+            <PaginationControls
+              page={page}
+              totalPages={totalPages(filteredProcedures.length)}
+              pageSize={pageSize}
+              totalRecords={filteredProcedures.length}
+              onPageChange={setPage}
+              onPageSizeChange={handlePageSizeChange}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+            />
+          )}
+        </Stack>
+      </Container>
+
+      <ProcedureFormWrapper
+        isOpen={showModal}
+        onClose={() => !isBlocking && setShowModal(false)}
+        title={
+          editingProcedure
+            ? t('procedures.editProcedure', 'Edit Procedure')
+            : t('procedures.addNewProcedure', 'Add New Procedure')
+        }
+        formData={formData}
+        onInputChange={handleInputChange}
+        onSubmit={handleSubmit}
+        editingItem={editingProcedure}
+        practitioners={practitioners}
+        isLoading={isBlocking}
+        statusMessage={statusMessage}
+        onDocumentManagerRef={setDocumentManagerMethods}
+        onFileUploadComplete={(success, _completedCount, _failedCount) => {
+          if (success && editingProcedure?.id) {
+            refreshFileCount(editingProcedure.id);
+          }
+        }}
+      >
+        {/* Form Loading Overlay */}
+        <FormLoadingOverlay
+          visible={isBlocking}
+          message={
+            statusMessage?.title || t('procedures.processing', 'Processing...')
+          }
+          submessage={statusMessage?.message}
+          type={statusMessage?.type || 'loading'}
+        />
+      </ProcedureFormWrapper>
+
+      <ProcedureViewModal
+        isOpen={showViewModal}
+        onClose={handleCloseViewModal}
+        procedure={viewingProcedure}
+        onEdit={handleEditProcedure}
+        practitioners={practitioners}
+        navigate={navigate}
+        disableEdit={isViewOnly}
+        disableEditTooltip={viewOnlyTooltip}
+        onFileUploadComplete={success => {
+          if (success && viewingProcedure) {
+            refreshFileCount(viewingProcedure.id);
+          }
+        }}
+      />
+    </>
+  );
+};
+
+// Wrap with responsive HOC for enhanced responsive capabilities
+export default withResponsive(Procedures, {
+  injectResponsive: true,
+  displayName: 'ResponsiveProcedures',
+});

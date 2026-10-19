@@ -1,0 +1,836 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+/**
+ * TestComponentEditModal - Modal for editing individual test components
+ */
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Modal,
+  Stack,
+  Group,
+  TextInput,
+  NumberInput,
+  Select,
+  SegmentedControl,
+  Textarea,
+  Button,
+  Text,
+  Box,
+  Alert,
+  Divider,
+} from '@mantine/core';
+import { IconEdit, IconAlertCircle, IconLink } from '@tabler/icons-react';
+import FormLoadingOverlay from '../../shared/FormLoadingOverlay';
+import { LabTestComponent } from '../../../services/api/labTestComponentApi';
+import { TEST_LIBRARY } from '../../../constants/testLibrary';
+import { QUALITATIVE_SELECT_OPTIONS } from '../../../constants/labCategories';
+import { MAX_REF_RANGE_TEXT_LENGTH } from '../../../utils/labTestComponentUtils';
+
+interface TestComponentEditModalProps {
+  component: LabTestComponent | null;
+  opened: boolean;
+  onClose: () => void;
+  onSubmit: (_updatedData: Partial<LabTestComponent>) => Promise<void>;
+}
+
+const TestComponentEditModal: React.FC<TestComponentEditModalProps> = ({
+  component,
+  opened,
+  onClose,
+  onSubmit,
+}) => {
+  const { t } = useTranslation(['labresults', 'common', 'shared']);
+  const [formData, setFormData] = useState<Partial<LabTestComponent>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-calculate status based on value and reference range
+  const calculateStatus = (
+    value: number | undefined,
+    refMin: number | undefined,
+    refMax: number | undefined
+  ): LabTestComponent['status'] => {
+    if (value === undefined || value === null) return undefined;
+    if (refMin === undefined && refMax === undefined) return undefined;
+
+    if (refMin !== undefined && refMax !== undefined) {
+      if (value < refMin) return 'low';
+      if (value > refMax) return 'high';
+      return 'normal';
+    }
+    if (refMin !== undefined) {
+      return value < refMin ? 'low' : 'normal';
+    }
+    if (refMax !== undefined) {
+      return value > refMax ? 'high' : 'normal';
+    }
+
+    return undefined;
+  };
+
+  // Auto-suggest category based on test name
+  const suggestCategory = (testName: string): LabTestComponent['category'] => {
+    if (!testName) return undefined;
+
+    const nameLower = testName.toLowerCase();
+
+    // Blood Chemistry & Metabolic
+    if (
+      nameLower.includes('glucose') ||
+      nameLower.includes('bun') ||
+      nameLower.includes('creatinine') ||
+      nameLower.includes('sodium') ||
+      nameLower.includes('potassium') ||
+      nameLower.includes('chloride') ||
+      nameLower.includes('calcium') ||
+      nameLower.includes('protein') ||
+      nameLower.includes('albumin') ||
+      nameLower.includes('bilirubin') ||
+      nameLower.includes('alt') ||
+      nameLower.includes('ast') ||
+      nameLower.includes('alp') ||
+      nameLower.includes('aminotransferase') ||
+      nameLower.includes('phosphatase')
+    ) {
+      return 'chemistry';
+    }
+
+    // Blood Counts & Cells
+    if (
+      nameLower.includes('hemoglobin') ||
+      nameLower.includes('hematocrit') ||
+      nameLower.includes('wbc') ||
+      nameLower.includes('rbc') ||
+      nameLower.includes('platelet') ||
+      nameLower.includes('mcv') ||
+      nameLower.includes('mch') ||
+      nameLower.includes('mchc') ||
+      nameLower.includes('white blood') ||
+      nameLower.includes('red blood') ||
+      nameLower.includes('neutrophil') ||
+      nameLower.includes('lymphocyte') ||
+      nameLower.includes('monocyte') ||
+      nameLower.includes('eosinophil') ||
+      nameLower.includes('basophil')
+    ) {
+      return 'hematology';
+    }
+
+    // Cholesterol & Lipids
+    if (
+      nameLower.includes('cholesterol') ||
+      nameLower.includes('triglyceride') ||
+      nameLower.includes('hdl') ||
+      nameLower.includes('ldl') ||
+      nameLower.includes('vldl') ||
+      nameLower.includes('lipid')
+    ) {
+      return 'lipids';
+    }
+
+    // Hormones & Thyroid
+    if (
+      nameLower.includes('tsh') ||
+      nameLower.includes('thyroid') ||
+      nameLower.includes('t3') ||
+      nameLower.includes('t4') ||
+      nameLower.includes('hormone') ||
+      nameLower.includes('testosterone') ||
+      nameLower.includes('estrogen') ||
+      nameLower.includes('progesterone') ||
+      nameLower.includes('cortisol') ||
+      nameLower.includes('insulin')
+    ) {
+      return 'endocrinology';
+    }
+
+    // Immune System & Antibodies
+    if (
+      nameLower.includes('antibod') ||
+      nameLower.includes('immuno') ||
+      nameLower.includes('igg') ||
+      nameLower.includes('igm') ||
+      nameLower.includes('iga') ||
+      nameLower.includes('ige')
+    ) {
+      return 'immunology';
+    }
+
+    // Infections & Cultures
+    if (
+      nameLower.includes('culture') ||
+      nameLower.includes('bacterial') ||
+      nameLower.includes('viral') ||
+      nameLower.includes('infection') ||
+      nameLower.includes('sensitivity')
+    ) {
+      return 'microbiology';
+    }
+
+    // Imaging & Radiology
+    if (
+      nameLower.includes('mri') ||
+      nameLower.includes('ct scan') ||
+      nameLower.includes('x-ray') ||
+      nameLower.includes('xray') ||
+      nameLower.includes('ultrasound') ||
+      nameLower.includes('radiolog') ||
+      nameLower.includes('scan') ||
+      nameLower.includes('imaging')
+    ) {
+      return 'imaging';
+    }
+
+    return undefined;
+  };
+
+  // Build dropdown options for canonical test name from test library
+  const canonicalTestOptions = useMemo(() => {
+    const options = TEST_LIBRARY.map(test => ({
+      value: test.test_name,
+      label: test.abbreviation
+        ? `${test.test_name} (${test.abbreviation})`
+        : test.test_name,
+    }));
+    // Sort alphabetically
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, []);
+
+  // Initialize form when component changes
+  useEffect(() => {
+    if (component) {
+      const calculatedStatus = calculateStatus(
+        component.value ?? undefined,
+        component.ref_range_min ?? undefined,
+        component.ref_range_max ?? undefined
+      );
+
+      // Use existing category if present, otherwise suggest one
+      const categoryToUse =
+        component.category || suggestCategory(component.test_name);
+
+      setFormData({
+        test_name: component.test_name,
+        abbreviation: component.abbreviation || '',
+        test_code: component.test_code || '',
+        value: component.value,
+        unit: component.unit,
+        ref_range_min: component.ref_range_min ?? undefined,
+        ref_range_max: component.ref_range_max ?? undefined,
+        ref_range_text: component.ref_range_text || '',
+        status: calculatedStatus,
+        category: categoryToUse,
+        canonical_test_name: component.canonical_test_name || '',
+        notes: component.notes || '',
+        result_type: component.result_type || 'quantitative',
+        qualitative_value: component.qualitative_value || undefined,
+        textual_value: component.textual_value || undefined,
+      });
+    }
+  }, [component]);
+
+  // Effect to recalculate status when value or ranges change
+  // Note: formData.status and formData.category are NOT in dependencies since they're outputs, not inputs
+  useEffect(() => {
+    const newStatus = calculateStatus(
+      formData.value as number,
+      formData.ref_range_min as number | undefined,
+      formData.ref_range_max as number | undefined
+    );
+
+    // Only update if status actually changed to avoid infinite loops
+    setFormData(prev => {
+      if (prev.status === newStatus) {
+        return prev;
+      }
+      return { ...prev, status: newStatus };
+    });
+  }, [formData.value, formData.ref_range_min, formData.ref_range_max]);
+
+  // Separate effect for auto-suggesting category when test name changes
+  useEffect(() => {
+    // Only suggest category if test_name exists and category is empty
+    const testName = formData.test_name;
+    if (!testName) return;
+
+    setFormData(prev => {
+      // Only suggest if category is currently empty
+      if (prev.category) return prev;
+
+      const suggestedCategory = suggestCategory(testName);
+      if (suggestedCategory) {
+        return { ...prev, category: suggestedCategory };
+      }
+      return prev;
+    });
+  }, [formData.test_name]);
+
+  const handleSubmit = async () => {
+    if (!component) return;
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isSubmitting) {
+      onClose();
+    }
+  };
+
+  const getStatusInputColor = (status: string | undefined | null): string => {
+    if (!status) return '#868e96';
+    switch (status) {
+      case 'high':
+      case 'critical':
+        return '#fa5252';
+      case 'low':
+        return '#fd7e14';
+      case 'normal':
+        return '#51cf66';
+      default:
+        return '#868e96';
+    }
+  };
+
+  const isSubmitDisabled =
+    isSubmitting ||
+    !formData.test_name?.trim() ||
+    (formData.result_type === 'qualitative' &&
+      !formData.qualitative_value?.trim()) ||
+    (formData.result_type === 'textual' && !formData.textual_value?.trim());
+
+  if (!component) return null;
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title={
+        <Group gap="xs">
+          <IconEdit size={20} />
+          <Text fw={600}>
+            {t(
+              'labresults:testComponents.editModal.title',
+              'Edit Test Component'
+            )}
+          </Text>
+        </Group>
+      }
+      size="lg"
+      centered
+      zIndex={3000}
+    >
+      <Box style={{ position: 'relative' }}>
+        <FormLoadingOverlay
+          visible={isSubmitting}
+          message={t(
+            'labresults:testComponents.editModal.updating',
+            'Updating test component...'
+          )}
+        />
+
+        <Stack gap="md">
+          <Alert icon={<IconAlertCircle size={16} />} color="blue">
+            {t('labresults:testComponents.editModal.editing', 'Editing')}:{' '}
+            <strong>{component.test_name}</strong>
+          </Alert>
+
+          {/* Test Name */}
+          <TextInput
+            label={t('shared:fields.testName', 'Test Name')}
+            placeholder={t(
+              'labresults:testComponents.editModal.placeholders.testName',
+              'e.g., Hemoglobin'
+            )}
+            required
+            value={formData.test_name || ''}
+            onChange={e =>
+              setFormData(prev => ({ ...prev, test_name: e.target.value }))
+            }
+          />
+
+          {/* Abbreviation and Test Code */}
+          <Group grow>
+            <TextInput
+              label={t(
+                'labresults:testComponents.editModal.fields.abbreviation',
+                'Abbreviation'
+              )}
+              placeholder={t(
+                'labresults:testComponents.editModal.placeholders.abbreviation',
+                'e.g., HGB'
+              )}
+              value={formData.abbreviation || ''}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, abbreviation: e.target.value }))
+              }
+            />
+            <TextInput
+              label={t('shared:fields.testCode', 'Test Code')}
+              placeholder={t(
+                'labresults:testComponents.editModal.placeholders.testCode',
+                'e.g., 718-7'
+              )}
+              value={formData.test_code || ''}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, test_code: e.target.value }))
+              }
+            />
+          </Group>
+
+          {/* Result Type */}
+          <SegmentedControl
+            value={formData.result_type || 'quantitative'}
+            onChange={value => {
+              setFormData(prev => ({
+                ...prev,
+                result_type: value as
+                  | 'quantitative'
+                  | 'qualitative'
+                  | 'textual',
+                // Clear incompatible fields when switching result type
+                ...(value === 'qualitative'
+                  ? {
+                      value: undefined,
+                      unit: '',
+                      ref_range_min: undefined,
+                      ref_range_max: undefined,
+                      textual_value: undefined,
+                    }
+                  : value === 'textual'
+                    ? {
+                        value: undefined,
+                        unit: '',
+                        ref_range_min: undefined,
+                        ref_range_max: undefined,
+                        qualitative_value: undefined,
+                      }
+                    : {
+                        qualitative_value: undefined,
+                        textual_value: undefined,
+                      }),
+              }));
+            }}
+            data={[
+              {
+                label: t(
+                  'labresults:testComponents.resultType.quantitative',
+                  'Quantitative (Numeric)'
+                ),
+                value: 'quantitative',
+              },
+              {
+                label: t(
+                  'labresults:testComponents.resultType.qualitative',
+                  'Qualitative (Pos/Neg)'
+                ),
+                value: 'qualitative',
+              },
+              {
+                label: t(
+                  'labresults:testComponents.resultType.textual',
+                  'Textual (Report)'
+                ),
+                value: 'textual',
+              },
+            ]}
+            fullWidth
+          />
+
+          {formData.result_type === 'quantitative' && (
+            <>
+              {/* Value and Unit */}
+              <Group grow>
+                <NumberInput
+                  label={t('shared:labels.value', 'Value')}
+                  placeholder={t(
+                    'labresults:testComponents.editModal.placeholders.value',
+                    'Enter test value'
+                  )}
+                  value={formData.value ?? undefined}
+                  onChange={value =>
+                    setFormData(prev => ({ ...prev, value: value as number }))
+                  }
+                  decimalScale={2}
+                />
+                <TextInput
+                  label={t(
+                    'labresults:testComponents.editModal.fields.unit',
+                    'Unit'
+                  )}
+                  placeholder={t(
+                    'labresults:testComponents.editModal.placeholders.unit',
+                    'e.g., g/dL'
+                  )}
+                  value={formData.unit || ''}
+                  onChange={e =>
+                    setFormData(prev => ({ ...prev, unit: e.target.value }))
+                  }
+                />
+              </Group>
+
+              {/* Reference Range */}
+              <Stack gap="xs">
+                <Text size="sm" fw={500}>
+                  {t(
+                    'labresults:testComponents.editModal.fields.referenceRange',
+                    'Reference Range'
+                  )}
+                </Text>
+                <Group grow>
+                  <NumberInput
+                    label={t(
+                      'labresults:testComponents.editModal.fields.minimum',
+                      'Minimum'
+                    )}
+                    placeholder={t(
+                      'labresults:testComponents.editModal.placeholders.minValue',
+                      'Min value'
+                    )}
+                    value={formData.ref_range_min ?? undefined}
+                    onChange={value =>
+                      setFormData(prev => ({
+                        ...prev,
+                        ref_range_min:
+                          value === '' ? undefined : (value as number),
+                      }))
+                    }
+                    decimalScale={2}
+                  />
+                  <NumberInput
+                    label={t(
+                      'labresults:testComponents.editModal.fields.maximum',
+                      'Maximum'
+                    )}
+                    placeholder={t(
+                      'labresults:testComponents.editModal.placeholders.maxValue',
+                      'Max value'
+                    )}
+                    value={formData.ref_range_max ?? undefined}
+                    onChange={value =>
+                      setFormData(prev => ({
+                        ...prev,
+                        ref_range_max:
+                          value === '' ? undefined : (value as number),
+                      }))
+                    }
+                    decimalScale={2}
+                  />
+                </Group>
+                <TextInput
+                  label={t(
+                    'labresults:testComponents.editModal.fields.rangeText',
+                    'Range Text (alternative)'
+                  )}
+                  placeholder={t(
+                    'labresults:testComponents.editModal.placeholders.rangeText',
+                    "e.g., 'Negative' or 'Male: 13.5-17.5, Female: 12.0-15.5'"
+                  )}
+                  value={formData.ref_range_text || ''}
+                  maxLength={MAX_REF_RANGE_TEXT_LENGTH}
+                  onChange={e =>
+                    setFormData(prev => ({
+                      ...prev,
+                      ref_range_text: e.target.value,
+                    }))
+                  }
+                />
+              </Stack>
+            </>
+          )}
+
+          {formData.result_type === 'qualitative' && (
+            <Select
+              label={t(
+                'labresults:testComponents.editModal.fields.result',
+                'Result'
+              )}
+              placeholder={t(
+                'labresults:testComponents.editModal.placeholders.result',
+                'Select result'
+              )}
+              required
+              data={QUALITATIVE_SELECT_OPTIONS}
+              value={formData.qualitative_value || null}
+              onChange={value => {
+                const qv =
+                  value === 'positive' ||
+                  value === 'negative' ||
+                  value === 'detected' ||
+                  value === 'undetected'
+                    ? value
+                    : undefined;
+                let autoStatus: LabTestComponent['status'];
+                if (qv === 'positive' || qv === 'detected')
+                  autoStatus = 'abnormal';
+                else if (qv === 'negative' || qv === 'undetected')
+                  autoStatus = 'normal';
+                setFormData(prev => ({
+                  ...prev,
+                  qualitative_value: qv,
+                  status: autoStatus,
+                }));
+              }}
+              comboboxProps={{ zIndex: 3001 }}
+            />
+          )}
+
+          {formData.result_type === 'textual' && (
+            <Textarea
+              label={t('labresults:textualResult.label', 'Result Text')}
+              placeholder={t(
+                'labresults:textualResult.placeholder',
+                'Enter the full result text (e.g. No acute findings)'
+              )}
+              value={formData.textual_value || ''}
+              onChange={e =>
+                setFormData(prev => ({
+                  ...prev,
+                  textual_value: e.target.value,
+                }))
+              }
+              minRows={3}
+              autosize
+              maxRows={10}
+              maxLength={5000}
+            />
+          )}
+
+          {/* Status (Auto-calculated) and Category */}
+          <Group grow>
+            <TextInput
+              label={t(
+                'labresults:testComponents.editModal.fields.status',
+                'Status (Auto-calculated)'
+              )}
+              value={
+                formData.status
+                  ? formData.status.charAt(0).toUpperCase() +
+                    formData.status.slice(1)
+                  : t(
+                      'labresults:testComponents.editModal.notDetermined',
+                      'Not determined'
+                    )
+              }
+              readOnly
+              styles={{
+                input: {
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  color: getStatusInputColor(formData.status),
+                  fontWeight: 500,
+                },
+              }}
+            />
+            <Select
+              label={t('shared:labels.category', 'Category')}
+              placeholder={t('shared:labels.selectCategory', 'Select category')}
+              clearable
+              searchable
+              comboboxProps={{ zIndex: 3001 }}
+              data={[
+                {
+                  value: 'chemistry',
+                  label: t(
+                    'labresults:testComponents.categories.chemistry',
+                    'Chemistry - Electrolytes & Minerals'
+                  ),
+                },
+                {
+                  value: 'hematology',
+                  label: t(
+                    'labresults:testComponents.categories.hematology',
+                    'Hematology - Blood Counts & Iron'
+                  ),
+                },
+                {
+                  value: 'hepatology',
+                  label: t(
+                    'labresults:testComponents.categories.hepatology',
+                    'Hepatology - Liver Enzymes & Function'
+                  ),
+                },
+                {
+                  value: 'lipids',
+                  label: t(
+                    'labresults:testComponents.categories.lipids',
+                    'Lipids - Cholesterol & Triglycerides'
+                  ),
+                },
+                {
+                  value: 'endocrinology',
+                  label: t(
+                    'labresults:testComponents.categories.endocrinology',
+                    'Endocrinology - Hormones & Diabetes'
+                  ),
+                },
+                {
+                  value: 'cardiology',
+                  label: t(
+                    'labresults:testComponents.categories.cardiology',
+                    'Cardiology - Heart & Cardiac Markers'
+                  ),
+                },
+                {
+                  value: 'immunology',
+                  label: t(
+                    'labresults:testComponents.categories.immunology',
+                    'Immunology - Immune System & Antibodies'
+                  ),
+                },
+                {
+                  value: 'microbiology',
+                  label: t(
+                    'labresults:testComponents.categories.microbiology',
+                    'Microbiology - Infections & Cultures'
+                  ),
+                },
+                {
+                  value: 'toxicology',
+                  label: t(
+                    'labresults:testComponents.categories.toxicology',
+                    'Toxicology - Drug & Toxin Screening'
+                  ),
+                },
+                {
+                  value: 'genetics',
+                  label: t(
+                    'labresults:testComponents.categories.genetics',
+                    'Genetics - Genetic Testing'
+                  ),
+                },
+                {
+                  value: 'molecular',
+                  label: t(
+                    'labresults:testComponents.categories.molecular',
+                    'Molecular - DNA Tests'
+                  ),
+                },
+                {
+                  value: 'pathology',
+                  label: t(
+                    'labresults:testComponents.categories.pathology',
+                    'Pathology - Tissue & Biopsy Analysis'
+                  ),
+                },
+                {
+                  value: 'imaging',
+                  label: t(
+                    'labresults:testComponents.categories.imaging',
+                    'Imaging - Radiology & Scans'
+                  ),
+                },
+                {
+                  value: 'other',
+                  label: t(
+                    'labresults:testComponents.categories.other',
+                    'Other Tests'
+                  ),
+                },
+              ]}
+              value={formData.category ?? null}
+              onChange={value =>
+                setFormData(prev => ({
+                  ...prev,
+                  category: value as LabTestComponent['category'],
+                }))
+              }
+            />
+          </Group>
+
+          {/* Trend Linking */}
+          <Divider
+            label={t(
+              'labresults:testComponents.editModal.trendLinking',
+              'Trend Linking'
+            )}
+            labelPosition="center"
+          />
+
+          <Select
+            label={
+              <Group gap={4}>
+                <IconLink size={14} />
+                <Text size="sm">
+                  {t(
+                    'labresults:testComponents.editModal.fields.linkedTest',
+                    'Link to Standard Test'
+                  )}
+                </Text>
+              </Group>
+            }
+            description={t(
+              'labresults:testComponents.editModal.descriptions.linkedTest',
+              'Link this test to a standard test name for trend tracking across different lab naming variations'
+            )}
+            placeholder={t(
+              'labresults:testComponents.editModal.placeholders.linkedTest',
+              'Select a standard test to link to...'
+            )}
+            clearable
+            searchable
+            comboboxProps={{ zIndex: 3001 }}
+            data={canonicalTestOptions}
+            value={formData.canonical_test_name || null}
+            onChange={value =>
+              setFormData(prev => ({
+                ...prev,
+                canonical_test_name: value || '',
+              }))
+            }
+          />
+
+          {formData.canonical_test_name && (
+            <Alert color="blue" variant="light">
+              <Text size="sm">
+                {t(
+                  'labresults:testComponents.editModal.linkedInfo',
+                  'This test will be grouped with other "{{testName}}" tests in trend charts.',
+                  { testName: formData.canonical_test_name }
+                )}
+              </Text>
+            </Alert>
+          )}
+
+          {/* Notes */}
+          <Textarea
+            label={t('shared:tabs.notes', 'Notes')}
+            placeholder={t(
+              'labresults:testComponents.editModal.placeholders.notes',
+              'Additional notes about this test result'
+            )}
+            rows={3}
+            value={formData.notes || ''}
+            onChange={e =>
+              setFormData(prev => ({ ...prev, notes: e.target.value }))
+            }
+          />
+
+          {/* Action Buttons */}
+          <Group justify="space-between" mt="md">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={isSubmitting}
+            >
+              {t('shared:fields.cancel', 'Cancel')}
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitDisabled}
+              loading={isSubmitting}
+            >
+              {t('buttons.saveChanges', 'Save Changes')}
+            </Button>
+          </Group>
+        </Stack>
+      </Box>
+    </Modal>
+  );
+};
+
+export default TestComponentEditModal;

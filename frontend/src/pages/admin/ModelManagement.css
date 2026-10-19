@@ -1,0 +1,5 @@
+/* Model Management Styles - Minimal overrides (Mantine handles most styling) */
+.model-management {
+  max-width: 1400px;
+  margin: 0 auto;
+}

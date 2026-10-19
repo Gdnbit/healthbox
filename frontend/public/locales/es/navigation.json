@@ -1,0 +1,123 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "activity": {
+    "actions": {
+      "added": "Añadido",
+      "deleted": "Eliminado",
+      "modified": "Modificado",
+      "removed": "Retirado",
+      "scheduled": "Programado",
+      "updated": "Actualizado",
+      "viewed": "Consultado"
+    }
+  },
+  "dashboard": {
+    "activity": {
+      "lastUpdated": "Última actualización",
+      "noActivity": "Sin actividad reciente",
+      "noActivityDescription": "Sus actividades de registros médicos aparecerán aquí"
+    },
+    "hello": "Hola",
+    "loading": "Cargando su panel médico...",
+    "modules": {
+      "exportRecords": "Exportar registros",
+      "visitHistory": "Historial de visitas"
+    },
+    "search": {
+      "advancedSearch": "Búsqueda avanzada",
+      "placeholder": "Buscar registros médicos..."
+    },
+    "sections": {
+      "additionalResources": "Recursos adicionales",
+      "coreMedical": "Información médica principal",
+      "healthMonitoring": "Monitoreo de salud",
+      "prevention": "Prevención e historial",
+      "recentActivity": "Actividad reciente",
+      "treatments": "Tratamientos y procedimientos"
+    },
+    "stats": {
+      "activeMedications": "Medicamentos activos"
+    },
+    "subtitle": "Gestione su información de salud de forma segura",
+    "title": "Panel de HealthBox"
+  },
+  "invitations": {
+    "acceptButton": "Aceptar invitación",
+    "confirmDescription": "Al aceptar, obtendrá acceso para ver la información médica compartida.",
+    "confirmQuestion": "¿Está seguro de que desea aceptar esta invitación?",
+    "confirmTitle": "Confirmar aceptación de invitación",
+    "from": "De",
+    "lastUpdated": "Última actualización",
+    "manageAll": "Gestionar todas las invitaciones",
+    "noPending": "Sin invitaciones pendientes",
+    "noPendingDescription": "Las nuevas invitaciones para compartir aparecerán aquí",
+    "sharePatient": "Compartir paciente",
+    "title": "Invitaciones",
+    "types": {
+      "patientRecord": "Historial del paciente"
+    }
+  },
+  "menu": {
+    "account": "Cuenta",
+    "backToDashboard": "Volver al panel",
+    "darkMode": "Modo oscuro",
+    "help": "Ayuda",
+    "lightMode": "Modo claro",
+    "logout": "Cerrar sesión",
+    "patients": "Pacientes",
+    "profile": "Perfil",
+    "reports": "Informes",
+    "userActions": "Acciones de usuario"
+  },
+  "pages": {
+    "help": "Ayuda y soporte",
+    "medicalHistory": "Historial médico",
+    "patientDetails": "Detalles del paciente",
+    "patientList": "Lista de pacientes",
+    "preferences": "Preferencias",
+    "reports": "Informes",
+    "userProfile": "Perfil de usuario"
+  },
+  "sections": {
+    "personalInfo": "Información personal",
+    "preferences": "Preferencias"
+  },
+  "sidebarNav": {
+    "items": {
+      "adminDashboard": "Panel de administración",
+      "allergies": "Alergias",
+      "backupManagement": "Gestión de respaldos",
+      "conditions": "Condiciones",
+      "customReports": "Informes personalizados",
+      "dataModels": "Modelos de datos",
+      "emergencyContacts": "Contactos de emergencia",
+      "exportRecords": "Exportar registros",
+      "familyHistory": "Historial familiar",
+      "immunizations": "Inmunizaciones",
+      "injuries": "Lesiones",
+      "insurance": "Seguro",
+      "labResults": "Resultados de laboratorio",
+      "language": "Idioma",
+      "medicalEquipment": "Equipo médico",
+      "medications": "Medicamentos",
+      "patientInfo": "Info. del paciente",
+      "pharmacies": "Farmacias",
+      "practitioners": "Médicos",
+      "procedures": "Procedimientos",
+      "settings": "Configuración",
+      "symptoms": "Síntomas",
+      "systemHealth": "Estado del sistema",
+      "tagManagement": "Gestión de etiquetas",
+      "theme": "Tema",
+      "treatments": "Tratamientos",
+      "visitHistory": "Historial de visitas",
+      "vitalSigns": "Signos vitales"
+    },
+    "sections": {
+      "administration": "Administración",
+      "careAndTreatment": "Atención y tratamiento",
+      "misc": "Varios",
+      "tools": "Herramientas"
+    }
+  }
+}

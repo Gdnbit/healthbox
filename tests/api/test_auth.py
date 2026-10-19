@@ -1,0 +1,608 @@
+"""
+Test authentication endpoints.
+"""
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.crud.user import user as user_crud
+from app.schemas.user import UserCreate
+from tests.utils.user import create_random_user
+
+
+class TestAuthEndpoints:
+    """Test authentication-related endpoints."""
+
+    def test_login_success(self, client: TestClient, db_session: Session):
+        """Test successful login."""
+        # Create a test user
+        user_data = create_random_user(db_session)
+        username = user_data["username"]
+        password = user_data["password"]
+
+        # Attempt login
+        response = client.post(
+            "/api/v1/auth/login", data={"username": username, "password": password}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        # Token response doesn't include user data, just the token
+
+    def test_login_token_contains_iat_claim(
+        self, client: TestClient, db_session: Session
+    ):
+        """Test that JWT tokens include an iat (issued-at) claim for clock skew detection."""
+        import base64
+        import json
+
+        user_data = create_random_user(db_session)
+        response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        # Decode JWT payload (no signature verification needed for claim check)
+        payload_b64 = token.split(".")[1]
+        # Add padding if needed
+        padding_len = (-len(payload_b64)) % 4
+        if padding_len:
+            payload_b64 += "=" * padding_len
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+
+        assert (
+            "iat" in payload
+        ), "JWT must include 'iat' claim for client clock skew handling"
+        assert isinstance(
+            payload["iat"], (int, float)
+        ), "'iat' must be a numeric timestamp"
+        assert "exp" in payload
+        assert payload["iat"] <= payload["exp"], "'iat' must not be after 'exp'"
+
+    def test_login_invalid_credentials(self, client: TestClient):
+        """Test login with invalid credentials."""
+        response = client.post(
+            "/api/v1/auth/login",
+            data={"username": "nonexistent", "password": "wrongpassword"},
+        )
+
+        assert response.status_code == 401
+        data = response.json()
+        # Production API uses structured error format
+        assert "message" in data or "detail" in data
+
+    def test_login_missing_fields(self, client: TestClient):
+        """Test login with missing fields."""
+        response = client.post(
+            "/api/v1/auth/login", data={"username": "testuser"}  # Missing password
+        )
+
+        assert response.status_code == 422
+
+    def test_register_success(self, client: TestClient, db_session: Session):
+        """Test successful user registration."""
+        user_data = {
+            "username": "newuser",
+            "email": "newuser@example.com",
+            "password": "newpassword123",
+            "full_name": "New User",
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+
+        assert response.status_code == 200  # Changed from 201
+        data = response.json()
+        assert data["username"] == user_data["username"]
+        assert data["email"] == user_data["email"]
+        assert data["full_name"] == user_data["full_name"]
+        assert "password" not in data  # Password should not be returned
+        assert "id" in data
+
+        # Verify user was created in database
+        db_user = user_crud.get_by_username(db_session, username=user_data["username"])
+        assert db_user is not None
+        assert db_user.username == user_data["username"]
+
+    def test_register_duplicate_username(self, client: TestClient, db_session: Session):
+        """Test registration with duplicate username."""
+        # Create a user first
+        user_data = create_random_user(db_session)
+        existing_username = user_data["username"]
+
+        # Try to register with same username
+        new_user_data = {
+            "username": existing_username,
+            "email": "different@example.com",
+            "password": "password123",
+            "full_name": "Different User",
+        }
+
+        response = client.post("/api/v1/auth/register", json=new_user_data)
+
+        assert response.status_code == 409
+        data = response.json()
+        # Check message in either detail or message field
+        error_msg = (data.get("detail") or data.get("message", "")).lower()
+        assert "already registered" in error_msg or "already exists" in error_msg
+
+    def test_register_duplicate_email(self, client: TestClient, db_session: Session):
+        """Test registration with duplicate email."""
+        # Create a user first
+        user_data = create_random_user(db_session)
+        existing_email = user_data["email"]
+
+        # Try to register with same email
+        new_user_data = {
+            "username": "differentuser",
+            "email": existing_email,
+            "password": "password123",
+            "full_name": "Different User",
+        }
+
+        response = client.post("/api/v1/auth/register", json=new_user_data)
+
+        assert response.status_code == 409
+        data = response.json()
+        # Check message in either detail or message field
+        error_msg = (data.get("detail") or data.get("message", "")).lower()
+        assert "already registered" in error_msg or "already exists" in error_msg
+
+    def test_register_invalid_email(self, client: TestClient):
+        """Test registration with invalid email format."""
+        user_data = {
+            "username": "testuser",
+            "email": "invalid-email",
+            "password": "password123",
+            "full_name": "Test User",
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+
+        assert response.status_code == 422
+        data = response.json()
+        # Validation errors can be in detail (list) or message (string)
+        if "detail" in data:
+            error_detail = data["detail"]
+            assert any("email" in str(error).lower() for error in error_detail)
+        else:
+            error_msg = data.get("message", "").lower()
+            assert "email" in error_msg
+
+    def test_register_weak_password(self, client: TestClient):
+        """Test registration with weak password."""
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "123",  # Too short
+            "full_name": "Test User",
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+
+        assert response.status_code == 422
+
+    def test_register_missing_fields(self, client: TestClient):
+        """Test registration with missing required fields."""
+        incomplete_data = {
+            "username": "testuser",
+            # Missing email, password, full_name
+        }
+
+        response = client.post("/api/v1/auth/register", json=incomplete_data)
+
+        assert response.status_code == 422
+
+    def test_register_creates_patient_record(
+        self, client: TestClient, db_session: Session
+    ):
+        """Test that registration automatically creates a patient record."""
+        from app.crud.patient import patient as patient_crud
+
+        user_data = {
+            "username": "patientuser",
+            "email": "patient@example.com",
+            "password": "password123",
+            "full_name": "Patient User",
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+        assert response.status_code == 200
+
+        # Get the created user
+        user = user_crud.get_by_username(db_session, username=user_data["username"])
+        assert user is not None
+
+        # Check that patient record was created
+        patient = patient_crud.get_by_user_id(db_session, user_id=user.id)
+        assert patient is not None
+        assert patient.user_id == user.id
+
+    def test_logout_success(self, authenticated_client: TestClient):
+        """Test successful logout."""
+        response = authenticated_client.post("/api/v1/auth/logout")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "message" in data
+
+    def test_logout_without_auth(self, client: TestClient):
+        """Test logout without authentication."""
+        response = client.post("/api/v1/auth/logout")
+
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize(
+        "invalid_token",
+        ["invalid_token", "Bearer invalid_token", "", "NotBearer valid_looking_token"],
+    )
+    def test_invalid_auth_tokens(self, client: TestClient, invalid_token: str):
+        """Test various invalid authentication tokens."""
+        headers = {"Authorization": invalid_token} if invalid_token else {}
+
+        response = client.get("/api/v1/patients/me", headers=headers)
+
+        assert response.status_code == 401
+
+    def test_token_expiry_handling(self, client: TestClient, db_session: Session):
+        """Test handling of expired tokens."""
+        # This would require mocking time or creating an expired token
+        # For now, we'll test with an invalid token format
+        headers = {"Authorization": "Bearer expired.token.here"}
+
+        response = client.get("/api/v1/patients/me", headers=headers)
+
+        assert response.status_code == 401
+
+    @pytest.mark.skip(
+        reason=(
+            "SQLAlchemy sessions are not thread-safe. Sharing db_session across "
+            "ThreadPoolExecutor workers causes 'Session.add() not supported within "
+            "flush process' when the activity log write races a concurrent flush. "
+            "Fix requires per-thread sessions or an after_flush event handler."
+        )
+    )
+    def test_concurrent_logins(self, client: TestClient, db_session: Session):
+        """Test multiple concurrent login attempts."""
+        import concurrent.futures
+
+        # Create a test user
+        user_data = create_random_user(db_session)
+        username = user_data["username"]
+        password = user_data["password"]
+
+        def attempt_login():
+            return client.post(
+                "/api/v1/auth/login", data={"username": username, "password": password}
+            )
+
+        # Attempt multiple concurrent logins
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(attempt_login) for _ in range(5)]
+            responses = [
+                future.result() for future in concurrent.futures.as_completed(futures)
+            ]
+
+        # All should succeed
+        for response in responses:
+            assert response.status_code == 200
+            assert "access_token" in response.json()
+
+    def test_register_auto_redirect_integration(
+        self, client: TestClient, db_session: Session
+    ):
+        """Test that registration sets up user for patient info redirect."""
+        user_data = {
+            "username": "redirectuser",
+            "email": "redirect@example.com",
+            "password": "password123",
+            "full_name": "Redirect User",
+        }
+
+        # Register user
+        response = client.post("/api/v1/auth/register", json=user_data)
+        assert response.status_code == 200
+
+        # Login and verify patient record exists with placeholder data
+        login_response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+        assert login_response.status_code == 200
+
+        token = login_response.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Check patient record
+        patient_response = client.get("/api/v1/patients/me", headers=headers)
+        assert patient_response.status_code == 200
+
+        patient_data = patient_response.json()
+        # first_name and last_name are parsed from full_name ("Redirect User")
+        assert patient_data["first_name"] == "Redirect"
+        assert patient_data["last_name"] == "User"
+        assert patient_data["address"] == "Please update your address in your profile"
+
+    # ------------------------------------------------------------------
+    # must_change_password flag tests
+    # ------------------------------------------------------------------
+
+    def test_login_response_includes_must_change_password_false(
+        self, client: TestClient, db_session: Session
+    ):
+        """Login for a normal user should return must_change_password: false."""
+        user_data = create_random_user(db_session)
+
+        response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "must_change_password" in data
+        assert data["must_change_password"] is False
+
+    def test_login_response_must_change_password_true_for_flagged_user(
+        self, client: TestClient, db_session: Session
+    ):
+        """Login should return must_change_password: true when the flag is set on the user."""
+        user_data = create_random_user(db_session)
+        db_user = user_data["user"]
+
+        # Set the forced-change flag directly (simulates emergency admin creation)
+        db_user.must_change_password = True
+        db_session.commit()
+
+        response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["must_change_password"] is True
+
+    def test_change_password_clears_must_change_password_flag(
+        self, client: TestClient, db_session: Session
+    ):
+        """Changing password via /change-password should clear the must_change_password flag."""
+        user_data = create_random_user(db_session)
+        db_user = user_data["user"]
+        original_password = user_data["password"]
+        new_password = original_password + "_new"
+
+        # Set the forced-change flag
+        db_user.must_change_password = True
+        db_session.commit()
+
+        # Confirm the flag is set in the login response
+        login_response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": original_password},
+        )
+        assert login_response.status_code == 200
+        assert login_response.json()["must_change_password"] is True
+
+        token = login_response.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Change the password
+        change_response = client.post(
+            "/api/v1/auth/change-password",
+            json={"currentPassword": original_password, "newPassword": new_password},
+            headers=headers,
+        )
+        assert change_response.status_code == 200
+
+        # Login again with the new password and confirm flag is cleared
+        re_login_response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": new_password},
+        )
+        assert re_login_response.status_code == 200
+        assert re_login_response.json()["must_change_password"] is False
+
+    # ------------------------------------------------------------------
+    # HttpOnly cookie authentication tests (Option C - Phase 1)
+    # ------------------------------------------------------------------
+
+    def test_login_sets_httponly_cookie(self, client: TestClient, db_session: Session):
+        """Test that login sets an HttpOnly session cookie with correct attributes."""
+        from app.core.config import settings
+
+        user_data = create_random_user(db_session)
+        response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+
+        assert response.status_code == 200
+        # JSON body still contains token (backward compat)
+        assert "access_token" in response.json()
+        # Cookie is set with configured name
+        assert settings.AUTH_COOKIE_NAME in response.cookies
+        # Verify HttpOnly and SameSite via Set-Cookie header
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "httponly" in set_cookie.lower(), "Cookie must be HttpOnly"
+        assert "samesite=lax" in set_cookie.lower(), "Cookie must have SameSite=Lax"
+
+    def test_cookie_auth_accepted(self, client: TestClient, db_session: Session):
+        """Test that cookie-based auth works for protected endpoints."""
+        user_data = create_random_user(db_session)
+        # Login -- TestClient automatically stores cookies
+        login_response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+        assert login_response.status_code == 200
+
+        # Request /users/me with NO Authorization header -- cookie should authenticate
+        me_response = client.get("/api/v1/users/me")
+        assert me_response.status_code == 200
+        assert me_response.json()["username"] == user_data["username"]
+
+    def test_logout_clears_cookie(self, client: TestClient, db_session: Session):
+        """Test that logout clears the session cookie."""
+        user_data = create_random_user(db_session)
+        login_response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+        assert login_response.status_code == 200
+        token = login_response.json()["access_token"]
+
+        # Logout (use header auth to authenticate the logout request)
+        logout_response = client.post(
+            "/api/v1/auth/logout", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert logout_response.status_code == 200
+
+        # After logout, cookie-only request should fail
+        # Clear the Authorization header to test cookie-only
+        client.headers.pop("Authorization", None)
+        me_response = client.get("/api/v1/users/me")
+        assert me_response.status_code == 401
+
+    def test_header_auth_still_works(self, client: TestClient, db_session: Session):
+        """Test that Authorization header auth continues to work."""
+        user_data = create_random_user(db_session)
+        login_response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+        assert login_response.status_code == 200
+        token = login_response.json()["access_token"]
+
+        # Clear cookies so only header is used
+        client.cookies.clear()
+
+        me_response = client.get(
+            "/api/v1/users/me", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert me_response.status_code == 200
+        assert me_response.json()["username"] == user_data["username"]
+
+    def test_header_takes_precedence_over_cookie(
+        self, client: TestClient, db_session: Session
+    ):
+        """Test that when both header and cookie are present, the header token is used."""
+        from app.core.config import settings
+
+        user_a = create_random_user(db_session)
+        user_b = create_random_user(db_session)
+
+        # Login as user A to get a cookie
+        login_a = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_a["username"], "password": user_a["password"]},
+        )
+        assert login_a.status_code == 200
+        cookie_a = login_a.cookies[settings.AUTH_COOKIE_NAME]
+
+        # Login as user B to get a header token (this overwrites the cookie to user B)
+        login_b = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_b["username"], "password": user_b["password"]},
+        )
+        token_b = login_b.json()["access_token"]
+
+        # Restore user A's cookie so both cookie (A) and header (B) are present
+        client.cookies.set(settings.AUTH_COOKIE_NAME, cookie_a)
+
+        # Header should win -- response should identify as user B
+        me_response = client.get(
+            "/api/v1/users/me", headers={"Authorization": f"Bearer {token_b}"}
+        )
+        assert me_response.status_code == 200
+        assert me_response.json()["username"] == user_b["username"]
+
+    def test_jwt_lifetime_uses_server_default_when_user_timeout_is_lower(
+        self, client: TestClient, db_session: Session
+    ):
+        """JWT lifetime = max(ACCESS_TOKEN_EXPIRE_MINUTES, user timeout). When user timeout < server default, JWT uses server default."""
+        import base64
+        import json
+        from app.core.config import settings
+
+        user_data = create_random_user(db_session)
+
+        from app.crud.user_preferences import user_preferences
+        from app.schemas.user_preferences import UserPreferencesUpdate
+
+        db_user = user_crud.get_by_username(db_session, username=user_data["username"])
+        user_preferences.get_or_create_by_user_id(db_session, user_id=db_user.id)
+        user_preferences.update_by_user_id(
+            db_session,
+            user_id=db_user.id,
+            obj_in=UserPreferencesUpdate(session_timeout_minutes=15),
+        )
+
+        response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        payload_b64 = token.split(".")[1]
+        padding_len = (-len(payload_b64)) % 4
+        if padding_len:
+            payload_b64 += "=" * padding_len
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+
+        token_lifetime_minutes = (payload["exp"] - payload["iat"]) / 60
+        assert token_lifetime_minutes == pytest.approx(
+            settings.ACCESS_TOKEN_EXPIRE_MINUTES, abs=1
+        ), f"JWT lifetime should be {settings.ACCESS_TOKEN_EXPIRE_MINUTES} min (server default), got {token_lifetime_minutes:.0f} min"
+
+        assert response.json()["session_timeout_minutes"] == 15
+
+    def test_jwt_lifetime_extends_when_user_timeout_exceeds_server_default(
+        self, client: TestClient, db_session: Session
+    ):
+        """JWT lifetime = max(ACCESS_TOKEN_EXPIRE_MINUTES, user timeout). When user timeout > server default, JWT extends to match."""
+        import base64
+        import json
+        from app.core.config import settings
+
+        user_data = create_random_user(db_session)
+
+        from app.crud.user_preferences import user_preferences
+        from app.schemas.user_preferences import UserPreferencesUpdate
+
+        db_user = user_crud.get_by_username(db_session, username=user_data["username"])
+        user_preferences.get_or_create_by_user_id(db_session, user_id=db_user.id)
+        user_timeout = settings.ACCESS_TOKEN_EXPIRE_MINUTES + 120  # e.g. 600 min
+        user_preferences.update_by_user_id(
+            db_session,
+            user_id=db_user.id,
+            obj_in=UserPreferencesUpdate(session_timeout_minutes=user_timeout),
+        )
+
+        response = client.post(
+            "/api/v1/auth/login",
+            data={"username": user_data["username"], "password": user_data["password"]},
+        )
+
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+
+        payload_b64 = token.split(".")[1]
+        padding_len = (-len(payload_b64)) % 4
+        if padding_len:
+            payload_b64 += "=" * padding_len
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+
+        token_lifetime_minutes = (payload["exp"] - payload["iat"]) / 60
+        assert token_lifetime_minutes == pytest.approx(
+            user_timeout, abs=1
+        ), f"JWT lifetime should extend to {user_timeout} min (user timeout), got {token_lifetime_minutes:.0f} min"
+
+        assert response.json()["session_timeout_minutes"] == user_timeout

@@ -1,0 +1,281 @@
+{
+  "fixture_policy": "synthetic_only",
+  "cases": [
+    {
+      "id": "CASE-MVP-REQUIREMENTS",
+      "expected": "the PRD separates target requirements, current implementation evidence, future options, and unresolved user decisions"
+    },
+    {
+      "id": "CASE-MVP-IA",
+      "expected": "the primary information architecture is organized around household tasks rather than upstream database tables or clinician workflows"
+    },
+    {
+      "id": "CASE-MVP-ACCESS",
+      "expected": "cross-subject and cross-circle access is denied for lists, searches, records, source files, exports and background tasks unless the request uses the subject owner, an explicit ordinary sharing scope, or the sole owner's audited owner_global_read capability, without exposing object existence or health values to denied callers"
+    },
+    {
+      "id": "CASE-MVP-IDENTITY",
+      "expected": "login accounts, health subjects, sharing circles and system roles remain separate and selecting a subject cannot change an account role"
+    },
+    {
+      "id": "CASE-MVP-INVITE",
+      "expected": "public registration is disabled and one-time invitations handle acceptance, rejection, cancellation, expiration and replay safely"
+    },
+    {
+      "id": "CASE-MVP-SESSION",
+      "expected": "reusable session tokens do not appear in JavaScript-readable persistent storage or URLs and old sessions are rejected after password change, reset, suspension or global logout"
+    },
+    {
+      "id": "CASE-MVP-RECIPROCAL",
+      "expected": "all active members of one archive sharing group receive complete mutual structured-dashboard visibility, and membership activation or revocation cannot leave any half-active directed relationship"
+    },
+    {
+      "id": "CASE-MVP-CIRCLE-ISOLATION",
+      "expected": "when group one contains only A and B and group two contains only B and C, A and C cannot discover or retrieve each other's subjects or data through the overlapping member"
+    },
+    {
+      "id": "CASE-MVP-SCOPE",
+      "expected": "group membership grants structured_dashboard only; source documents, narrative records, export, edit, model Q&A and personalized screening reminders remain denied, and revocation blocks direct object URLs and stale tabs"
+    },
+    {
+      "id": "CASE-MVP-DELEGATION",
+      "expected": "directional caregiving access has a documented subject, scope, basis, expiry and revocation and cannot be delegated through a circle"
+    },
+    {
+      "id": "CASE-MVP-OWNER-GLOBAL-READ",
+      "expected": "the sole instance owner can read every subject's health records, source files, reminders and risk outputs through an explicit disclosed owner_global_read capability; ordinary accounts cannot obtain it, each owner view/download/export is audited without copying health values into operational logs, and global read does not silently grant cross-subject write"
+    },
+    {
+      "id": "CASE-MVP-ACCOUNT-BOUNDARY",
+      "expected": "the first release binds each active login account to exactly one owned health subject and rejects accountless subjects, duplicate ownership and caregiving entry points"
+    },
+    {
+      "id": "CASE-MVP-SINGLE-OPERATOR",
+      "expected": "the instance permits exactly one active system operator and rejects plus audits creation, invitation or promotion of a second operator"
+    },
+    {
+      "id": "CASE-MVP-INTERNAL-GROUP-ADMIN",
+      "expected": "the sole system operator can atomically add, move, suspend or remove archive-group members without approval from other members, while ordinary users receive only the deduplicated mutually visible subject list and cannot discover group identifiers or invoke membership management"
+    },
+    {
+      "id": "CASE-MVP-SELF-SERVICE-HEALTH",
+      "expected": "each ordinary member can upload, review, enter and revise health content only for their owned subject; group dashboard visibility never grants write access, while the sole system operator can explicitly modify, void or withdraw another subject's data only with the actual actor, target subject, reason, before and after state, timestamp and immutable revision chain"
+    },
+    {
+      "id": "CASE-MVP-ADMIN-DELEGATED-UPLOAD",
+      "expected": "ordinary members cannot choose another upload subject; the sole operator's delegated-upload capability is disabled by default, and when explicitly enabled it requires target-subject selection, preserves the operator as the actual actor and never impersonates the member"
+    },
+    {
+      "id": "CASE-MVP-OWNER-MAINTENANCE",
+      "expected": "owner maintenance is separated into audited admin APIs, a versioned local recovery command and raw-SQL break glass; password recovery uses a proper hash, handles MFA bindings, revokes sessions and creates a maintenance record, while raw SQL requires a recoverable backup, a transaction, post-change integrity checks and audit backfill without storing plaintext passwords"
+    },
+    {
+      "id": "CASE-MVP-SOURCE",
+      "expected": "source identity, metadata, hash, member ownership, and record provenance round-trip without exposing server paths"
+    },
+    {
+      "id": "CASE-MVP-UPLOAD-BATCH-LIFECYCLE",
+      "expected": "synthetic uploads enforce 20 MB per image, 50 MB per PDF, 30 files and 300 MB per batch; a valid multi-file batch shows per-file progress and retry, permits one-file removal or whole-batch cancellation, and after saving uses dependency-aware trash, batch withdrawal and protected cleanup without leaving current formal values whose source was silently removed"
+    },
+    {
+      "id": "CASE-MVP-DUPLICATE-OVERLAP",
+      "expected": "exact SHA-256 duplicates are skipped automatically; near-page and partially overlapping images create reviewable relationships but are not automatically cropped, merged or silently discarded in this release"
+    },
+    {
+      "id": "CASE-MVP-ONE-CLICK-COMMIT",
+      "expected": "after a batch-level summary the user can commit every valid candidate in one action without per-page confirmation; a suspected subject mismatch adds one batch-level confirmation, and invalid items remain attached to the source as pending work rather than creating fabricated values"
+    },
+    {
+      "id": "CASE-MVP-UPLOAD-SECURITY",
+      "expected": "synthetic files exercise extension, media type, signature, size, filename, quarantine, scanner failure and cleanup controls before formal source storage"
+    },
+    {
+      "id": "CASE-MVP-PARSE-PROVENANCE",
+      "expected": "automatic parsing preserves parser version, confidence, source page or region, raw candidate text and human edits while failures and retries never write formal records"
+    },
+    {
+      "id": "CASE-MVP-PARSE-WORKER-READINESS",
+      "expected": "a single-process database worker drains queued parse tasks in stable order, automatically requeues interrupted running tasks after application restart, reports file-path-specific parser dependencies without private paths, and two synthetic institution-style digital PDFs match field-level golden output while formal_write_count remains zero"
+    },
+    {
+      "id": "CASE-MVP-IMPORT",
+      "expected": "unreviewed candidates never reach formal records and a safe batch can be rolled back"
+    },
+    {
+      "id": "CASE-MVP-LIFECYCLE",
+      "expected": "source, candidate, review, separate confirmation, formal record, revision or void, export, and backup states remain distinct and auditable"
+    },
+    {
+      "id": "CASE-MVP-REVISION-BOUNDARY",
+      "expected": "an uncommitted candidate can be corrected without creating a formal history point while any correction after formal commit creates an immutable revision preserving the old value, reason, actor and time"
+    },
+    {
+      "id": "CASE-MVP-VIZ",
+      "expected": "summary, coverage, trend eligibility and quality counts reconcile to source rows"
+    },
+    {
+      "id": "CASE-MVP-DYNAMIC-TREND",
+      "expected": "the dashboard prioritizes actual compatible formal observations, supports one or two user-selected metrics, auto-fits an explicit adjustable date window to data density and span, keeps the overview lightweight while preserving original units, methods, reference ranges and sources in details and handoff outputs, and never emits a whole-body health score"
+    },
+    {
+      "id": "CASE-MVP-LIGHTWEIGHT-DASHBOARD",
+      "expected": "the ordinary-member overview makes new-report upload the most prominent action, exposes no more than one or two trends and only genuine actionable issues, avoids a professional task wall, hides exact values, units and jargon by default, and preserves all facts in metric details"
+    },
+    {
+      "id": "CASE-MVP-SMOOTH-TREND",
+      "expected": "display smoothing changes only the connector while every real point remains visible and the observation id, clinical date and value sets stay identical; no interpolated, predicted, calculated or extrapolated observations are created"
+    },
+    {
+      "id": "CASE-MVP-COPY-HANDOFF",
+      "expected": "the home exposes one copy or share action rather than separate copy-data and copy-for-AI buttons; its preview offers general-data and AI-ready-text formats using the same subject, date, metric and sensitive-scope preview; all clipboard formats remain local, exclude direct identity and originals by default, make no external model request, and preserve selected exact facts"
+    },
+    {
+      "id": "CASE-MVP-MOBILE-FIRST-DASHBOARD",
+      "expected": "at 390 by 844 the first screen identifies the current subject, makes upload visibly primary, shows one primary trend, allows metric switching and exposes unified copy or share plus export or print without horizontal overflow, while desktop expands to no more than two trends"
+    },
+    {
+      "id": "CASE-MVP-HEALTH-ARCHIVE-MERGE",
+      "expected": "primary navigation does not expose separate records and trends destinations; one health archive contains source reports, structured metrics, trends, exam comparison, coverage and quality, and legacy deep links retain subject and filter context"
+    },
+    {
+      "id": "CASE-MVP-AI-ASSISTANT-SCOPE",
+      "expected": "the AI assistant continuously shows the current subject, formal-data, time, original or narrative scope, data cutoff and processing location; subject changes clear context and reauthorize, every personal fact has a currently accessible citation, ordinary dashboard sharing does not grant AI access to another subject, and the model has no write tools"
+    },
+    {
+      "id": "CASE-MVP-AI-SCREENING-EXPLANATION",
+      "expected": "a question about examinations that may need scheduling only explains versioned states already calculated from published guidance and confirmed evidence; missing active guidance, profile fields or method-matched evidence produces an insufficiency response, never a model-invented interval, due state, disease probability, diagnosis or treatment"
+    },
+    {
+      "id": "CASE-MVP-COVERAGE",
+      "expected": "blank evidence is not inferred as not performed, normal, or zero, and same-date conflicts remain visible"
+    },
+    {
+      "id": "CASE-MVP-ALERT",
+      "expected": "each alert exposes its deterministic rule, inputs, source, calculation time, version, and limitations without diagnosis"
+    },
+    {
+      "id": "CASE-MVP-BODY-GUIDANCE",
+      "expected": "front, back, female, male, shared and systemic navigation plus an equivalent accessible list only expose curated reviewed topics and never encode personal disease probability"
+    },
+    {
+      "id": "CASE-MVP-GUIDANCE-VERSION",
+      "expected": "guidance draft, medical review, validation, publication, supersession and withdrawal are auditable, only a published current version can drive status, and historical evaluations are not rewritten"
+    },
+    {
+      "id": "CASE-MVP-GUIDANCE-CONFLICT",
+      "expected": "conflicting jurisdictional guidance is shown in parallel and only an explicitly selected active policy drives status without automatically choosing the shortest interval"
+    },
+    {
+      "id": "CASE-MVP-SCREENING-EVIDENCE",
+      "expected": "only confirmed screening events with a matching purpose, method, date and source satisfy a rule; a generic checkup, unknown method or unreviewed candidate does not"
+    },
+    {
+      "id": "CASE-MVP-SCREENING-DUE",
+      "expected": "four-year and exact five-calendar-year cases, symptoms, prior abnormalities, missing inputs, one-time screening, shared decisions and insufficient-evidence guidance produce distinct explainable states without safety claims"
+    },
+    {
+      "id": "CASE-MVP-RISK-SEPARATION",
+      "expected": "source-report status, screening schedule, validated prediction and diagnostic follow-up remain separate domains, and simple thresholds, anatomy navigation and language models cannot generate disease probabilities"
+    },
+    {
+      "id": "CASE-MVP-RISK-ELIGIBILITY",
+      "expected": "risk calculation requires a published model plus matching age, region, target population and prior-disease criteria, while ineligible, insufficient and out-of-distribution cases never become low risk"
+    },
+    {
+      "id": "CASE-MVP-RISK-INPUT-PROVENANCE",
+      "expected": "every risk input resolves to a confirmed current-subject record with value, unit, clinical date and source, and missing, stale, conflicting, out-of-range, incompatible-unit or cross-subject inputs block calculation"
+    },
+    {
+      "id": "CASE-MVP-RISK-DETERMINISM",
+      "expected": "a fixed model and implementation version produces an independently reproducible result for fixed synthetic inputs, and prompts, language-model output and execution order cannot alter the numeric estimate"
+    },
+    {
+      "id": "CASE-MVP-RISK-NO-REASSURANCE",
+      "expected": "normal, negative, not-due and low-risk states never claim health, safety, disease exclusion or no need for concern, while high risk never becomes a diagnosis"
+    },
+    {
+      "id": "CASE-MVP-RISK-SYMPTOM-OVERRIDE",
+      "expected": "symptoms, critical source status, prior abnormality, diagnosis or post-treatment follow-up supersede ordinary risk presentation and historical low estimates cannot provide reassurance"
+    },
+    {
+      "id": "CASE-MVP-RISK-VERSIONING",
+      "expected": "model upgrades, input revisions and withdrawal preserve historical snapshots and current recomputation explains whether changes came from data or model versions"
+    },
+    {
+      "id": "CASE-MVP-RISK-SHARING",
+      "expected": "risk inputs and evaluations are visible to the subject owner and sole instance owner by default, never appear in ordinary structured_dashboard responses, and any future sharing to another member requires a separate revocable risk_view capability"
+    },
+    {
+      "id": "CASE-MVP-LLM-INTAKE",
+      "expected": "model extraction emits versioned source-located candidates and deterministic validation plus human review blocks wrong values, truncation, timeout or schema failure from writing any partial formal record"
+    },
+    {
+      "id": "CASE-MVP-LLM-DYNAMIC-FIELD",
+      "expected": "a newly discovered field remains an unmapped raw candidate until a reviewed typed registry entry and synthetic regression exist, and it cannot silently alter schema, trends or reminders"
+    },
+    {
+      "id": "CASE-MVP-LLM-PROMPT-INJECTION",
+      "expected": "instructions embedded in an uploaded report remain untrusted document data and cannot invoke formal writes, sharing, export, notifications, external fetches or guidance publication"
+    },
+    {
+      "id": "CASE-MVP-LLM-QA",
+      "expected": "fixed-question answers preserve subject and scope, cite every factual statement, expose prompt and model versions and missing evidence, and remain separate from formal health facts"
+    },
+    {
+      "id": "CASE-MVP-LLM-PACKAGE",
+      "expected": "doctor and external-model package presets enforce independent export authorization and sensitive-field preview, and the model package excludes originals and direct identity by default"
+    },
+    {
+      "id": "CASE-MVP-EXPORT",
+      "expected": "portable exports preserve values, context, versions, and source identifiers without private paths or executable spreadsheet content"
+    },
+    {
+      "id": "CASE-MVP-COMPLETE-ARCHIVE",
+      "expected": "a self-owned durable task emits structured JSON, every retained report original, a versioned manifest and layered integrity evidence in an open ZIP; originals outside private source storage, missing or changed originals, cross-subject access, archive tampering and expired downloads fail closed, while derived-file expiry never deletes formal data or originals"
+    },
+    {
+      "id": "CASE-MVP-I18N",
+      "expected": "the household core flow is available in Simplified Chinese on desktop and mobile while preserving explicit language choices"
+    },
+    {
+      "id": "CASE-MVP-PWA",
+      "expected": "desktop Chromium, Android Chrome and iOS Safari complete the core flow and the installable web app has valid Chinese metadata, icons, isolated scope, safe updates and logout cache behavior"
+    },
+    {
+      "id": "CASE-MVP-PUBLIC-ENTRY",
+      "expected": "the public homepage has no visible health link and the health entry is marked not for indexing, while all visitors who know the URL still require authentication"
+    },
+    {
+      "id": "CASE-MVP-PUBLIC-SECURITY",
+      "expected": "HTTPS, secure headers, secure cookies, weak-password rejection, abuse throttling, dependency checks and internal port boundaries pass before internet exposure; the sole public administrator must complete TOTP or passkey authentication and have a tested offline recovery code, while ordinary members use password-only login and are not offered an MFA settings path in the first release"
+    },
+    {
+      "id": "CASE-MVP-DEPLOY",
+      "expected": "the website and health service deploy, smoke test, fail safely and roll back independently with a verified pre-migration backup"
+    },
+    {
+      "id": "CASE-MVP-SERVER-READINESS",
+      "expected": "a timestamped read-only inspection covers server CPU, memory, storage, containers, reverse proxy, certificates, firewall, updates and backup capacity"
+    },
+    {
+      "id": "CASE-MVP-CONSENT",
+      "expected": "health-data, sharing, minor and external-processing decisions are separately versioned and withdrawal plus access history remain auditable"
+    },
+    {
+      "id": "CASE-MVP-PRIVACY-ASSESSMENT",
+      "expected": "a pre-production privacy impact assessment records purpose, necessity, risks and safeguards and an incident exercise uses no real health content"
+    },
+    {
+      "id": "CASE-MVP-EXTERNAL-PROCESSOR",
+      "expected": "external OCR, model, storage or messaging calls are blocked until provider, location, fields, retention and the corresponding authorization are recorded"
+    },
+    {
+      "id": "CASE-MVP-RESTORE",
+      "expected": "a verified full archive restores required tables in an ephemeral no-network database"
+    },
+    {
+      "id": "CASE-MVP-REAL-DATA-GATE",
+      "expected": "formal import remains disabled until synthetic E2E, visual QA and explicit user confirmation pass"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+# HealthBox local trial. Independent project/volumes, no production mounts.
+name: healthbox
+services:
+  postgres:
+    image: postgres:15-bookworm
+    environment:
+      POSTGRES_DB: healthbox
+      POSTGRES_USER: healthbox
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set a random DB_PASSWORD in .env}
+    volumes:
+      - healthbox-db:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U healthbox -d healthbox"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: healthbox:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${APP_PORT:-18085}:8000"
+    environment:
+      DATABASE_URL: postgresql://healthbox:${DB_PASSWORD:?Set DB_PASSWORD}@postgres:5432/healthbox
+      SECRET_KEY: ${SECRET_KEY:?Set a random SECRET_KEY in .env}
+      ADMIN_DEFAULT_USERNAME: ${ADMIN_DEFAULT_USERNAME:-admin}
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:?Set a strong initial password}
+      TZ: ${TZ:-UTC}
+      ALLOW_USER_REGISTRATION: "false"
+      HOUSEHOLD_ADMIN_PROVISIONING_ONLY: "true"
+      LEGACY_DIRECTIONAL_SHARING_ENABLED: "false"
+      HOUSEHOLD_PRIVACY_CONSENT_REQUIRED: "true"
+      HEALTH_AI_ENABLED: "false"
+      HEALTH_AI_TEST_PROVIDER_ALLOWED: "false"
+      INSTANCE_DATA_CLASS: synthetic
+      REMOTE_RELEASE_NOTES_ENABLED: "false"
+      AUTH_COOKIE_SECURE: "false"
+      LOG_LEVEL: WARNING
+    volumes:
+      - healthbox-uploads:/app/uploads
+      - healthbox-backups:/app/backups
+      - healthbox-logs:/app/logs
+    restart: unless-stopped
+volumes:
+  healthbox-db:
+  healthbox-uploads:
+  healthbox-backups:
+  healthbox-logs:

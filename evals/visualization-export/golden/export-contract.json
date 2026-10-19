@@ -1,0 +1,20 @@
+{
+  "mode": "comparison",
+  "ordered_dates": ["2024-03-01", "2025-03-01", "2026-03-01"],
+  "file_stem": "health-metric-synthetic-marker-20260722T060000Z",
+  "observation_count": 3,
+  "required_fields": ["date", "display_value", "unit", "status", "reference_range", "source_name", "source_id"],
+  "svg": {
+    "mime": "image/svg+xml;charset=utf-8",
+    "required_visible_text": ["Synthetic Marker", "合成家庭成员", "Synthetic Baseline Panel", "Synthetic Follow-up Panel", "Synthetic Annual Panel", "仅整理记录，不构成诊断"],
+    "required_elements": ["title", "desc", "svg", "polyline_or_bars", "source_table"],
+    "forbidden_fragments": ["<script", "javascript:", "E:/", "E:\\"]
+  },
+  "csv": {
+    "mime": "text/csv;charset=utf-8",
+    "bom": true,
+    "row_count": 3,
+    "required_headers": ["日期", "值", "单位", "状态", "参考范围", "来源记录", "来源记录 ID"]
+  },
+  "database_effect": "none"
+}

@@ -1,0 +1,57 @@
+{
+  "contract_id": "household-privacy-consent@1.0.0",
+  "notice": {
+    "version": "household-privacy-notice@1.0.0",
+    "locale": "zh-CN",
+    "content_hash": "sha256",
+    "scope_snapshot_persisted": true,
+    "external_processing_consent_included": false
+  },
+  "restricted_session": {
+    "precedence": [
+      "forced_password_change",
+      "privacy_consent",
+      "business_access"
+    ],
+    "allowed_paths_before_acceptance": [
+      "/api/v1/privacy-consent/current",
+      "/api/v1/privacy-consent/decisions",
+      "/api/v1/users/me",
+      "/api/v1/auth/logout"
+    ],
+    "health_and_business_paths_blocked_server_side": true
+  },
+  "decisions": {
+    "allowed": [
+      "accepted",
+      "declined"
+    ],
+    "append_only": true,
+    "same_latest_decision_idempotent": true,
+    "stale_or_unknown_version_rejected": true,
+    "decline_ends_session": true,
+    "decline_deletes_account": false,
+    "later_acceptance_allowed": true
+  },
+  "scope_invariants": [
+    "sole_administrator_global_read_is_disclosed",
+    "reciprocal_structured_dashboard_sharing_is_disclosed",
+    "source_originals_are_not_shared_by_default",
+    "narrative_background_is_not_shared_by_default",
+    "write_export_ai_screening_and_reminder_permissions_are_not_granted",
+    "external_ocr_model_or_storage_requires_separate_confirmation"
+  ],
+  "configuration": {
+    "flag": "HOUSEHOLD_PRIVACY_CONSENT_REQUIRED",
+    "household_default": true,
+    "disabled_mode_preserves_upstream_compatibility": true
+  },
+  "audit": {
+    "decision_metadata_recorded": true,
+    "forbidden_values": [
+      "health_metric_values",
+      "report_content",
+      "source_file_content"
+    ]
+  }
+}

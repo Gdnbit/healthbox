@@ -1,0 +1,31 @@
+{
+  "source_display_name": "Synthetic household health report",
+  "source_filename": "synthetic-household-health-report.pdf",
+  "pdf_title": "Synthetic Household Health Report",
+  "pdf_body": "Generated only for isolated browser acceptance testing.",
+  "csv_fixture": "evals/entry-workspace/cases/generic-lab-csv.csv",
+  "expected_markers": [
+    "Synthetic marker alpha",
+    "Synthetic flag beta",
+    "Synthetic note gamma"
+  ],
+  "vital_export": {
+    "card_name": "打开血压趋势和明细表",
+    "records": [
+      {
+        "recorded_date": "2026-01-05T08:00:00Z",
+        "systolic_bp": 118,
+        "diastolic_bp": 76
+      },
+      {
+        "recorded_date": "2026-02-05T08:00:00Z",
+        "systolic_bp": 121,
+        "diastolic_bp": 79
+      }
+    ]
+  },
+  "viewports": {
+    "desktop": { "width": 1440, "height": 900 },
+    "mobile": { "width": 390, "height": 844 }
+  }
+}

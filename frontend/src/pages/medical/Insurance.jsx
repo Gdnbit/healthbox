@@ -1,0 +1,727 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import { useState, useRef, useEffect } from 'react';
+import { useMedicalData } from '../../hooks/useMedicalData';
+import { useDataManagement } from '../../hooks/useDataManagement';
+import { useEntityFileCounts } from '../../hooks/useEntityFileCounts';
+import { useViewModalNavigation } from '../../hooks/useViewModalNavigation';
+import { apiService } from '../../services/api';
+import { useDateFormat } from '../../hooks/useDateFormat';
+import { getMedicalPageConfig } from '../../utils/medicalPageConfigs';
+import {
+  initializeFormData as initFormData,
+  restructureFormData,
+  insuranceFieldConfig,
+  insuranceDefaultValues,
+} from '../../utils/nestedFormUtils';
+import { printInsuranceRecord } from '../../utils/printTemplateGenerator';
+import logger from '../../services/logger';
+import { notifications } from '@mantine/notifications';
+import { PageHeader } from '../../components';
+import { withResponsive } from '../../hoc/withResponsive';
+import { usePagination } from '../../hooks/usePagination';
+import { useResponsive } from '../../hooks/useResponsive';
+import { usePersistedViewMode } from '../../hooks/usePersistedViewMode';
+import MedicalPageFilters from '../../components/shared/MedicalPageFilters';
+import { ResponsiveTable } from '../../components/adapters';
+import MedicalPageActions from '../../components/shared/MedicalPageActions';
+import StatusBadge from '../../components/medical/StatusBadge';
+import InsuranceCard from '../../components/medical/insurance/InsuranceCard';
+import InsuranceFormWrapper from '../../components/medical/insurance/InsuranceFormWrapper';
+import InsuranceViewModal from '../../components/medical/insurance/InsuranceViewModal';
+import FormLoadingOverlay from '../../components/shared/FormLoadingOverlay';
+import EmptyState from '../../components/shared/EmptyState';
+import MedicalPageAlerts from '../../components/shared/MedicalPageAlerts';
+import MedicalPageLoading from '../../components/shared/MedicalPageLoading';
+import AnimatedCardGrid from '../../components/shared/AnimatedCardGrid';
+import PaginationControls from '../../components/shared/PaginationControls';
+import { useFormSubmissionWithUploads } from '../../hooks/useFormSubmissionWithUploads';
+import { useTranslation } from 'react-i18next';
+import { usePatientPermissions } from '../../hooks/usePatientPermissions';
+import { Badge, Button, Stack, Text, Container, Paper } from '@mantine/core';
+
+const Insurance = () => {
+  const { t } = useTranslation(['common', 'shared']);
+  const { isViewOnly, viewOnlyTooltip } = usePatientPermissions();
+  const { formatDate } = useDateFormat();
+  const responsive = useResponsive();
+  const [viewMode, setViewMode] = usePersistedViewMode('insurance');
+  const {
+    page,
+    setPage,
+    pageSize,
+    handlePageSizeChange,
+    paginateData,
+    totalPages,
+    resetPage,
+    clampPage,
+    PAGE_SIZE_OPTIONS,
+  } = usePagination();
+
+  // Modern data management with useMedicalData
+  const {
+    items: insurances = [],
+    currentPatient,
+    loading = false,
+    error,
+    successMessage,
+    clearError,
+    createItem = async () => {},
+    updateItem = async () => {},
+    deleteItem = async () => {},
+    refreshData = () => {},
+  } = useMedicalData({
+    entityName: 'insurance',
+    apiMethodsConfig: {
+      getAll: signal => apiService.getInsurances(signal),
+      getByPatient: (patientId, signal) =>
+        apiService.getPatientInsurances(patientId, signal),
+      create: (data, signal) => apiService.createInsurance(data, signal),
+      update: (id, data, signal) =>
+        apiService.updateInsurance(id, data, signal),
+      delete: (id, signal) => apiService.deleteInsurance(id, signal),
+    },
+    requiresPatient: true,
+  }) || {};
+
+  // Get configuration for filtering and sorting
+  const config = getMedicalPageConfig('insurances');
+
+  // File count management for cards
+  const { fileCounts, fileCountsLoading, cleanupFileCount, refreshFileCount } =
+    useEntityFileCounts('insurance', insurances);
+
+  // View modal navigation with URL deep linking
+  const {
+    isOpen: showViewModal,
+    viewingItem: viewingInsurance,
+    openModal: handleViewInsurance,
+    closeModal: handleCloseViewModal,
+  } = useViewModalNavigation({
+    items: insurances,
+    loading,
+    onClose: insurance => {
+      if (insurance) {
+        refreshFileCount(insurance.id);
+      }
+    },
+  });
+
+  // Track if we need to refresh after form submission (but not after uploads)
+  const needsRefreshAfterSubmissionRef = useRef(false);
+
+  // Form submission with uploads hook
+  const {
+    startSubmission,
+    completeFormSubmission,
+    startFileUpload,
+    completeFileUpload,
+    handleSubmissionFailure,
+    resetSubmission,
+    isBlocking,
+    canSubmit,
+    statusMessage,
+  } = useFormSubmissionWithUploads({
+    entityType: 'insurance',
+    onSuccess: () => {
+      // Reset form and close modal on complete success
+      setIsFormOpen(false);
+      setEditingInsurance(null);
+      setFormData(initializeFormData());
+      setDocumentManagerMethods(null);
+
+      // Only refresh if we created a new insurance during form submission
+      // Don't refresh after uploads complete to prevent resource exhaustion
+      if (needsRefreshAfterSubmissionRef.current) {
+        needsRefreshAfterSubmissionRef.current = false;
+        refreshData();
+      }
+
+      // IMPORTANT: Reset submission state after closing to prevent re-triggering
+      // This prevents the useEffect in the hook from firing again when form reopens
+      setTimeout(() => resetSubmission(), 0);
+    },
+    onError: error => {
+      logger.error('insurance_form_error', {
+        message: 'Form submission error in insurance',
+        error,
+        component: 'Insurance',
+      });
+    },
+    component: 'Insurance',
+  });
+
+  // Data management (filtering, sorting, pagination)
+  const dataManagement = useDataManagement(insurances || [], config) || {};
+
+  const {
+    data: processedInsurances = [],
+    hasActiveFilters = false,
+    handleSortChange = () => {},
+    sortBy = '',
+    sortOrder = 'asc',
+    getSortIndicator = () => '',
+  } = dataManagement;
+
+  const paginatedInsurances = paginateData(processedInsurances);
+
+  useEffect(() => {
+    resetPage();
+  }, [hasActiveFilters, resetPage]);
+  useEffect(() => {
+    clampPage(processedInsurances.length);
+  }, [processedInsurances.length, clampPage]);
+
+  // Form state management
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingInsurance, setEditingInsurance] = useState(null);
+  const [formData, setFormData] = useState({});
+
+  // Document management state
+  const [documentManagerMethods, setDocumentManagerMethods] = useState(null);
+
+  // Table formatters - consistent with medication table approach
+  const formatters = {
+    insurance_type: (value, item) => (
+      <Badge
+        variant="light"
+        color={
+          item.insurance_type === 'medical'
+            ? 'blue'
+            : item.insurance_type === 'dental'
+              ? 'green'
+              : item.insurance_type === 'vision'
+                ? 'purple'
+                : 'orange'
+        }
+        size="sm"
+      >
+        {item.insurance_type?.charAt(0).toUpperCase() +
+          item.insurance_type?.slice(1)}
+      </Badge>
+    ),
+    company_name: value => <Text size="sm">{value || '-'}</Text>,
+    plan_name: value => <Text size="sm">{value || '-'}</Text>,
+    member_id: value => (
+      <Text size="sm" fw={600}>
+        {value || '-'}
+      </Text>
+    ),
+    group_number: value => <Text size="sm">{value || '-'}</Text>,
+    member_name: value => <Text size="sm">{value || '-'}</Text>,
+    effective_date: value => (
+      <Text size="sm">{value ? formatDate(value) : '-'}</Text>
+    ),
+    expiration_date: value => (
+      <Text size="sm">{value ? formatDate(value) : 'Ongoing'}</Text>
+    ),
+    status: (value, item) => <StatusBadge status={item.status} />,
+    is_primary: (value, item) => {
+      if (item.is_primary) {
+        return (
+          <Badge color="green" variant="filled" size="sm">
+            {t('labels.yes')}
+          </Badge>
+        );
+      }
+      return (
+        <Badge color="gray" variant="light" size="sm">
+          {t('labels.no')}
+        </Badge>
+      );
+    },
+  };
+
+  // Initialize form data using utility
+  const initializeFormData = (insurance = null) => {
+    return initFormData(
+      insurance,
+      insuranceFieldConfig,
+      insuranceDefaultValues
+    );
+  };
+
+  // Handle form input changes
+  const handleInputChange = e => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = async e => {
+    e.preventDefault();
+
+    // Start submission immediately to prevent race conditions
+    startSubmission();
+
+    if (!canSubmit) {
+      logger.warn('insurance_race_condition_prevented', {
+        message: 'Form submission prevented due to race condition',
+        component: 'Insurance',
+      });
+      return;
+    }
+
+    try {
+      // Use utility to restructure form data
+      const submitData = restructureFormData(formData, insuranceFieldConfig);
+
+      // Only add patient_id for new insurance (create), not for updates
+      if (!editingInsurance) {
+        submitData.patient_id = currentPatient?.id;
+      }
+
+      let success;
+      let resultId;
+
+      // Submit form data
+      if (editingInsurance) {
+        logger.info('Updating insurance', {
+          insuranceId: editingInsurance.id,
+          insurance_type: formData.insurance_type,
+          company: formData.company_name,
+        });
+        success = await updateItem(editingInsurance.id, submitData);
+        resultId = editingInsurance.id;
+        // No refresh needed for updates - user stays on same page
+      } else {
+        logger.info('Creating new insurance', {
+          insurance_type: formData.insurance_type,
+          company: formData.company_name,
+        });
+        const result = await createItem(submitData);
+        success = !!result;
+        resultId = result?.id;
+        // Set flag to refresh after new insurance creation (but only after form submission, not uploads)
+        if (success) {
+          needsRefreshAfterSubmissionRef.current = true;
+        }
+      }
+
+      // Complete form submission
+      completeFormSubmission(success, resultId);
+
+      if (success && resultId) {
+        // Check if we have files to upload
+        const hasPendingFiles = documentManagerMethods?.hasPendingFiles?.();
+
+        if (hasPendingFiles) {
+          logger.info('insurance_starting_file_upload', {
+            message: 'Starting file upload process',
+            insuranceId: resultId,
+            pendingFilesCount: documentManagerMethods.getPendingFilesCount(),
+            component: 'Insurance',
+          });
+
+          // Start file upload process
+          startFileUpload();
+
+          try {
+            // Upload files with progress tracking
+            await documentManagerMethods.uploadPendingFiles(resultId);
+
+            // File upload completed successfully
+            completeFileUpload(
+              true,
+              documentManagerMethods.getPendingFilesCount(),
+              0
+            );
+
+            // Refresh file count
+            refreshFileCount(resultId);
+          } catch (uploadError) {
+            logger.error('insurance_file_upload_error', {
+              message: 'File upload failed',
+              insuranceId: resultId,
+              error: uploadError.message,
+              component: 'Insurance',
+            });
+
+            // File upload failed
+            completeFileUpload(
+              false,
+              0,
+              documentManagerMethods.getPendingFilesCount()
+            );
+          }
+        } else {
+          // No files to upload, complete immediately
+          completeFileUpload(true, 0, 0);
+        }
+      }
+    } catch (error) {
+      logger.error('insurance_submission_error', {
+        message: 'Form submission failed',
+        error: error.message,
+        component: 'Insurance',
+      });
+
+      // Check if it's a validation error
+      if (error.validationErrors) {
+        handleSubmissionFailure(error.validationErrors.join('\n'), 'form');
+      } else {
+        handleSubmissionFailure(error, 'form');
+      }
+    }
+  };
+
+  // Handle edit
+  const handleEdit = insurance => {
+    try {
+      const initialFormData = initializeFormData(insurance);
+
+      setEditingInsurance(insurance);
+      setFormData(initialFormData);
+      setIsFormOpen(true);
+    } catch (error) {
+      logger.error('Error initiating insurance edit:', error);
+      notifications.show({
+        title: t('insurance.notifications.errorTitle'),
+        message: t('insurance.notifications.unknownError'),
+        color: 'red',
+      });
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async insuranceOrId => {
+    // Handle both ID (from table) and full object (from card)
+    const insuranceId =
+      typeof insuranceOrId === 'object' ? insuranceOrId.id : insuranceOrId;
+    const insurance =
+      typeof insuranceOrId === 'object'
+        ? insuranceOrId
+        : insurances.find(i => i.id === insuranceOrId);
+
+    if (!insurance) {
+      notifications.show({
+        title: t('insurance.notifications.errorTitle'),
+        message: t('insurance.notifications.notFound'),
+        color: 'red',
+      });
+      return;
+    }
+
+    if (
+      window.confirm(
+        t('insurance.notifications.confirmDelete', {
+          type: insurance.insurance_type,
+        })
+      )
+    ) {
+      const success = await deleteItem(insuranceId);
+      if (success) {
+        cleanupFileCount(insuranceId);
+      }
+    }
+  };
+
+  // Handle set primary
+  const handleSetPrimary = async insurance => {
+    try {
+      logger.info('Setting insurance as primary', {
+        insurance_id: insurance.id,
+        insurance_type: insurance.insurance_type,
+        company: insurance.company_name,
+      });
+
+      await apiService.setPrimaryInsurance(insurance.id);
+
+      notifications.show({
+        title: t('insurance.notifications.primarySetTitle'),
+        message: t('insurance.notifications.primarySetMessage', {
+          company: insurance.company_name,
+          type: insurance.insurance_type,
+        }),
+        color: 'green',
+      });
+
+      // Refresh data to show updated primary status
+      await refreshData();
+
+      logger.info('Primary insurance set successfully', {
+        insurance_id: insurance.id,
+        insurance_type: insurance.insurance_type,
+      });
+    } catch (error) {
+      logger.error('Error setting primary insurance:', error);
+      notifications.show({
+        title: t('insurance.notifications.errorTitle'),
+        message: t('insurance.notifications.serverError'),
+        color: 'red',
+      });
+    }
+  };
+
+  // Handle add new
+  const handleAddNew = () => {
+    resetSubmission(); // Reset submission state
+    setEditingInsurance(null);
+    setDocumentManagerMethods(null); // Reset document manager methods
+    setFormData(initializeFormData());
+    setIsFormOpen(true);
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <MedicalPageLoading
+        message={t('insurance.loading', 'Loading insurance records...')}
+      />
+    );
+  }
+
+  return (
+    <Container size="xl" py="sm">
+      <PageHeader
+        title={t('shared:categories.insurance', 'Insurance')}
+        description={t(
+          'insurance.description',
+          'Manage your insurance information and digital cards'
+        )}
+      />
+
+      <Stack gap="sm" mt="md">
+        <MedicalPageAlerts
+          error={error}
+          successMessage={successMessage}
+          onClearError={clearError}
+        />
+
+        <MedicalPageActions
+          primaryAction={{
+            label: t('insurance.actions.addNew', '+ Add New Insurance'),
+            onClick: handleAddNew,
+            size: 'sm',
+            disabled: isViewOnly,
+            tooltip: viewOnlyTooltip,
+          }}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          viewToggleSize="sm"
+          mb={0}
+        />
+
+        {/* Mantine Filter Controls */}
+        <MedicalPageFilters dataManagement={dataManagement} config={config} />
+
+        {processedInsurances.length === 0 ? (
+          <EmptyState
+            emoji="🏥"
+            title={t('insurance.empty.title', 'No Insurance Found')}
+            hasActiveFilters={hasActiveFilters}
+            filteredMessage={t(
+              'shared:emptyStates.adjustSearch',
+              'Try adjusting your search or filter criteria.'
+            )}
+            noDataMessage={t(
+              'insurance.empty.noData',
+              'Start by adding your first insurance.'
+            )}
+            actionButton={
+              <Button variant="filled" onClick={handleAddNew}>
+                {t('insurance.empty.addFirst', 'Add Your First Insurance')}
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            {viewMode === 'cards' ? (
+              <AnimatedCardGrid
+                items={paginatedInsurances}
+                columns={{ base: 12, sm: 6, md: 4, lg: 3 }}
+                renderCard={insurance => (
+                  <InsuranceCard
+                    insurance={insurance}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onSetPrimary={handleSetPrimary}
+                    onView={handleViewInsurance}
+                    fileCount={fileCounts[insurance.id] || 0}
+                    fileCountLoading={fileCountsLoading[insurance.id] || false}
+                    disableActions={isViewOnly}
+                    disableActionsTooltip={viewOnlyTooltip}
+                  />
+                )}
+              />
+            ) : (
+              <Paper shadow="sm" radius="md" withBorder>
+                <ResponsiveTable
+                  persistKey="insurance"
+                  data={paginatedInsurances}
+                  pagination={false}
+                  disableEdit={isViewOnly}
+                  disableDelete={isViewOnly}
+                  disableActionsTooltip={viewOnlyTooltip}
+                  columns={[
+                    {
+                      header: 'Type',
+                      accessor: 'insurance_type',
+                      priority: 'high',
+                      width: 100,
+                    },
+                    {
+                      header: 'Company',
+                      accessor: 'company_name',
+                      priority: 'high',
+                      width: 180,
+                    },
+                    {
+                      header: 'Plan',
+                      accessor: 'plan_name',
+                      priority: 'medium',
+                      width: 150,
+                    },
+                    {
+                      header: 'Member ID',
+                      accessor: 'member_id',
+                      priority: 'high',
+                      width: 120,
+                    },
+                    {
+                      header: 'Group #',
+                      accessor: 'group_number',
+                      priority: 'low',
+                      width: 120,
+                    },
+                    {
+                      header: 'Member Name',
+                      accessor: 'member_name',
+                      priority: 'medium',
+                      width: 150,
+                    },
+                    {
+                      header: 'Effective',
+                      accessor: 'effective_date',
+                      priority: 'medium',
+                      width: 100,
+                    },
+                    {
+                      header: 'Expires',
+                      accessor: 'expiration_date',
+                      priority: 'medium',
+                      width: 100,
+                    },
+                    {
+                      header: 'Status',
+                      accessor: 'status',
+                      priority: 'high',
+                      width: 90,
+                    },
+                    {
+                      header: 'Primary',
+                      accessor: 'is_primary',
+                      priority: 'high',
+                      width: 80,
+                    },
+                  ]}
+                  formatters={formatters}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onView={handleViewInsurance}
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                  onSortChange={handleSortChange}
+                  getSortIndicator={getSortIndicator}
+                  dataType="medical"
+                  responsive={responsive}
+                />
+              </Paper>
+            )}
+            <PaginationControls
+              page={page}
+              totalPages={totalPages(processedInsurances.length)}
+              pageSize={pageSize}
+              totalRecords={processedInsurances.length}
+              onPageChange={setPage}
+              onPageSizeChange={handlePageSizeChange}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+            />
+          </>
+        )}
+      </Stack>
+
+      {/* Form Modal */}
+      <InsuranceFormWrapper
+        isOpen={isFormOpen}
+        onClose={() => {
+          if (!isBlocking) {
+            resetSubmission();
+            setIsFormOpen(false);
+            setEditingInsurance(null);
+            setDocumentManagerMethods(null);
+            setFormData(initializeFormData());
+          }
+        }}
+        title={
+          editingInsurance
+            ? t('insurance.form.editTitle', 'Edit Insurance')
+            : t('insurance.form.addTitle', 'Add New Insurance')
+        }
+        formData={formData}
+        onInputChange={handleInputChange}
+        onSubmit={handleSubmit}
+        editingItem={editingInsurance}
+        isLoading={isBlocking}
+        statusMessage={statusMessage}
+        onDocumentManagerRef={setDocumentManagerMethods}
+        onFileUploadComplete={(success, _completedCount, _failedCount) => {
+          if (success && editingInsurance?.id) {
+            refreshFileCount(editingInsurance.id);
+          }
+        }}
+      >
+        {/* Form Loading Overlay */}
+        <FormLoadingOverlay
+          visible={isBlocking}
+          message={statusMessage?.title || 'Processing...'}
+          submessage={statusMessage?.message}
+          type={statusMessage?.type || 'loading'}
+        />
+      </InsuranceFormWrapper>
+
+      {/* View Modal */}
+      <InsuranceViewModal
+        isOpen={showViewModal}
+        onClose={handleCloseViewModal}
+        insurance={viewingInsurance}
+        onEdit={handleEdit}
+        disableEdit={isViewOnly}
+        disableEditTooltip={viewOnlyTooltip}
+        onPrint={insurance => {
+          printInsuranceRecord(
+            insurance,
+            () => {
+              notifications.show({
+                title: t('insurance.notifications.printReadyTitle'),
+                message: t('insurance.notifications.printReadyMessage'),
+                color: 'blue',
+              });
+            },
+            _error => {
+              notifications.show({
+                title: t('insurance.notifications.printErrorTitle'),
+                message: t('insurance.notifications.printErrorMessage'),
+                color: 'red',
+              });
+            }
+          );
+        }}
+        onSetPrimary={handleSetPrimary}
+        onFileUploadComplete={success => {
+          if (success && viewingInsurance) {
+            refreshFileCount(viewingInsurance.id);
+          }
+        }}
+      />
+    </Container>
+  );
+};
+
+// Wrap with responsive HOC for enhanced responsive capabilities
+export default withResponsive(Insurance, {
+  injectResponsive: true,
+  displayName: 'ResponsiveInsurance',
+});

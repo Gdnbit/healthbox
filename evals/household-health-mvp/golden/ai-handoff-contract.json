@@ -1,0 +1,77 @@
+{
+  "contract_version": "1.0",
+  "task": "MVP-AI-HANDOFF-SCOPE-01",
+  "availability": {
+    "owned_subject": "local_clipboard_handoff",
+    "shared_subject": "hidden",
+    "shared_subject_generate_copy_or_in_app_call": false,
+    "in_app_question": "recent_changes_only",
+    "automatic_external_send": false
+  },
+  "input": {
+    "source": "authorized_loaded_structured_observations",
+    "ranges": ["1y", "3y", "5y", "all"],
+    "anchor": "latest_valid_observation_date",
+    "questions": [
+      "recent_changes",
+      "doctor_questions",
+      "term_or_custom",
+      "custom"
+    ],
+    "in_app_question_ids": [
+      "recent_changes"
+    ],
+    "in_app_canonical_question": {
+      "question_id": "recent_changes",
+      "question": "最近有哪些变化？",
+      "free_text_allowed": false
+    },
+    "handoff_only_question_ids": [
+      "doctor_questions",
+      "term_or_custom",
+      "custom"
+    ],
+    "maximum_observation_count": 200,
+    "over_limit_selection": "preserve_latest_per_metric_then_fill_newest",
+    "omitted_observation_count_disclosed": true,
+    "screening_schedule": "blocked_without_published_deterministic_state"
+  },
+  "output": {
+    "template_version": "household-ai-handoff@1.0.0",
+    "subject_label": "当前本人档案",
+    "required": [
+      "question",
+      "scope",
+      "data_cutoff",
+      "observation_count",
+      "total_observation_count",
+      "omitted_observation_count",
+      "stable_record_citations",
+      "source_errors",
+      "excluded_content",
+      "limitations",
+      "non_diagnostic_notice"
+    ],
+    "excluded_by_default": [
+      "name",
+      "username",
+      "email",
+      "phone",
+      "report_original",
+      "report_filename",
+      "report_body",
+      "narrative_background",
+      "server_path",
+      "guidance",
+      "screening_state"
+    ]
+  },
+  "state": {
+    "persist_question_or_answer": false,
+    "write_health_data": false,
+    "reset_on_subject_change": true,
+    "free_text_location": "browser_memory_and_user_initiated_local_clipboard_only",
+    "free_text_sent_to_in_app_service": false,
+    "free_text_sent_to_provider": false
+  }
+}

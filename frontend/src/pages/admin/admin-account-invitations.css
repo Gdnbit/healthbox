@@ -1,0 +1,179 @@
+@import '../../styles/household-health-foundations.css';
+
+.account-invitation-page {
+  width: min(100%, var(--hhp-content-width));
+  margin: 0 auto;
+  padding: var(--hhp-space-4) var(--hhp-space-2) var(--hhp-space-12);
+  color: var(--hhp-ink);
+}
+
+.account-invitation-page,
+.account-invitation-page .mantine-Card-root {
+  font-family:
+    Inter,
+    'PingFang SC',
+    'Microsoft YaHei',
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+.account-invitation-page > * + * {
+  margin-top: var(--hhp-space-6);
+}
+
+.account-invitation-page__header,
+.account-invitation-page__section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--hhp-space-5);
+}
+
+.account-invitation-page__header h1 {
+  margin-top: var(--hhp-space-1);
+  color: var(--hhp-ink);
+  font-size: var(--hhp-font-page-title);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.account-invitation-page__eyebrow {
+  color: var(--hhp-teal-dark);
+  font-size: var(--hhp-font-small);
+  font-weight: var(--hhp-weight-bold);
+  letter-spacing: 0.08em;
+}
+
+.account-invitation-page__intro {
+  max-width: 42rem;
+  margin-top: var(--hhp-space-2);
+  color: var(--hhp-muted);
+  line-height: var(--hhp-line-body);
+}
+
+.account-invitation-page .mantine-Card-root {
+  border-color: var(--hhp-border);
+  background: var(--hhp-surface-raised);
+  box-shadow: var(--hhp-shadow-card);
+}
+
+.account-invitation-page__boundary {
+  border: 1px solid #b8d9d3;
+  background: var(--hhp-teal-soft);
+  color: var(--hhp-ink);
+}
+
+.account-invitation-page__create-card {
+  border-top: 4px solid var(--hhp-teal) !important;
+}
+
+.account-invitation-page__form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.42fr);
+  gap: var(--hhp-space-4);
+}
+
+.account-invitation-page__secret-card {
+  border-color: #a7d3ca !important;
+  background: var(--hhp-surface-soft) !important;
+}
+
+.account-invitation-page__copy-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: flex-end;
+  gap: var(--hhp-space-3);
+}
+
+.account-invitation-page__records {
+  padding-top: var(--hhp-space-2);
+}
+
+.account-invitation-page__record-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--hhp-space-4);
+  margin-top: var(--hhp-space-4);
+}
+
+.account-invitation-page__record {
+  min-width: 0;
+}
+
+.account-invitation-page__status {
+  flex: 0 0 auto;
+}
+
+.account-invitation-page__empty {
+  min-height: 11rem;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--hhp-space-2);
+  margin-top: var(--hhp-space-4);
+  border: 1px dashed var(--hhp-border-strong);
+  border-radius: var(--hhp-radius-card);
+  background: var(--hhp-surface);
+  text-align: center;
+}
+
+.account-invitation-page .mantine-Button-root {
+  min-height: var(--hhp-touch-target);
+  border-radius: var(--hhp-radius-control);
+  font-size: var(--hhp-font-label);
+}
+
+.account-invitation-page
+  .mantine-Button-root:not([data-variant='subtle']):not(
+    [data-variant='default']
+  ):not([data-variant='light']):not(:disabled):not([data-disabled]) {
+  background: var(--hhp-teal);
+}
+
+.account-invitation-page
+  .mantine-Button-root:not([data-variant='subtle']):not(
+    [data-variant='default']
+  ):not([data-variant='light']):not(:disabled):not([data-disabled]):hover {
+  background: var(--hhp-teal-dark);
+}
+
+.account-invitation-page .mantine-Button-root:disabled,
+.account-invitation-page .mantine-Button-root[data-disabled] {
+  background: #e5ebe9;
+  color: #73817d;
+  opacity: 1;
+}
+
+@media (max-width: 760px) {
+  .account-invitation-page {
+    padding: var(--hhp-space-3) var(--hhp-space-2) var(--hhp-space-8);
+  }
+
+  .account-invitation-page__header,
+  .account-invitation-page__section-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-invitation-page__header > .mantine-Button-root {
+    width: 100%;
+  }
+
+  .account-invitation-page__form-grid,
+  .account-invitation-page__copy-row,
+  .account-invitation-page__record-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-invitation-page__copy-row .mantine-Button-root,
+  .account-invitation-page__record .mantine-Button-root {
+    width: 100%;
+  }
+
+  .account-invitation-page .mantine-Button-root {
+    min-height: var(--hhp-touch-target) !important;
+    padding-inline: var(--hhp-space-4) !important;
+    font-size: var(--hhp-font-label) !important;
+  }
+}

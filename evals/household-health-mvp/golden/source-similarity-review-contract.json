@@ -1,0 +1,101 @@
+{
+  "contract_id": "household-source-similarity-review@1.0.0",
+  "case_id": "CASE-MVP-DUPLICATE-OVERLAP",
+  "scope": "candidate_relationships_only",
+  "algorithm": {
+    "version": "source-image-similarity@1.0.0",
+    "supported_media": [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/heic",
+      "image/heif"
+    ],
+    "persisted_signature": "non_reconstructive_hash_features",
+    "raw_pixels_persisted": false,
+    "candidate_types": [
+      "near_duplicate",
+      "partial_overlap"
+    ],
+    "candidate_limit_per_source": 20,
+    "comparison_limit_per_upload": 200,
+    "failure_behavior": "preserve_original_without_similarity_claim"
+  },
+  "relationship": {
+    "statuses": [
+      "pending",
+      "confirmed",
+      "dismissed"
+    ],
+    "required_fields": [
+      "id",
+      "patient_id",
+      "source_document_id",
+      "related_source_document_id",
+      "relation_type",
+      "confidence",
+      "algorithm_version",
+      "evidence",
+      "review_status",
+      "created_at"
+    ],
+    "evidence_fields": [
+      "matched_region_ratio",
+      "source_unique_ratio",
+      "related_unique_ratio",
+      "orientation",
+      "explanation_code"
+    ],
+    "pair_order": "lower_source_document_id_first",
+    "review_transition": "pending_to_confirmed_or_dismissed_only",
+    "review_is_idempotent_for_same_decision": true,
+    "review_conflict_for_opposite_decision": true
+  },
+  "access": {
+    "list": "archive_owner_only",
+    "review": "archive_owner_only",
+    "thumbnail": "archive_owner_only",
+    "shared_dashboard": false,
+    "owner_global_read": false,
+    "delegated_upload_may_review": false,
+    "cross_patient_pair": false
+  },
+  "thumbnail": {
+    "generated_on_request": true,
+    "stored": false,
+    "format": "image/jpeg",
+    "max_edge_px": 480,
+    "metadata_removed": true,
+    "cache_control": "no-store"
+  },
+  "ui": {
+    "surface": "household_upload_modal",
+    "pending_relationships_survive_modal_reopen": true,
+    "side_by_side_thumbnails": true,
+    "shows_unique_area_warning": true,
+    "shows_candidate_not_fact_language": true,
+    "review_actions": [
+      "confirm_relationship",
+      "dismiss_relationship"
+    ],
+    "delegated_upload_message": "archive_owner_review_required"
+  },
+  "always_preserved": [
+    "both_original_files",
+    "source_document_identity",
+    "review_history",
+    "algorithm_version",
+    "relationship_evidence"
+  ],
+  "forbidden": [
+    "automatic_crop",
+    "automatic_merge",
+    "automatic_delete",
+    "automatic_replace",
+    "silent_discard",
+    "formal_health_record_write",
+    "cross_subject_thumbnail",
+    "raw_image_content_in_audit",
+    "server_file_path_in_response"
+  ]
+}

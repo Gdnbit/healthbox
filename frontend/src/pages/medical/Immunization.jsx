@@ -1,0 +1,655 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import { useState, useRef, useEffect } from 'react';
+import logger from '../../services/logger';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Container, Paper, Stack, Tabs, Text } from '@mantine/core';
+import { IconPlus, IconVaccine } from '@tabler/icons-react';
+import { useMedicalData } from '../../hooks/useMedicalData';
+import { useDataManagement } from '../../hooks/useDataManagement';
+import { useEntityFileCounts } from '../../hooks/useEntityFileCounts';
+import { useViewModalNavigation } from '../../hooks/useViewModalNavigation';
+import EmptyState from '../../components/shared/EmptyState';
+import MedicalPageAlerts from '../../components/shared/MedicalPageAlerts';
+import { apiService } from '../../services/api';
+import { useDateFormat } from '../../hooks/useDateFormat';
+import { getMedicalPageConfig } from '../../utils/medicalPageConfigs';
+import { getEntityFormatters } from '../../utils/tableFormatters';
+import { usePatientWithStaticData } from '../../hooks/useGlobalData';
+import { PageHeader } from '../../components';
+import { ResponsiveTable } from '../../components/adapters';
+import MedicalPageFilters from '../../components/shared/MedicalPageFilters';
+import MedicalPageActions from '../../components/shared/MedicalPageActions';
+import MedicalPageLoading from '../../components/shared/MedicalPageLoading';
+import AnimatedCardGrid from '../../components/shared/AnimatedCardGrid';
+import PaginationControls from '../../components/shared/PaginationControls';
+import { withResponsive } from '../../hoc/withResponsive';
+import { useResponsive } from '../../hooks/useResponsive';
+import { usePersistedViewMode } from '../../hooks/usePersistedViewMode';
+import { usePagination } from '../../hooks/usePagination';
+import { useFormSubmissionWithUploads } from '../../hooks/useFormSubmissionWithUploads';
+
+// Modular components
+import {
+  ImmunizationCard,
+  ImmunizationViewModal,
+  ImmunizationFormWrapper,
+} from '../../components/medical/immunizations';
+import { ImmunizationHistoryTab } from '../../components/medical/immunizations/history';
+import { usePatientPermissions } from '../../hooks/usePatientPermissions';
+import { getVaccineByName } from '../../constants/vaccineLibrary';
+
+const Immunization = () => {
+  const { t } = useTranslation(['common', 'shared']);
+  const { isViewOnly, viewOnlyTooltip } = usePatientPermissions();
+  const { formatDate } = useDateFormat();
+  const [viewMode, setViewMode] = usePersistedViewMode('immunizations');
+  const {
+    page,
+    setPage,
+    pageSize,
+    handlePageSizeChange,
+    paginateData,
+    totalPages,
+    resetPage,
+    clampPage,
+    PAGE_SIZE_OPTIONS,
+  } = usePagination();
+  const navigate = useNavigate();
+  const responsive = useResponsive();
+
+  // Standardized data management
+  const {
+    items: immunizations,
+    currentPatient,
+    loading,
+    error,
+    successMessage,
+    createItem,
+    updateItem,
+    deleteItem,
+    refreshData,
+    clearError,
+    setError,
+  } = useMedicalData({
+    entityName: 'immunization',
+    apiMethodsConfig: {
+      getAll: signal => apiService.getImmunizations(signal),
+      getByPatient: (patientId, signal) =>
+        apiService.getPatientImmunizations(patientId, signal),
+      create: (data, signal) => apiService.createImmunization(data, signal),
+      update: (id, data, signal) =>
+        apiService.updateImmunization(id, data, signal),
+      delete: (id, signal) => apiService.deleteImmunization(id, signal),
+    },
+    requiresPatient: true,
+  });
+
+  // Get standardized configuration
+  const config = getMedicalPageConfig('immunizations');
+
+  // Use standardized data management
+  const dataManagement = useDataManagement(immunizations, config);
+
+  // File count management for cards
+  const { fileCounts, fileCountsLoading, cleanupFileCount, refreshFileCount } =
+    useEntityFileCounts('immunization', immunizations);
+
+  // View modal navigation with URL deep linking
+  const {
+    isOpen: showViewModal,
+    viewingItem: viewingImmunization,
+    openModal: handleViewImmunization,
+    closeModal: handleCloseViewModal,
+  } = useViewModalNavigation({
+    items: immunizations,
+    loading,
+  });
+
+  // Form and UI state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingImmunization, setEditingImmunization] = useState(null);
+  const [activeTab, setActiveTab] = useState('records');
+  const [formData, setFormData] = useState({
+    vaccine_name: '',
+    vaccine_trade_name: '',
+    date_administered: '',
+    dose_number: '',
+    lot_number: '',
+    ndc_number: '',
+    manufacturer: '',
+    site: '',
+    route: '',
+    expiration_date: '',
+    location: '',
+    notes: '',
+    practitioner_id: null,
+    tags: [],
+  });
+
+  // Document management state
+  const [documentManagerMethods, setDocumentManagerMethods] = useState(null);
+
+  // Track if we need to refresh after form submission
+  const needsRefreshAfterSubmissionRef = useRef(false);
+
+  const {
+    startSubmission,
+    completeFormSubmission,
+    startFileUpload,
+    completeFileUpload,
+    handleSubmissionFailure,
+    resetSubmission,
+    isBlocking,
+    canSubmit,
+    statusMessage,
+  } = useFormSubmissionWithUploads({
+    entityType: 'immunization',
+    onSuccess: () => {
+      resetForm();
+
+      if (needsRefreshAfterSubmissionRef.current) {
+        needsRefreshAfterSubmissionRef.current = false;
+        refreshData();
+      }
+    },
+    onError: error => {
+      logger.error('immunizations_form_error', {
+        message: 'Form submission error in immunizations',
+        error,
+        component: 'Immunization',
+      });
+    },
+    component: 'Immunization',
+  });
+
+  const handleInputChange = e => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      vaccine_name: '',
+      vaccine_trade_name: '',
+      date_administered: '',
+      dose_number: '',
+      lot_number: '',
+      ndc_number: '',
+      manufacturer: '',
+      site: '',
+      route: '',
+      expiration_date: '',
+      location: '',
+      notes: '',
+      practitioner_id: null,
+      standardized_vaccine_who_code: null,
+      tags: [],
+    });
+    setEditingImmunization(null);
+    setShowAddForm(false);
+  };
+
+  const handleAddImmunization = () => {
+    resetSubmission();
+    setDocumentManagerMethods(null);
+    resetForm();
+    setShowAddForm(true);
+  };
+
+  const handleEditImmunization = immunization => {
+    resetSubmission();
+    // Auto-link on open: if the stored vaccine_name already matches a library
+    // entry, pre-populate who_code so a plain Save persists the FK without the
+    // user having to re-pick from the dropdown. The user can still re-pick to
+    // change vaccines. This is what makes the "Link to library" affordance on
+    // the History tab work in one click for records the resolver matched by
+    // name. Records whose vaccine_name doesn't match anything (typos, free
+    // text, the broken-display-string case) fall through to who_code=null and
+    // need a manual re-pick.
+    const libraryMatch = immunization.vaccine_name
+      ? getVaccineByName(immunization.vaccine_name)
+      : undefined;
+    setFormData({
+      vaccine_name: immunization.vaccine_name || '',
+      vaccine_trade_name: immunization.vaccine_trade_name || '',
+      date_administered: immunization.date_administered || '',
+      dose_number: immunization.dose_number || '',
+      lot_number: immunization.lot_number || '',
+      ndc_number: immunization.ndc_number || '',
+      manufacturer: immunization.manufacturer || '',
+      site: immunization.site || '',
+      route: immunization.route || '',
+      expiration_date: immunization.expiration_date || '',
+      location: immunization.location || '',
+      notes: immunization.notes || '',
+      practitioner_id: immunization.practitioner_id || null,
+      standardized_vaccine_who_code: libraryMatch?.who_code ?? null,
+      tags: immunization.tags || [],
+    });
+    setEditingImmunization(immunization);
+    setShowAddForm(true);
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+
+    if (!currentPatient?.id) {
+      setError('Patient information not available');
+      return;
+    }
+
+    startSubmission();
+
+    if (!canSubmit) {
+      return;
+    }
+
+    // Decide whether to send standardized_vaccine_who_code. The backend treats
+    // an explicit null as "clear the FK link". We only want that when the
+    // user actually changed the vaccine identity (typed a new name or picked
+    // a new library entry). On a pure-other-field edit, omit the key so the
+    // backend's exclude_unset preserves the existing FK link.
+    const hasPickedFromLibrary = formData.standardized_vaccine_who_code != null;
+    const nameChanged =
+      editingImmunization &&
+      formData.vaccine_name !== editingImmunization.vaccine_name;
+    const includeWhoCode =
+      !editingImmunization || hasPickedFromLibrary || nameChanged;
+
+    const immunizationData = {
+      vaccine_name: formData.vaccine_name,
+      vaccine_trade_name: formData.vaccine_trade_name || null,
+      date_administered: formData.date_administered,
+      patient_id: currentPatient.id,
+      dose_number: formData.dose_number
+        ? parseInt(formData.dose_number, 10)
+        : null,
+      lot_number: formData.lot_number || null,
+      ndc_number: formData.ndc_number || null,
+      manufacturer: formData.manufacturer || null,
+      site: formData.site || null,
+      route: formData.route || null,
+      expiration_date: formData.expiration_date || null,
+      location: formData.location || null,
+      notes: formData.notes || null,
+      practitioner_id: formData.practitioner_id
+        ? parseInt(formData.practitioner_id, 10)
+        : null,
+      ...(includeWhoCode && {
+        standardized_vaccine_who_code:
+          formData.standardized_vaccine_who_code || null,
+      }),
+      tags: formData.tags || [],
+    };
+
+    try {
+      let success;
+      let resultId;
+
+      if (editingImmunization) {
+        success = await updateItem(editingImmunization.id, immunizationData);
+        resultId = editingImmunization.id;
+      } else {
+        const result = await createItem(immunizationData);
+        success = !!result;
+        resultId = result?.id;
+        if (success) {
+          needsRefreshAfterSubmissionRef.current = true;
+        }
+      }
+
+      completeFormSubmission(success, resultId);
+
+      if (success && resultId) {
+        const hasPendingFiles = documentManagerMethods?.hasPendingFiles?.();
+
+        if (hasPendingFiles) {
+          logger.info('immunizations_starting_file_upload', {
+            message: 'Starting file upload process',
+            immunizationId: resultId,
+            pendingFilesCount: documentManagerMethods.getPendingFilesCount(),
+            component: 'Immunization',
+          });
+
+          const pendingCount = documentManagerMethods.getPendingFilesCount();
+
+          startFileUpload();
+
+          try {
+            await documentManagerMethods.uploadPendingFiles(resultId);
+            completeFileUpload(true, pendingCount, 0);
+          } catch (uploadError) {
+            logger.error('immunizations_file_upload_error', {
+              message: 'File upload failed',
+              immunizationId: resultId,
+              error: uploadError.message,
+              component: 'Immunization',
+            });
+            completeFileUpload(false, 0, pendingCount);
+          }
+        } else {
+          completeFileUpload(true, 0, 0);
+        }
+      } else {
+        handleSubmissionFailure(new Error('Form submission failed'), 'form');
+      }
+    } catch (error) {
+      logger.error('immunizations_submission_error', {
+        message: 'Form submission failed',
+        error: error.message,
+        component: 'Immunization',
+      });
+      handleSubmissionFailure(error, 'form');
+    }
+  };
+
+  const handleDeleteImmunization = async immunizationId => {
+    const success = await deleteItem(immunizationId);
+    if (success) {
+      cleanupFileCount(immunizationId);
+      await refreshData();
+    }
+  };
+
+  // Get processed data from data management
+  const processedImmunizations = dataManagement.data;
+  const paginatedImmunizations = paginateData(processedImmunizations);
+
+  useEffect(() => {
+    resetPage();
+  }, [dataManagement.hasActiveFilters, resetPage]);
+  useEffect(() => {
+    clampPage(processedImmunizations.length);
+  }, [processedImmunizations.length, clampPage]);
+
+  // Get practitioners data
+  const { practitioners: practitionersObject } = usePatientWithStaticData();
+  const practitioners = practitionersObject?.practitioners || [];
+
+  // Get standardized formatters for immunizations
+  const immunizationFormatters = getEntityFormatters(
+    'immunizations',
+    practitioners,
+    navigate,
+    null,
+    formatDate
+  );
+
+  if (loading) {
+    return (
+      <MedicalPageLoading
+        message={t(
+          'immunizations.loadingImmunizations',
+          'Loading immunizations...'
+        )}
+      />
+    );
+  }
+
+  return (
+    <Container size="xl" py="sm">
+      <PageHeader
+        title={t('shared:categories.immunizations', 'Immunizations')}
+        icon="💉"
+      />
+
+      <Stack gap="sm" mt="md">
+        <MedicalPageAlerts
+          error={error}
+          successMessage={successMessage}
+          onClearError={clearError}
+        />
+
+        {/* Modals stay outside Tabs so switching tabs doesn't unmount them */}
+        {/* Form Modal */}
+        <ImmunizationFormWrapper
+          isOpen={showAddForm}
+          onClose={() => !isBlocking && resetForm()}
+          title={
+            editingImmunization
+              ? t('immunizations.editImmunization', 'Edit Immunization')
+              : t('immunizations.addNewImmunization', 'Add New Immunization')
+          }
+          formData={formData}
+          onInputChange={handleInputChange}
+          onSubmit={handleSubmit}
+          editingImmunization={editingImmunization}
+          practitioners={practitioners}
+          isLoading={isBlocking}
+          statusMessage={statusMessage}
+          onDocumentManagerRef={setDocumentManagerMethods}
+          onFileUploadComplete={(success, _completedCount, _failedCount) => {
+            if (success && editingImmunization?.id) {
+              refreshFileCount(editingImmunization.id);
+            }
+          }}
+        />
+
+        {/* View Details Modal */}
+        <ImmunizationViewModal
+          isOpen={showViewModal}
+          onClose={handleCloseViewModal}
+          immunization={viewingImmunization}
+          onEdit={handleEditImmunization}
+          practitioners={practitioners}
+          navigate={navigate}
+          disableEdit={isViewOnly}
+          disableEditTooltip={viewOnlyTooltip}
+        />
+
+        <Tabs value={activeTab} onChange={setActiveTab} keepMounted={false}>
+          <Tabs.List>
+            <Tabs.Tab value="records">
+              {t('immunizations.tabs.records', 'Records')}
+            </Tabs.Tab>
+            <Tabs.Tab value="history">
+              {t('immunizations.tabs.history', 'History')}
+            </Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="records" pt="md">
+            <Stack gap="sm">
+              <MedicalPageActions
+                primaryAction={{
+                  label: t(
+                    'immunizations.addImmunization',
+                    'Add New Immunization'
+                  ),
+                  onClick: handleAddImmunization,
+                  leftSection: <IconPlus size={16} />,
+                  size: 'sm',
+                  disabled: isViewOnly,
+                  tooltip: viewOnlyTooltip,
+                }}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                viewToggleSize="sm"
+                mb={0}
+              />
+
+              {/* Mantine Filter Controls */}
+              <MedicalPageFilters
+                dataManagement={dataManagement}
+                config={config}
+              />
+
+              {/* Content */}
+              {processedImmunizations.length === 0 ? (
+                <EmptyState
+                  icon={IconVaccine}
+                  title={t(
+                    'immunizations.noImmunizationsFound',
+                    'No immunizations found'
+                  )}
+                  hasActiveFilters={dataManagement.hasActiveFilters}
+                  filteredMessage={t(
+                    'shared:emptyStates.adjustSearch',
+                    'Try adjusting your search or filter criteria.'
+                  )}
+                  noDataMessage={t(
+                    'immunizations.clickToGetStarted',
+                    'Click "Add New Immunization" to get started.'
+                  )}
+                />
+              ) : viewMode === 'cards' ? (
+                <AnimatedCardGrid
+                  items={paginatedImmunizations}
+                  renderCard={immunization => (
+                    <ImmunizationCard
+                      immunization={immunization}
+                      onView={handleViewImmunization}
+                      onEdit={handleEditImmunization}
+                      onDelete={handleDeleteImmunization}
+                      practitioners={practitioners}
+                      navigate={navigate}
+                      fileCount={fileCounts[immunization.id] || 0}
+                      fileCountLoading={
+                        fileCountsLoading[immunization.id] || false
+                      }
+                      disableActions={isViewOnly}
+                      disableActionsTooltip={viewOnlyTooltip}
+                    />
+                  )}
+                />
+              ) : (
+                <Paper shadow="sm" radius="md" withBorder>
+                  <ResponsiveTable
+                    persistKey="immunizations"
+                    data={paginatedImmunizations}
+                    pagination={false}
+                    disableEdit={isViewOnly}
+                    disableDelete={isViewOnly}
+                    disableActionsTooltip={viewOnlyTooltip}
+                    columns={[
+                      {
+                        header: t('shared:fields.vaccineName', 'Vaccine Name'),
+                        accessor: 'vaccine_name',
+                        priority: 'high',
+                        width: 200,
+                      },
+                      {
+                        header: t(
+                          'shared:fields.dateAdministered',
+                          'Date Administered'
+                        ),
+                        accessor: 'date_administered',
+                        priority: 'high',
+                        width: 150,
+                      },
+                      {
+                        header: t('shared:fields.doseNumber', 'Dose Number'),
+                        accessor: 'dose_number',
+                        priority: 'medium',
+                        width: 100,
+                      },
+                      {
+                        header: t('shared:fields.manufacturer', 'Manufacturer'),
+                        accessor: 'manufacturer',
+                        priority: 'medium',
+                        width: 150,
+                      },
+                      {
+                        header: t('immunizations.table.site', 'Site'),
+                        accessor: 'site',
+                        priority: 'low',
+                        width: 100,
+                      },
+                      {
+                        header: t('shared:labels.route', 'Route'),
+                        accessor: 'route',
+                        priority: 'low',
+                        width: 100,
+                      },
+                      {
+                        header: t('shared:fields.lotNumber', 'Lot Number'),
+                        accessor: 'lot_number',
+                        priority: 'low',
+                        width: 120,
+                      },
+                      {
+                        header: t(
+                          'shared:fields.expirationDate',
+                          'Expiration Date'
+                        ),
+                        accessor: 'expiration_date',
+                        priority: 'medium',
+                        width: 130,
+                      },
+                      {
+                        header: t('shared:tabs.notes', 'Notes'),
+                        accessor: 'notes',
+                        priority: 'low',
+                        width: 200,
+                      },
+                    ]}
+                    patientData={currentPatient}
+                    tableName={t(
+                      'shared:categories.immunizations',
+                      'Immunizations'
+                    )}
+                    onView={handleViewImmunization}
+                    onEdit={handleEditImmunization}
+                    onDelete={handleDeleteImmunization}
+                    formatters={{
+                      vaccine_name: (value, item) =>
+                        immunizationFormatters.immunization_name(value, item),
+                      date_administered:
+                        immunizationFormatters.administration_date,
+                      expiration_date: immunizationFormatters.date,
+                      site: immunizationFormatters.simple,
+                      dose_number: immunizationFormatters.simple,
+                      manufacturer: immunizationFormatters.simple,
+                      route: immunizationFormatters.simple,
+                      lot_number: immunizationFormatters.lot_number,
+                      notes: immunizationFormatters.notes,
+                    }}
+                    dataType="medical"
+                    responsive={responsive}
+                  />
+                </Paper>
+              )}
+              {processedImmunizations.length > 0 && (
+                <PaginationControls
+                  page={page}
+                  totalPages={totalPages(processedImmunizations.length)}
+                  pageSize={pageSize}
+                  totalRecords={processedImmunizations.length}
+                  onPageChange={setPage}
+                  onPageSizeChange={handlePageSizeChange}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                />
+              )}
+            </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="history" pt="md">
+            {currentPatient?.id ? (
+              <ImmunizationHistoryTab
+                patientId={currentPatient.id}
+                onItemClick={handleViewImmunization}
+                onLinkClick={handleEditImmunization}
+              />
+            ) : (
+              <Text c="dimmed">
+                {t(
+                  'immunizations.history.noPatient',
+                  'Select a patient to view history.'
+                )}
+              </Text>
+            )}
+          </Tabs.Panel>
+        </Tabs>
+      </Stack>
+    </Container>
+  );
+};
+
+// Wrap with responsive HOC for enhanced responsive capabilities
+export default withResponsive(Immunization, {
+  injectResponsive: true,
+  displayName: 'ResponsiveImmunization',
+});

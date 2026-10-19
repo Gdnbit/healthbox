@@ -1,0 +1,22 @@
+{
+  "periods": ["2025-01-10", "2025-06-10", "2026-01-10"],
+  "rows": [
+    {
+      "metric_key": "synthetic metric a",
+      "cells": {
+        "2025-01-10": {"state": "recorded", "observation_count": 1, "statement_count": 0, "conflict_count": 0},
+        "2025-06-10": {"state": "not-performed", "observation_count": 0, "statement_count": 1, "conflict_count": 0},
+        "2026-01-10": {"state": "conflict", "observation_count": 1, "statement_count": 1, "conflict_count": 1}
+      }
+    }
+  ],
+  "summary": {
+    "recorded_observations": 2,
+    "confirmed_not_performed": 2,
+    "not_applicable": 0,
+    "unknown": 0,
+    "needs_review": 0,
+    "conflicts": 1,
+    "percentage": null
+  }
+}

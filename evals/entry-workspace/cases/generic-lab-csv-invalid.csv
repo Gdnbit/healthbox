@@ -1,0 +1,4 @@
+observed_date,test_name,result_type,value,unit
+2026/02/30,Synthetic invalid date,quantitative,4.2,unit/L
+2026-01-15,"=HYPERLINK(""https://example.invalid"")",quantitative,3.0,unit/L
+2026-01-15,Synthetic unsupported,qualitative,maybe,

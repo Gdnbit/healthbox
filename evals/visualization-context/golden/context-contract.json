@@ -1,0 +1,27 @@
+{
+  "date_boundary": "inclusive",
+  "lab_default": {
+    "target_id": 703,
+    "baseline_id": 702,
+    "primary_delta": -1.0,
+    "unit": "u/L"
+  },
+  "lab_custom_baseline": {
+    "target_id": 703,
+    "baseline_id": 701,
+    "primary_delta": 1.5
+  },
+  "blood_pressure": {
+    "target_id": 802,
+    "baseline_id": 801,
+    "primary_delta": 3,
+    "secondary_delta": 3
+  },
+  "routes": {
+    "lab_record": "/lab-results?view=1702",
+    "source_document": "/health-insights?view=sources&source=2702",
+    "vital_record": "/vitals?view=802"
+  },
+  "reject": ["invalid_format", "reversed", "insufficient_points", "missing_value", "invalid_baseline", "incompatible_unit"],
+  "forbidden": ["percent_change", "improving", "worsening", "diagnosis", "filesystem_path"]
+}

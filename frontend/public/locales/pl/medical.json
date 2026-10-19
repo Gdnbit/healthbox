@@ -1,0 +1,1558 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "allergies": {
+    "allergen": {
+      "description": "Nazwa alergenu",
+      "label": "Alergen",
+      "placeholder": "Wpisz nazwę alergenu"
+    },
+    "allergyType": {
+      "description": "Kategoria alergii",
+      "label": "Typ alergii",
+      "options": {
+        "environmental": "Środowiskowa",
+        "food": "Pokarmowa",
+        "insect": "Na owady",
+        "medication": "Na leki"
+      },
+      "placeholder": "Wybierz typ alergii"
+    },
+    "cardSubtitle": "Alergia medyczna",
+    "editTitle": "Edytuj alergię",
+    "emptyState": {
+      "noData": "Kliknij \"Dodaj nową alergię\", aby rozpocząć.",
+      "title": "Nie znaleziono alergii"
+    },
+    "messages": {
+      "loading": "Ładowanie alergii...",
+      "saving": "Zapisywanie alergii..."
+    },
+    "modal": {
+      "title": "Szczegóły alergii"
+    },
+    "noMedicationLinked": "Brak połączonego leku",
+    "onsetDate": {
+      "description": "Kiedy alergia została po raz pierwszy zidentyfikowana",
+      "placeholder": "Wybierz datę wystąpienia"
+    },
+    "reaction": {
+      "description": "Objawy i szczegóły reakcji",
+      "label": "Opis reakcji",
+      "placeholder": "Opisz reakcję alergiczną"
+    },
+    "reactionInformation": "Informacje o reakcji",
+    "reactionType": {
+      "description": "Typ reakcji alergicznej",
+      "label": "Typ reakcji",
+      "options": {
+        "anaphylaxis": "Anafilaksja",
+        "gastrointestinal": "Żołądkowo-jelitowa",
+        "respiratory": "Oddechowa",
+        "skin": "Reakcja skórna"
+      },
+      "placeholder": "Wybierz typ reakcji"
+    },
+    "relatedMedication": {
+      "description": "Lek, który powoduje tę alergię",
+      "label": "Powiązany lek",
+      "placeholder": "Wybierz lek"
+    },
+    "severity": {
+      "description": "Nasilenie reakcji alergicznej",
+      "placeholder": "Wybierz poziom nasilenia"
+    },
+    "status": {
+      "description": "Aktualny status alergii"
+    },
+    "tabs": {
+      "reactionDetails": "Szczegóły reakcji"
+    },
+    "viewMedication": "Wyświetl szczegóły leku"
+  },
+  "componentCatalog": {
+    "fetchError": "Nie udało się załadować katalogu badań",
+    "noData": "Dodaj wyniki laboratoryjne, aby je tutaj zobaczyć.",
+    "noResults": "Nie znaleziono wyników laboratoryjnych",
+    "readingCount_one": "{{count}} odczyt",
+    "refRange": "Zakres ref.",
+    "searchPlaceholder": "Szukaj badań...",
+    "sort": {
+      "alphabetical": "A-Z"
+    },
+    "status": {
+      "abnormal": "Nieprawidłowy",
+      "borderline": "Graniczny",
+      "critical": "Krytyczny",
+      "high": "Wysoki",
+      "low": "Niski",
+      "normal": "Normalny"
+    },
+    "trend": {
+      "decreasing": "Malejący",
+      "improving": "Poprawiający się",
+      "increasing": "Wzrastający",
+      "stable": "Stabilny",
+      "worsening": "Pogarszający się"
+    }
+  },
+  "conditions": {
+    "codeDescription": {
+      "description": "Czytelny opis kodu",
+      "label": "Opis kodu",
+      "placeholder": "Opis kodu medycznego"
+    },
+    "diagnosis": {
+      "description": "Nazwa schorzenia lub diagnozy",
+      "label": "Diagnoza",
+      "placeholder": "np. Nadciśnienie, Cukrzyca typu 2, Astma"
+    },
+    "endDate": {
+      "description": "Kiedy schorzenie zostało wyleczone (jeśli dotyczy)",
+      "placeholder": "Wybierz datę zakończenia"
+    },
+    "icd10Code": {
+      "description": "Międzynarodowa Klasyfikacja Chorób",
+      "label": "Kod ICD-10",
+      "placeholder": "np. I10, E11.9"
+    },
+    "notes": {
+      "description": "Dodatkowe szczegóły dotyczące schorzenia, historii leczenia lub obserwacji"
+    },
+    "onsetDate": {
+      "description": "Kiedy schorzenie po raz pierwszy się pojawiło",
+      "placeholder": "Wybierz datę wystąpienia"
+    },
+    "relatedMedication": {
+      "description": "Połącz to schorzenie z konkretnym lekiem",
+      "label": "Powiązany lek",
+      "placeholder": "Wybierz lek (opcjonalnie)"
+    },
+    "severity": {
+      "description": "Jak poważne jest to schorzenie",
+      "placeholder": "Wybierz poziom nasilenia"
+    },
+    "snomedCode": {
+      "description": "Kod terminologii klinicznej SNOMED CT",
+      "label": "Kod SNOMED",
+      "placeholder": "np. 38341003"
+    },
+    "status": {
+      "description": "Aktualny status tego schorzenia"
+    }
+  },
+  "emergencyContacts": {
+    "form": {
+      "address": {
+        "description": "Adres kontaktu (opcjonalnie)",
+        "label": "Adres",
+        "placeholder": "np. ul. Główna 123, Miasto, Województwo 12-345"
+      },
+      "email": {
+        "description": "Opcjonalny adres e-mail",
+        "label": "Adres e-mail",
+        "placeholder": "np. jan.kowalski@email.com"
+      },
+      "isActive": {
+        "description": "Ten kontakt jest aktualnie dostępny",
+        "label": "Kontakt aktywny"
+      },
+      "isPrimary": {
+        "description": "Ta osoba będzie skontaktowana w pierwszej kolejności w nagłych wypadkach",
+        "label": "Główny kontakt alarmowy"
+      },
+      "name": {
+        "description": "Pełne imię i nazwisko kontaktu alarmowego",
+        "label": "Imię i nazwisko",
+        "placeholder": "np. Jan Kowalski"
+      },
+      "notes": {
+        "description": "Wszelkie dodatkowe notatki dotyczące tego kontaktu",
+        "placeholder": "Dodatkowe informacje (np. 'Dostępny tylko w dni robocze', 'Mówi po angielsku')"
+      },
+      "primaryPhone": {
+        "description": "Główny numer telefonu",
+        "label": "Telefon główny",
+        "placeholder": "np. +48 555 123 456"
+      },
+      "relationship": {
+        "description": "Pokrewieństwo z pacjentem",
+        "label": "Pokrewieństwo",
+        "placeholder": "Wybierz pokrewieństwo"
+      },
+      "secondaryPhone": {
+        "description": "Opcjonalny dodatkowy numer telefonu",
+        "label": "Telefon dodatkowy",
+        "placeholder": "np. +48 555 987 654"
+      }
+    },
+    "messages": {
+      "saving": "Zapisywanie kontaktu alarmowego..."
+    },
+    "tabs": {
+      "contactInfo": "Informacje kontaktowe"
+    }
+  },
+  "equipment": {
+    "tabs": {
+      "deviceDetails": "Szczegóły urządzenia",
+      "serviceDates": "Usługi i daty"
+    }
+  },
+  "familyHistory": {
+    "form": {
+      "condition": {
+        "conditionName": {
+          "description": "Nazwa schorzenia medycznego",
+          "label": "Nazwa schorzenia",
+          "placeholder": "np. Cukrzyca, Choroba serca, Rak"
+        },
+        "conditionType": {
+          "description": "Kategoria schorzenia medycznego",
+          "label": "Typ schorzenia",
+          "placeholder": "Wybierz typ schorzenia"
+        },
+        "diagnosisAge": {
+          "description": "Wiek w chwili diagnozy",
+          "label": "Wiek diagnozy",
+          "placeholder": "np. 45"
+        },
+        "icd10Code": {
+          "description": "Kod diagnozy medycznej (jeśli znany)",
+          "label": "Kod ICD-10",
+          "placeholder": "np. E11.9"
+        },
+        "notes": {
+          "description": "Szczegóły leczenia, wyniki lub inne istotne informacje",
+          "placeholder": "Dodatkowe szczegóły na temat schorzenia..."
+        },
+        "severity": {
+          "description": "Jak poważne było/jest schorzenie",
+          "label": "Nasilenie",
+          "placeholder": "Wybierz poziom nasilenia"
+        },
+        "severityOptions": {
+          "critical": "🚨 Krytyczny - Zagrażający życiu",
+          "mild": "💛 Łagodny - Niewielki wpływ",
+          "moderate": "⚡ Umiarkowany - Zauważalny wpływ",
+          "severe": "⚠️ Ciężki - Znaczący wpływ"
+        },
+        "status": {
+          "description": "Aktualny status schorzenia",
+          "label": "Status",
+          "placeholder": "Wybierz status"
+        },
+        "statusOptions": {
+          "active": "Aktywny - Trwające schorzenie",
+          "chronic": "Przewlekły - Długotrwałe schorzenie",
+          "resolved": "Rozwiązany - Już nie występuje"
+        },
+        "typeOptions": {
+          "autoimmune": "Autoimmunologiczne - Zaburzenia układu immunologicznego",
+          "cancer": "Rak - Nowotwory złośliwe",
+          "cardiovascular": "Sercowo-naczyniowe - Serce i naczynia krwionośne",
+          "diabetes": "Cukrzyca - Zaburzenia poziomu cukru",
+          "endocrine": "Endokrynologiczne - Zaburzenia hormonalne",
+          "genetic": "Genetyczne - Schorzenia dziedziczne",
+          "mentalHealth": "Zdrowie psychiczne - Zaburzenia psychologiczne",
+          "neurological": "Neurologiczne - Mózg i układ nerwowy",
+          "other": "Inne - Określ w notatkach",
+          "respiratory": "Oddechowe - Płuca i zaburzenia oddychania"
+        }
+      },
+      "member": {
+        "birthYear": {
+          "description": "Rok urodzenia członka rodziny",
+          "label": "Rok urodzenia",
+          "placeholder": "np. 1965"
+        },
+        "deathYear": {
+          "description": "Rok, w którym członek rodziny zmarł",
+          "label": "Rok śmierci",
+          "placeholder": "np. 2020"
+        },
+        "deceased": {
+          "description": "Zaznacz, jeśli członek rodziny nie żyje",
+          "label": "Zmarły"
+        },
+        "gender": {
+          "description": "Płeć członka rodziny",
+          "label": "Płeć",
+          "placeholder": "Wybierz płeć"
+        },
+        "genderOptions": {
+          "female": "Kobieta",
+          "male": "Mężczyzna"
+        },
+        "name": {
+          "description": "Pełne imię i nazwisko członka rodziny",
+          "label": "Imię i nazwisko",
+          "placeholder": "Wpisz imię i nazwisko członka rodziny"
+        },
+        "notes": {
+          "description": "Wszelkie dodatkowe notatki lub ważne informacje",
+          "placeholder": "Dodatkowe informacje dotyczące członka rodziny..."
+        },
+        "relationship": {
+          "description": "Pokrewieństwo z tobą",
+          "label": "Pokrewieństwo",
+          "placeholder": "Wybierz pokrewieństwo"
+        },
+        "relationshipOptions": {
+          "aunt": "Ciotka",
+          "brother": "Brat",
+          "cousin": "Kuzyn/Kuzynka",
+          "father": "Ojciec",
+          "maternalGrandfather": "Dziadek ze strony matki",
+          "maternalGrandmother": "Babcia ze strony matki",
+          "mother": "Matka",
+          "paternalGrandfather": "Dziadek ze strony ojca",
+          "paternalGrandmother": "Babcia ze strony ojca",
+          "sister": "Siostra",
+          "uncle": "Wujek"
+        }
+      }
+    }
+  },
+  "form": {
+    "invalidPhoneDigits": "Numer telefonu może zawierać tylko cyfry, spacje, myślniki, nawiasy, kropki i +",
+    "invalidWebsiteUrl": "Proszę wpisać prawidłowy adres URL strony internetowej"
+  },
+  "immunizations": {
+    "dateAdministered": {
+      "description": "Kiedy szczepionka została podana",
+      "label": "Data podania",
+      "placeholder": "Wybierz datę podania"
+    },
+    "doseNumber": {
+      "description": "Która dawka w serii",
+      "label": "Numer dawki",
+      "placeholder": "1, 2, 3..."
+    },
+    "expirationDate": {
+      "description": "Data ważności fiolki/dawki szczepionki użytej",
+      "label": "Data ważności szczepionki",
+      "placeholder": "Wybierz datę ważności"
+    },
+    "form": {
+      "linkStatusLinked": "✓ Połączono z biblioteką: {{name}}",
+      "linkStatusUnlinked": "⚠ Nie połączono z biblioteką. Wybierz szczepionkę z listy, aby połączyć."
+    },
+    "history": {
+      "dateRangePlaceholder": "Filtruj według zakresu dat",
+      "doseLabel": "Dawka {{n}}",
+      "dosesCount": "Liczba dawek: {{count}}",
+      "dosesCount_one": "{{count}} doses",
+      "dosesCount_other": "{{count}} doses",
+      "dosesCountSingular": "1 dawka",
+      "emptyAll": "Brak zarejestrowanych szczepień.",
+      "emptyRange": "Brak szczepień w tym zakresie.",
+      "linkActionLabel": "Połącz z biblioteką",
+      "lotLabel": "Partia {{lot}}",
+      "miscGroup": "Różne / Niepołączone",
+      "miscGroupHint": "Te wpisy nie są jeszcze połączone z biblioteką szczepionek. Kliknij wpis, aby go edytować i wybrać pozycję z biblioteki.",
+      "noDiseaseData": "Żadne szczepienia nie są powiązane z biblioteką. Przełącz na widok „Według daty”, aby zobaczyć wszystkie wpisy, lub edytuj wpis i ponownie wybierz szczepionkę z autouzupełniania, aby ją powiązać.",
+      "recordCount": "Liczba szczepień: {{count}}",
+      "recordCount_one": "{{count}} vaccinations",
+      "recordCount_other": "{{count}} vaccinations",
+      "recordCountSingular": "1 szczepienie",
+      "unlinkedTag": "Niepowiązane",
+      "unmatchedBanner": "Liczba niepowiązanych wpisów: {{count}}. Edytuj wpis i wybierz go ponownie z autouzupełniania, aby go powiązać.",
+      "unmatchedBanner_one": "{{count}} records aren't linked. Edit a record and re-select from the autocomplete to link it.",
+      "unmatchedBanner_other": "{{count}} records aren't linked. Edit a record and re-select from the autocomplete to link it.",
+      "unmatchedTitle": "Niektóre wpisy nie są powiązane z biblioteką szczepionek",
+      "viewMode": {
+        "byDate": "Według daty",
+        "byDisease": "Według choroby"
+      }
+    },
+    "location": {
+      "description": "Gdzie szczepionka została podana",
+      "placeholder": "np. Apteka, Szpital, Klinika, Departament Zdrowia"
+    },
+    "lotNumber": {
+      "description": "Identyfikator partii do śledzenia",
+      "label": "Numer partii",
+      "placeholder": "Numer partii/serii szczepionki"
+    },
+    "manufacturer": {
+      "description": "Producent szczepionki",
+      "label": "Producent",
+      "placeholder": "Wybierz producenta"
+    },
+    "manufacturerOptions": {
+      "astraZeneca": "AstraZeneca",
+      "glaxoSmithKline": "GlaxoSmithKline",
+      "johnsonJohnson": "Johnson & Johnson",
+      "merck": "Merck",
+      "moderna": "Moderna",
+      "pfizerBioNTech": "Pfizer-BioNTech",
+      "sanofi": "Sanofi"
+    },
+    "ndcNumber": {
+      "description": "Narodowy kod leku dla szczepionki",
+      "label": "Numer NDC",
+      "placeholder": "np. 12345-6789-01"
+    },
+    "notes": {
+      "description": "Wszelkie istotne szczegóły dotyczące szczepienia",
+      "placeholder": "Dodatkowe notatki dotyczące tego szczepienia..."
+    },
+    "route": {
+      "description": "Sposób podania",
+      "label": "Droga podania",
+      "placeholder": "Wybierz drogę"
+    },
+    "routeOptions": {
+      "intradermal": "Śródskórnie (ID)",
+      "intramuscular": "Domięśniowo (IM)",
+      "subcutaneous": "Podskórnie (SC)"
+    },
+    "site": {
+      "description": "Miejsce podania szczepionki",
+      "label": "Miejsce zastrzyku",
+      "placeholder": "Wybierz miejsce zastrzyku"
+    },
+    "siteOptions": {
+      "leftArm": "Lewe ramię",
+      "leftDeltoid": "Lewy mięsień naramienny",
+      "leftThigh": "Lewe udo",
+      "rightArm": "Prawe ramię",
+      "rightDeltoid": "Prawy mięsień naramienny",
+      "rightThigh": "Prawe udo"
+    },
+    "vaccineName": {
+      "combinedHint": "Szczepionka złożona — składniki: {{components}}",
+      "description": "Nazwa podanej szczepionki",
+      "label": "Nazwa szczepionki",
+      "matchedCommonName": "dopasowano: {{name}}",
+      "placeholder": "np. COVID-19 mRNA, Grypa, MMR",
+      "searchPlaceholder": "Wpisz, aby wyszukać szczepionki..."
+    }
+  },
+  "injuries": {
+    "addNew": "Dodaj nowy uraz",
+    "addTitle": "Dodaj nowy uraz",
+    "bodyLocation": {
+      "description": "Konkretna część ciała dotknięta urazem",
+      "label": "Lokalizacja ciała",
+      "placeholder": "np. Lewe kolano, Prawe ramię"
+    },
+    "bodyPart": {
+      "description": "Dotknięta część ciała lub obszar",
+      "label": "Część ciała",
+      "placeholder": "np. Kostka, Nadgarstek, Kolano"
+    },
+    "cardSubtitle": "Uraz fizyczny",
+    "cause": {
+      "description": "Jak doszło do urazu (upadek, sport, wypadek itp.)",
+      "label": "Przyczyna/Mechanizm",
+      "placeholder": "Opisz, jak doszło do urazu..."
+    },
+    "dateOfInjury": {
+      "description": "Data wystąpienia urazu (opcjonalna, jeśli nieznana)",
+      "label": "Data urazu"
+    },
+    "editTitle": "Edytuj uraz",
+    "emptyState": {
+      "noData": "Kliknij \"Dodaj nowy uraz\", aby rozpocząć.",
+      "title": "Nie znaleziono urazów"
+    },
+    "injuryDate": {
+      "description": "Kiedy doszło do urazu",
+      "label": "Data urazu",
+      "placeholder": "Wybierz datę urazu"
+    },
+    "injuryName": {
+      "description": "Opisowa nazwa tego urazu",
+      "label": "Nazwa urazu",
+      "placeholder": "np. Zwichnięcie prawej kostki"
+    },
+    "injuryType": {
+      "description": "Kategoria urazu (np. Zwichnięcie, Złamanie)",
+      "label": "Typ urazu",
+      "noResults": "Nie znaleziono pasujących typów",
+      "placeholder": "Wybierz lub utwórz typ"
+    },
+    "laterality": {
+      "description": "Która strona ciała jest dotknięta",
+      "label": "Strona",
+      "options": {
+        "bilateral": "Obie strony",
+        "left": "Lewa",
+        "notApplicable": "Nie dotyczy",
+        "right": "Prawa"
+      },
+      "placeholder": "Wybierz stronę"
+    },
+    "mechanism": {
+      "description": "Opisz, jak doszło do urazu",
+      "label": "Jak się to stało",
+      "placeholder": "np. Upadek podczas wędrówki"
+    },
+    "messages": {
+      "loading": "Ładowanie urazów...",
+      "saving": "Zapisywanie urazu..."
+    },
+    "notes": {
+      "description": "Notatki ogólne lub dodatkowe szczegóły",
+      "placeholder": "Wszelkie inne istotne informacje..."
+    },
+    "practitioner": {
+      "description": "Pracownik opieki zdrowotnej leczący ten uraz",
+      "label": "Lekarz leczący",
+      "placeholder": "Wybierz lekarza"
+    },
+    "recoveryNotes": {
+      "description": "Notatki na temat postępu powrotu do zdrowia",
+      "label": "Notatki powrotu do zdrowia",
+      "placeholder": "Aktualizacje postępów, kamienie milowe lub obserwacje"
+    },
+    "severity": {
+      "description": "Jak poważny jest ten uraz",
+      "options": {
+        "lifeThreatening": "Zagrażający życiu - Potrzebna pomoc doraźna",
+        "mild": "Łagodny - Nieznaczny dyskomfort",
+        "moderate": "Umiarkowany - Zauważalny wpływ",
+        "severe": "Ciężki - Znaczący wpływ"
+      },
+      "placeholder": "Wybierz nasilenie"
+    },
+    "status": {
+      "description": "Aktualny status tego urazu",
+      "options": {
+        "active": "Aktywny - Aktualnie leczony",
+        "chronic": "Przewlekły - Długotrwałe skutki",
+        "healing": "Gojący się - W trakcie powrotu do zdrowia",
+        "resolved": "Rozwiązany - Całkowicie wyleczony"
+      }
+    },
+    "treatment": {
+      "description": "Leczenie medyczne udzielone w związku z urazem",
+      "label": "Otrzymane leczenie",
+      "placeholder": "Opisz otrzymane leczenie..."
+    },
+    "treatmentReceived": {
+      "description": "Opis otrzymanego leczenia",
+      "placeholder": "np. Protokół RICE, założony gips"
+    },
+    "viewModal": {
+      "additionalInfo": "Dodatkowe informacje",
+      "injuryDetails": "Szczegóły urazu"
+    }
+  },
+  "insurance": {
+    "form": {
+      "addInsurance": "Dodaj ubezpieczenie",
+      "annualMaximum": {
+        "description": "Maksymalna roczna kwota świadczenia",
+        "label": "Maksymalne roczne świadczenie",
+        "placeholder": "np. 1500"
+      },
+      "basicCoverage": {
+        "description": "Procent pokrycia dla zabiegów podstawowych",
+        "label": "Pokrycie podstawowe %",
+        "placeholder": "np. 80"
+      },
+      "binNumber": {
+        "description": "Numer identyfikacyjny banku dla apteki",
+        "label": "Numer BIN",
+        "placeholder": "np. 123456"
+      },
+      "claimsAddress": {
+        "description": "Adres do składania wniosków o świadczenia",
+        "label": "Adres dla wniosków",
+        "placeholder": "Wpisz adres pocztowy dla wniosków..."
+      },
+      "companyName": {
+        "description": "Nazwa firmy ubezpieczeniowej",
+        "label": "Firma ubezpieczeniowa",
+        "placeholder": "np. Narodowy Fundusz Zdrowia"
+      },
+      "contactAllowance": {
+        "description": "Roczny limit na soczewki kontaktowe",
+        "label": "Limit na soczewki kontaktowe",
+        "placeholder": "np. 150"
+      },
+      "copayBrand": {
+        "description": "Kwota dopłaty za leki markowe",
+        "label": "Dopłata za lek markowy",
+        "placeholder": "np. 30"
+      },
+      "copayEmergencyRoom": {
+        "description": "Kwota dopłaty za wizyty na oddziale ratunkowym",
+        "label": "Dopłata za oddział ratunkowy",
+        "placeholder": "np. 200"
+      },
+      "copayGeneric": {
+        "description": "Kwota dopłaty za leki generyczne",
+        "label": "Dopłata za lek generyczny",
+        "placeholder": "np. 10"
+      },
+      "copayPrimaryCare": {
+        "description": "Kwota dopłaty za wizyty u lekarza podstawowej opieki zdrowotnej",
+        "label": "Dopłata za opiekę podstawową",
+        "placeholder": "np. 25"
+      },
+      "copaySpecialist": {
+        "description": "Kwota dopłaty za wizyty u specjalisty",
+        "label": "Dopłata za specjalistę",
+        "placeholder": "np. 50"
+      },
+      "copaySpecialty": {
+        "description": "Kwota dopłaty za leki specjalistyczne",
+        "label": "Dopłata za leki specjalistyczne",
+        "placeholder": "np. 50"
+      },
+      "copayUrgentCare": {
+        "description": "Kwota dopłaty za wizyty w pomocy doraźnej",
+        "label": "Dopłata za pomoc doraźną",
+        "placeholder": "np. 75"
+      },
+      "coveragePeriodStatus": "Okres ubezpieczenia i status",
+      "customerServicePhone": {
+        "description": "Numer telefonu obsługi klienta",
+        "label": "Telefon obsługi klienta",
+        "placeholder": "np. 800-123-456"
+      },
+      "deductibleFamily": {
+        "description": "Roczna kwota udziału własnego dla rodziny",
+        "label": "Udział własny dla rodziny",
+        "placeholder": "np. 2000"
+      },
+      "deductibleIndividual": {
+        "description": "Roczna kwota udziału własnego dla osoby",
+        "label": "Udział własny indywidualny",
+        "placeholder": "np. 1000"
+      },
+      "dentalPlanType": {
+        "description": "Rodzaj planu ubezpieczenia stomatologicznego",
+        "label": "Typ planu stomatologicznego",
+        "options": {
+          "dhmo": "DHMO (Stomatologiczna organizacja opieki zdrowotnej)",
+          "discount": "Plan rabatowy",
+          "dppo": "DPPO (Stomatologiczna organizacja preferowanych usługodawców)"
+        },
+        "placeholder": "Wybierz typ planu stomatologicznego"
+      },
+      "dividers": {
+        "additionalInfo": "Informacje dodatkowe",
+        "basicInfo": "Podstawowe informacje ubezpieczenia",
+        "contactInfo": "Informacje kontaktowe",
+        "coverageDetails": "Szczegóły pokrycia",
+        "coveragePeriodStatus": "Okres ochrony i status",
+        "memberInfo": "Informacje ubezpieczonego"
+      },
+      "effectiveDate": {
+        "description": "Data rozpoczęcia ubezpieczenia",
+        "label": "Data wejścia w życie",
+        "placeholder": "Wybierz datę wejścia w życie"
+      },
+      "employerGroup": {
+        "description": "Firma lub organizacja zapewniająca ubezpieczenie (jeśli dotyczy)",
+        "label": "Pracodawca/Sponsor grupy",
+        "placeholder": "np. ABC Corporation, Samozatrudnienie"
+      },
+      "examCopay": {
+        "description": "Kwota dopłaty za badania wzroku",
+        "label": "Dopłata za badanie",
+        "placeholder": "np. 10"
+      },
+      "expirationDate": {
+        "description": "Data zakończenia ubezpieczenia (jeśli znana)",
+        "label": "Data wygaśnięcia",
+        "placeholder": "Wybierz datę wygaśnięcia"
+      },
+      "frameAllowance": {
+        "description": "Roczny limit na oprawki",
+        "label": "Limit na oprawki",
+        "placeholder": "np. 150"
+      },
+      "groupNumber": {
+        "description": "Numer grupy (jeśli dotyczy)",
+        "label": "Numer grupy",
+        "placeholder": "np. GRP123"
+      },
+      "insuranceType": {
+        "description": "Rodzaj ubezpieczenia",
+        "label": "Rodzaj ubezpieczenia",
+        "options": {
+          "dental": "🦷 Ubezpieczenie stomatologiczne",
+          "medical": "🏥 Ubezpieczenie zdrowotne",
+          "prescription": "💊 Ubezpieczenie na leki",
+          "vision": "👁️ Ubezpieczenie okulistyczne"
+        },
+        "placeholder": "Wybierz rodzaj ubezpieczenia"
+      },
+      "isPrimary": {
+        "description": "Zaznacz, jeśli jest to twoje główne ubezpieczenie (tylko zdrowotne)",
+        "label": "Główne ubezpieczenie"
+      },
+      "lensCoverage": {
+        "description": "Szczegóły pokrycia dla soczewek",
+        "label": "Pokrycie soczewek",
+        "placeholder": "np. 100% pokrycia"
+      },
+      "majorCoverage": {
+        "description": "Procent pokrycia dla zabiegów głównych",
+        "label": "Pokrycie główne %",
+        "placeholder": "np. 50"
+      },
+      "memberId": {
+        "description": "Numer ID ubezpieczonego z karty ubezpieczeniowej",
+        "label": "ID ubezpieczonego",
+        "placeholder": "np. ABC123456789"
+      },
+      "memberName": {
+        "description": "Nazwa wyświetlana na karcie ubezpieczeniowej",
+        "label": "Nazwa ubezpieczonego",
+        "placeholder": "np. Jan Kowalski"
+      },
+      "notes": {
+        "description": "Wszelkie dodatkowe szczegóły lub notatki",
+        "placeholder": "Dodatkowe informacje na temat tego ubezpieczenia..."
+      },
+      "pcnNumber": {
+        "description": "Numer kontrolny procesora",
+        "label": "Numer PCN",
+        "placeholder": "np. ABC123"
+      },
+      "pharmacyNetworkInfo": {
+        "description": "Informacje o preferowanych sieciach aptek",
+        "label": "Informacje o sieci aptek",
+        "placeholder": "Wpisz szczegóły sieci aptek..."
+      },
+      "planName": {
+        "description": "Nazwa konkretnego planu ubezpieczeniowego",
+        "label": "Nazwa planu",
+        "placeholder": "np. PPO Gold Plus"
+      },
+      "planType": {
+        "description": "Rodzaj planu ubezpieczenia zdrowotnego",
+        "label": "Typ planu",
+        "options": {
+          "epo": "EPO (Organizacja wyłącznych usługodawców)",
+          "hdhp": "HDHP (Plan z wysokim udziałem własnym)",
+          "hmo": "HMO (Organizacja opieki zdrowotnej)",
+          "indemnity": "Indemnizacyjne (opłata za usługę)",
+          "pos": "POS (Punkt obsługi)",
+          "ppo": "PPO (Organizacja preferowanych usługodawców)"
+        },
+        "placeholder": "Wybierz typ planu"
+      },
+      "policyHolderName": {
+        "description": "Imię i nazwisko posiadacza polisy (jeśli inne niż ubezpieczony)",
+        "label": "Imię i nazwisko posiadacza polisy",
+        "placeholder": "np. Anna Kowalska (pozostaw puste, jeśli takie same jak ubezpieczony)"
+      },
+      "preauthPhone": {
+        "description": "Numer telefonu do wstępnej autoryzacji",
+        "label": "Telefon wstępnej autoryzacji"
+      },
+      "prescriptionPlanType": {
+        "description": "Rodzaj planu ubezpieczenia na leki",
+        "label": "Typ planu na leki",
+        "options": {
+          "formulary": "Plan oparty na formularzu",
+          "integrated": "Zintegrowany z ubezpieczeniem zdrowotnym",
+          "medicarePartD": "Medicare Część D",
+          "tieredCopay": "Plan z wielopoziomową dopłatą"
+        },
+        "placeholder": "Wybierz typ planu na leki"
+      },
+      "preventiveCoverage": {
+        "description": "Procent pokrycia dla opieki profilaktycznej",
+        "label": "Pokrycie profilaktyki %",
+        "placeholder": "np. 100"
+      },
+      "primaryCarePhysician": {
+        "description": "Imię i nazwisko lekarza podstawowej opieki zdrowotnej",
+        "label": "Lekarz POZ",
+        "placeholder": "np. Dr Jan Kowalski"
+      },
+      "providerServicesPhone": {
+        "description": "Numer telefonu do usług dla świadczeniodawców",
+        "label": "Telefon usług świadczeniodawców"
+      },
+      "relationshipToHolder": {
+        "description": "Twój związek z posiadaczem polisy",
+        "label": "Związek z posiadaczem",
+        "options": {
+          "child": "Dziecko",
+          "dependent": "Osoba na utrzymaniu",
+          "self": "Ja",
+          "spouse": "Małżonek"
+        },
+        "placeholder": "Wybierz związek"
+      },
+      "rxgroup": {
+        "description": "Numer grupy recept",
+        "label": "Grupa RX",
+        "placeholder": "np. RXGRP123"
+      },
+      "saving": "Zapisywanie ubezpieczenia...",
+      "status": {
+        "description": "Aktualny status ubezpieczenia",
+        "options": {
+          "expired": "Wygasłe"
+        },
+        "placeholder": "Wybierz status"
+      },
+      "tabs": {
+        "contact": "Kontakt",
+        "coverage": "Pokrycie",
+        "member": "Ubezpieczony"
+      },
+      "updateInsurance": "Zaktualizuj ubezpieczenie",
+      "visionPlanType": {
+        "description": "Rodzaj planu ubezpieczenia okulistycznego",
+        "label": "Typ planu okulistycznego",
+        "options": {
+          "visionDiscount": "Plan rabatowy okulistyczny",
+          "visionHmo": "HMO okulistyczne",
+          "visionPpo": "PPO okulistyczne"
+        },
+        "placeholder": "Wybierz typ planu okulistycznego"
+      },
+      "websiteUrl": {
+        "description": "Portal ubezpieczonego lub adres strony internetowej",
+        "label": "Adres URL strony internetowej",
+        "placeholder": "np. https://ubezpieczony.firma.com"
+      }
+    },
+    "viewModal": {
+      "coverageDetails": "Szczegóły pokrycia"
+    }
+  },
+  "labResults": {
+    "addPanel": {
+      "componentPartialSaveMessage": "The panel was created but some test components failed to save. Edit the panel to review.",
+      "componentPartialSaveTitle": "Some components not saved",
+      "componentSaveFailedMessage": "The panel was created but test components could not be saved. Edit the panel to add them.",
+      "componentSaveFailedTitle": "Test components not saved",
+      "createButton": "Zapisz wyniki",
+      "createError": "Nie udało się utworzyć panelu badań",
+      "creating": "Tworzenie...",
+      "panelName": "Panel lub typ wyników laboratoryjnych",
+      "panelNameDescription": "Nazwa dla tej grupy badań",
+      "panelNamePlaceholder": "np. CBC, morfologia krwi",
+      "tagsPlaceholder": "Dodaj tagi, aby później organizować i wyszukiwać ten rekord",
+      "testResultRequired": "Wymagany jest co najmniej jeden wynik badania",
+      "title": "Dodaj wyniki laboratoryjne"
+    },
+    "buttons": {
+      "addLabResults": "Dodaj wyniki badań"
+    },
+    "form": {
+      "componentCreationWarning": "Wynik laboratoryjny zapisany, ale nie można było dodać komponentów badania. Możesz je dodać ze strony widoku.",
+      "relationshipCreationWarning": "Wynik laboratoryjny zapisany, ale niektóre relacje nie mogły być utworzone. Możesz je dodać ze strony edycji."
+    }
+  },
+  "medications": {
+    "alternativeName": {
+      "description": "Opcjonalna nazwa alternatywna lub markowa (2-100 znaków)",
+      "label": "Nazwa alternatywna",
+      "placeholder": "np. nazwa markowa lub generyczna"
+    },
+    "dosage": {
+      "description": "Siła i ilość na jedną dawkę",
+      "label": "Dawkowanie",
+      "placeholder": "np. 10 mg, 1 tabletka"
+    },
+    "form": {
+      "addMedication": "Dodaj lek",
+      "conditionLinkFailed": "Lek został zapisany, ale niektóre schorzenia nie mogły zostać powiązane. Możesz je powiązać później, edytując lek.",
+      "conditionLinkPartialFailure": "Nie udało się powiązać {{count}} schorzeń",
+      "conditionLinkPartialFailure_one": "Nie udało się powiązać {{count}} schorzenia",
+      "conditionLinkPartialFailure_other": "Nie udało się powiązać {{count}} schorzeń",
+      "linkConditionsDescription": "Opcjonalnie powiąż ten lek z istniejącymi schorzeniami",
+      "noConditionsFound": "Nie znaleziono schorzeń",
+      "saving": "Zapisywanie leku...",
+      "updateMedication": "Aktualizuj lek"
+    },
+    "frequency": {
+      "description": "Jak często przyjmować lek",
+      "label": "Częstotliwość",
+      "placeholder": "np. Raz dziennie, Dwa razy dziennie"
+    },
+    "indication": {
+      "description": "Do czego służy ten lek? Opisz powód lub schorzenie, które jest leczone",
+      "label": "Wskazanie",
+      "placeholder": "np. Wysokie ciśnienie, W razie potrzeby przy bólu, Leczenie cukrzycy"
+    },
+    "medicationName": {
+      "description": "Generyczna lub markowa nazwa leku (min. 2 znaki)",
+      "label": "Nazwa leku",
+      "placeholder": "np. Lisinopril, Metformina"
+    },
+    "medicationType": {
+      "description": "Kategoria leku",
+      "label": "Typ leku",
+      "placeholder": "Wybierz typ"
+    },
+    "pharmacy": {
+      "description": "Apteka, w której realizowany jest lek",
+      "label": "Apteka",
+      "placeholder": "Wybierz aptekę"
+    },
+    "prescribingProvider": {
+      "description": "Lekarz, który przepisał ten lek",
+      "label": "Lekarz przepisujący",
+      "placeholder": "Wybierz lekarza"
+    },
+    "reminders": {
+      "days": {
+        "description": "Zostaw puste, aby otrzymywać przypomnienia każdego dnia",
+        "fri": "Pt",
+        "label": "Dni przypomnień",
+        "mon": "Pon",
+        "sat": "Sob",
+        "sun": "Nd",
+        "thu": "Czw",
+        "tue": "Wt",
+        "wed": "Śr"
+      },
+      "enabled": {
+        "description": "Wysyłaj powiadomienia, gdy nadejdzie pora przyjęcia tego leku",
+        "label": "Włącz przypomnienia"
+      },
+      "enabledBadge": "Przypomnienia włączone",
+      "message": {
+        "description": "Opcjonalna notatka w powiadomieniu o przypomnieniu (maks. 200 znaków)",
+        "label": "Niestandardowa wiadomość przypomnienia",
+        "placeholder": "np. Przyjmować z jedzeniem, Najpierw zmierzyć ciśnienie"
+      },
+      "noChannelsTitle": "Brak włączonego kanału powiadomień",
+      "noChannelsWarning": "Nie skonfigurowano kanału powiadomień dla przypomnień o lekach. Otwórz ustawienia powiadomień, aby włączyć kanał.",
+      "notFiring": {
+        "badge": "Nie zostanie uruchomione",
+        "dayNotActive": "Przypomnienia nie są zaplanowane na dzisiaj.",
+        "notStarted": "Przyjmowanie tego leku zaczyna się dopiero {{date}}.",
+        "periodEnded": "Ten lek jest oznaczony jako już nieprzyjmowany od {{date}}.",
+        "statusNotActive": "Status leku to „{{status}}” — przypomnienia są wysyłane tylko dla aktywnych leków.",
+        "title": "Przypomnienia nie będą uruchamiane"
+      },
+      "openSettings": "Otwórz ustawienia powiadomień",
+      "saveBeforeTest": "Najpierw zapisz lek, aby wysłać testowe przypomnienie.",
+      "tabLabel": "Przypomnienia",
+      "testButton": "Wyślij teraz testowe przypomnienie",
+      "testError": "Nie udało się wysłać testowego przypomnienia",
+      "testSuccess": "Wysłano testowe przypomnienie",
+      "times": {
+        "addButton": "Dodaj godzinę",
+        "description": "Godziny (format 24-godzinny), o których przypomnienie zostanie wysłane",
+        "duplicate": "Ta godzina jest już na liście",
+        "empty": "Nie skonfigurowano godzin przypomnień.",
+        "invalid": "Godzina musi być w formacie GG:MM (24-godzinnym)",
+        "label": "Godziny przypomnień",
+        "max": "Maksymalnie {{count}} godzin",
+        "max_one": "Maximum of {{count}} times",
+        "max_other": "Maximum of {{count}} times",
+        "removeAriaLabel": "Usuń godzinę"
+      },
+      "viewNone": "Brak skonfigurowanych przypomnień"
+    },
+    "route": {
+      "description": "Sposób podawania leku",
+      "label": "Droga podania",
+      "options": {
+        "inhalation": "Wziewnie",
+        "injection": "Zastrzyk",
+        "intramuscular": "Domięśniowo",
+        "intravenous": "Dożylnie",
+        "nasal": "Donosowo",
+        "oral": "Doustnie",
+        "rectal": "Doodbytniczo",
+        "subcutaneous": "Podskórnie",
+        "sublingual": "Podjęzykowo",
+        "topical": "Miejscowo"
+      },
+      "placeholder": "Wybierz drogę"
+    },
+    "sideEffects": {
+      "description": "Znane lub doświadczane skutki uboczne tego leku",
+      "label": "Działania niepożądane",
+      "placeholder": "Wymień znane lub doświadczane działania niepożądane..."
+    }
+  },
+  "pharmacies": {
+    "form": {
+      "brand": {
+        "description": "Główna sieć aptek lub typ niezależny",
+        "label": "Marka apteki",
+        "options": {
+          "amazonPharmacy": "Amazon Pharmacy",
+          "compoundingPharmacy": "Apteka recepturowa",
+          "costcoPharmacy": "Costco Pharmacy",
+          "cvs": "CVS",
+          "hebPharmacy": "H-E-B Pharmacy",
+          "hospitalPharmacy": "Apteka szpitalna",
+          "independent": "Niezależna",
+          "kaiserPermanente": "Kaiser Permanente",
+          "krogerPharmacy": "Kroger Pharmacy",
+          "meijerPharmacy": "Meijer Pharmacy",
+          "onlinePharmacy": "Apteka internetowa",
+          "publixPharmacy": "Publix Pharmacy",
+          "riteAid": "Rite Aid",
+          "safewayPharmacy": "Safeway Pharmacy",
+          "specialtyPharmacy": "Apteka specjalistyczna",
+          "targetPharmacy": "Target Pharmacy",
+          "walgreens": "Walgreens",
+          "walmartPharmacy": "Walmart Pharmacy"
+        },
+        "placeholder": "Wybierz sieć aptek lub typ"
+      },
+      "city": {
+        "description": "Miasto lokalizacji",
+        "label": "Miasto",
+        "placeholder": "Warszawa"
+      },
+      "country": {
+        "description": "Kraj, w którym znajduje się apteka",
+        "label": "Kraj",
+        "placeholder": "np. Polska, Niemcy"
+      },
+      "locationDivider": "Informacje o lokalizacji",
+      "name": {
+        "description": "Konkretna nazwa lub identyfikator lokalizacji",
+        "label": "Nazwa apteki",
+        "placeholder": "Apteka Centralna - ul. Główna"
+      },
+      "phone": {
+        "description": "Główny numer telefonu apteki",
+        "placeholder": "+48 555 123 456"
+      },
+      "postalCode": {
+        "description": "Kod pocztowy",
+        "label": "Kod pocztowy",
+        "placeholder": "np. 00-001, 90-210"
+      },
+      "specialtyServices": {
+        "description": "Specjalne usługi oferowane przez tę aptekę",
+        "label": "Usługi specjalistyczne",
+        "placeholder": "np. Szczepienia, Leki recepturowe, Poradnictwo farmaceutyczne"
+      },
+      "stateProvince": {
+        "description": "Województwo, prowincja lub region",
+        "label": "Województwo/Prowincja",
+        "placeholder": "np. Mazowieckie, Śląskie"
+      },
+      "storeNumber": {
+        "description": "Wewnętrzny identyfikator sklepu",
+        "label": "Numer sklepu",
+        "placeholder": "np. 1234, #5678, Sklep A"
+      },
+      "streetAddress": {
+        "description": "Fizyczny adres ulicy",
+        "label": "Adres ulicy",
+        "placeholder": "ul. Główna 123"
+      },
+      "website": {
+        "description": "Strona internetowa apteki do zamówień online lub informacji",
+        "placeholder": "https://www.przyklad.pl"
+      }
+    }
+  },
+  "practices": {
+    "form": {
+      "fax": {
+        "description": "Numer faksu placówki",
+        "label": "Numer faksu",
+        "placeholder": "+48 555 123 457"
+      },
+      "name": {
+        "description": "Nazwa placówki lub kliniki",
+        "label": "Nazwa placówki",
+        "placeholder": "Szpital Wojewódzki"
+      },
+      "notes": {
+        "description": "Wszelkie dodatkowe informacje na temat placówki",
+        "placeholder": "Dodatkowe notatki na temat tej placówki..."
+      },
+      "patientPortal": {
+        "description": "Adres URL portalu pacjenta",
+        "label": "Adres URL portalu pacjenta",
+        "placeholder": "https://portal.placowka.pl"
+      },
+      "phone": {
+        "description": "Główny numer kontaktowy placówki",
+        "label": "Telefon placówki"
+      },
+      "website": {
+        "description": "Oficjalna strona internetowa placówki",
+        "label": "Strona internetowa placówki",
+        "placeholder": "https://www.placowka.pl"
+      }
+    }
+  },
+  "practitioners": {
+    "form": {
+      "email": {
+        "description": "Zawodowy adres e-mail",
+        "label": "Adres e-mail",
+        "placeholder": "lekarz@przyklad.pl"
+      },
+      "name": {
+        "description": "Pełne imię i nazwisko lekarza z tytułem",
+        "label": "Imię i nazwisko",
+        "placeholder": "Dr Anna Kowalska"
+      },
+      "phone": {
+        "description": "Główny numer kontaktowy",
+        "label": "Numer telefonu",
+        "placeholder": "+48 555 123 456"
+      },
+      "practice": {
+        "description": "Wybierz istniejącą placówkę lub wpisz, aby utworzyć nową",
+        "label": "Placówka/Klinika",
+        "placeholder": "Szukaj lub utwórz placówkę..."
+      },
+      "rating": {
+        "description": "Twoja ogólna ocena tego lekarza (0-5)",
+        "label": "Ocena"
+      },
+      "specialty": {
+        "description": "Wybierz z listy lub wpisz niestandardową specjalizację",
+        "label": "Specjalizacja medyczna",
+        "placeholder": "Szukaj specjalizacji lub wpisz niestandardową..."
+      },
+      "website": {
+        "description": "Zawodowa strona internetowa lub strona placówki",
+        "placeholder": "https://www.przyklad.pl"
+      }
+    }
+  },
+  "procedures": {
+    "anesthesiaNotes": {
+      "description": "Wszelkie notatki dotyczące podania znieczulenia",
+      "label": "Notatki znieczulenia",
+      "placeholder": "Notatki związane ze znieczuleniem..."
+    },
+    "anesthesiaType": {
+      "description": "Rodzaj zastosowanego znieczulenia",
+      "label": "Typ znieczulenia",
+      "options": {
+        "general": "Ogólne - Całkowita utrata przytomności",
+        "local": "Miejscowe - Znieczulenie określonego obszaru",
+        "none": "Brak - Nie wymaga znieczulenia",
+        "regional": "Regionalne - Znieczulenie większego obszaru",
+        "sedation": "Sedacja - Spokojny, ale przytomny"
+      },
+      "placeholder": "Wybierz typ znieczulenia"
+    },
+    "complications": {
+      "description": "Dokumentuj wszelkie powikłania, zdarzenia niepożądane lub nieoczekiwane wyniki",
+      "label": "Powikłania",
+      "placeholder": "Wszelkie powikłania, które wystąpiły podczas zabiegu..."
+    },
+    "description": {
+      "description": "Szczegółowy opis na czym polega zabieg",
+      "placeholder": "Opisz zabieg szczegółowo..."
+    },
+    "facility": {
+      "description": "Gdzie zabieg był lub będzie wykonany",
+      "label": "Placówka",
+      "placeholder": "np. Szpital Wojewódzki, Ośrodek Ambulatoryjny"
+    },
+    "notes": {
+      "description": "Wszelkie istotne obserwacje, instrukcje przedoperacyjne/pooperacyjne lub szczegóły",
+      "placeholder": "Dodatkowe notatki dotyczące zabiegu..."
+    },
+    "practitioner": {
+      "description": "Lekarz lub specjalista wykonujący zabieg",
+      "label": "Lekarz wykonujący zabieg",
+      "placeholder": "Wybierz lekarza"
+    },
+    "procedureCode": {
+      "description": "Kodowanie medyczne (CPT, ICD-10-PCS, itp.)",
+      "label": "Kod zabiegu",
+      "placeholder": "np. CPT-12345, ICD-10-PCS"
+    },
+    "procedureDate": {
+      "description": "Kiedy zabieg jest/był wykonywany",
+      "label": "Data zabiegu",
+      "placeholder": "Wybierz datę zabiegu"
+    },
+    "procedureDuration": {
+      "description": "Jak długo zabieg trwał/będzie trwać",
+      "label": "Czas trwania (minuty)",
+      "placeholder": "np. 30, 120"
+    },
+    "procedureName": {
+      "description": "Nazwa zabiegu medycznego",
+      "label": "Nazwa zabiegu",
+      "placeholder": "np. Appendektomia, Rezonans magnetyczny, Kolonoskopia"
+    },
+    "procedureSetting": {
+      "description": "Gdzie zabieg ma miejsce",
+      "label": "Miejsce zabiegu",
+      "options": {
+        "emergency": "Nagły - SOR/opieka doraźna",
+        "home": "Dom - W domu pacjenta",
+        "inpatient": "Stacjonarne - Wymagany pobyt w szpitalu",
+        "office": "Gabinet - Gabinet lekarski/klinika",
+        "outpatient": "Ambulatoryjne - Wypis tego samego dnia"
+      },
+      "placeholder": "Wybierz miejsce"
+    },
+    "procedureType": {
+      "description": "Kategoria zabiegu",
+      "label": "Typ zabiegu",
+      "options": {
+        "diagnostic": "Diagnostyczny - Badania/Obrazowanie",
+        "emergency": "Nagły - Opieka doraźna",
+        "preventive": "Profilaktyczny - Opieka zapobiegawcza",
+        "surgical": "Chirurgiczny - Zabieg inwazyjny",
+        "therapeutic": "Terapeutyczny - Leczenie"
+      },
+      "placeholder": "Wybierz typ"
+    },
+    "status": {
+      "description": "Aktualny status zabiegu"
+    }
+  },
+  "symptoms": {
+    "messages": {
+      "saving": "Zapisywanie objawu..."
+    },
+    "occurrence": {
+      "additionalNotes": {
+        "description": "Wszelkie inne istotne informacje dotyczące tego wystąpienia",
+        "label": "Dodatkowe notatki",
+        "placeholder": "Dodatkowe szczegóły dotyczące tego epizodu..."
+      },
+      "associatedSymptoms": {
+        "description": "Inne objawy, które wystąpiły wraz z tym epizodem",
+        "label": "Powiązane objawy",
+        "placeholder": "Inne objawy (nudności, zawroty głowy itp.)"
+      },
+      "duration": {
+        "description": "Jak długo trwał ten epizod",
+        "label": "Czas trwania",
+        "placeholder": "np. 2 godziny, 30 minut, cały dzień"
+      },
+      "impactLevel": {
+        "description": "Jak bardzo wpłynęło to na twoje codzienne czynności",
+        "label": "Wpływ na codzienne życie",
+        "placeholder": "Wybierz poziom wpływu"
+      },
+      "impactLevelOptions": {
+        "debilitating": "Wyniszczający - Niemożność funkcjonowania",
+        "mild": "Łagodny - Niewielkie trudności w czynnościach",
+        "moderate": "Umiarkowany - Niektóre czynności ograniczone",
+        "noImpact": "Brak wpływu - Mogę funkcjonować normalnie",
+        "severe": "Ciężki - Większość czynności trudna"
+      },
+      "location": {
+        "description": "Gdzie w ciele odczuwałeś to",
+        "label": "Lokalizacja",
+        "placeholder": "np. Lewa skroń, Dolna część pleców, Całe ciało"
+      },
+      "occurrenceDate": {
+        "description": "Data tego konkretnego epizodu",
+        "label": "Data wystąpienia",
+        "placeholder": "Kiedy wystąpił ten epizod"
+      },
+      "painScale": {
+        "description": "Oceń poziom bólu od 0 (brak) do 10 (najgorszy możliwy)",
+        "label": "Skala bólu (0-10)",
+        "placeholder": "0 = Brak bólu, 10 = Najgorszy ból"
+      },
+      "reliefMethods": {
+        "description": "Rzeczy, które przyniosły ulgę w tym epizodzie",
+        "label": "Metody ulgi",
+        "placeholder": "Co pomogło (leki, odpoczynek, lód itp.)"
+      },
+      "resolutionNotes": {
+        "description": "Szczegóły na temat tego, jak ten epizod się zakończył lub był leczony",
+        "label": "Notatki rozwiązania",
+        "placeholder": "Jak rozwiązano ten epizod..."
+      },
+      "resolvedDate": {
+        "description": "Pozostaw puste, jeśli nadal doświadczasz tego epizodu",
+        "label": "Data rozwiązania",
+        "placeholder": "Kiedy ten epizod się rozwiązał"
+      },
+      "resolvedTime": {
+        "description": "Godzina, kiedy ten epizod się rozwiązał",
+        "label": "Godzina rozwiązania",
+        "placeholder": "Godzina rozwiązania epizodu"
+      },
+      "severity": {
+        "description": "Jak poważny jest objaw podczas tego wystąpienia",
+        "placeholder": "Wybierz poziom nasilenia"
+      },
+      "timeOfDay": {
+        "description": "O której porze dnia to wystąpiło",
+        "label": "Pora dnia",
+        "placeholder": "Wybierz porę dnia"
+      },
+      "triggers": {
+        "description": "Czynniki, które mogły spowodować lub pogorszyć ten epizod",
+        "label": "Wyzwalacze",
+        "placeholder": "Co wywołało ten epizod (stres, jedzenie, pogoda itp.)"
+      }
+    },
+    "parent": {
+      "category": {
+        "description": "Opcjonalna kategoria do organizowania objawów",
+        "label": "Kategoria",
+        "placeholder": "np. Ból, Trawienne, Oddechowe"
+      },
+      "firstOccurrenceDate": {
+        "description": "Kiedy po raz pierwszy zauważyłeś ten objaw",
+        "label": "Data pierwszego wystąpienia",
+        "placeholder": "Kiedy po raz pierwszy doświadczyłeś tego"
+      },
+      "generalNotes": {
+        "description": "Informacje ogólne na temat wzorców, historii lub obserwacji",
+        "label": "Notatki ogólne",
+        "placeholder": "Notatki ogólne dotyczące tego objawu..."
+      },
+      "isChronic": {
+        "description": "Zaznacz, jeśli jest to objaw długotrwały/przewlekły",
+        "label": "Schorzenie przewlekłe"
+      },
+      "resolvedDate": {
+        "description": "Data, kiedy ten objaw został całkowicie wyleczony",
+        "label": "Data rozwiązania",
+        "placeholder": "Kiedy ten objaw został rozwiązany"
+      },
+      "status": {
+        "description": "Aktualny ogólny status tego objawu",
+        "label": "Ogólny status",
+        "placeholder": "Wybierz status"
+      },
+      "statusOptions": {
+        "active": "Aktywny - Obecnie doświadczany",
+        "recurring": "Nawracający - Pojawia się i znika",
+        "resolved": "Rozwiązany - Już nie doświadczany"
+      },
+      "symptomName": {
+        "description": "Nazwa objawu, który chcesz śledzić",
+        "label": "Nazwa objawu",
+        "placeholder": "np. Migrena, Przewlekły ból pleców"
+      },
+      "typicalTriggers": {
+        "description": "Co zazwyczaj wywołuje ten objaw",
+        "label": "Typowe wyzwalacze",
+        "placeholder": "Dodaj typowe wyzwalacze (stres, pogoda, pokarmy itp.)"
+      }
+    }
+  },
+  "treatmentPlan": {
+    "clickToExpand": "Kliknij, aby rozwinąć i dodać szczegóły (opcjonalnie)",
+    "conditions": "Schorzenia",
+    "encounters": "Wizyty",
+    "equipment": "Sprzęt",
+    "medications": "Leki",
+    "noEquipment": "Nie znaleziono sprzętu. Sprzęt można dodać po utworzeniu leczenia.",
+    "noLabResults": "Nie znaleziono wyników laboratoryjnych. Utwórz najpierw wyniki laboratoryjne, aby je tutaj powiązać.",
+    "noMedications": "Nie znaleziono leków. Utwórz najpierw leki, aby je tutaj powiązać.",
+    "noVisits": "Nie znaleziono wizyt. Utwórz najpierw wizyty, aby je tutaj powiązać."
+  },
+  "treatments": {
+    "amount": {
+      "description": "Ilość lub intensywność na sesję",
+      "label": "Ilość",
+      "placeholder": "np. 500 mg, 2 tabletki, 30 minut"
+    },
+    "endDate": {
+      "description": "Oczekiwana lub rzeczywista data zakończenia",
+      "placeholder": "Wybierz datę zakończenia (jeśli znana)"
+    },
+    "frequency": {
+      "description": "Jak często odbywa się leczenie",
+      "label": "Częstotliwość",
+      "placeholder": "Wybierz częstotliwość"
+    },
+    "frequencyOptions": {
+      "asNeeded": "W razie potrzeby (PRN)",
+      "biWeekly": "Co dwa tygodnie",
+      "continuous": "Ciągłe/trwające",
+      "fourTimes": "Cztery razy dziennie (QID)",
+      "monthly": "Miesięcznie",
+      "onceDaily": "Raz dziennie",
+      "oneTime": "Jednorazowo",
+      "threeTimes": "Trzy razy dziennie (TID)",
+      "twiceDaily": "Dwa razy dziennie (BID)",
+      "weekly": "Tygodniowo"
+    },
+    "medications": {
+      "specificEndDate": "Data zakończenia leczenia",
+      "specificStartDate": "Data rozpoczęcia leczenia"
+    },
+    "mode": {
+      "advancedOption": "Plan leczenia",
+      "description": "Wybierz sposób śledzenia tego leczenia",
+      "label": "Tryb leczenia",
+      "simpleOption": "Prosty"
+    },
+    "notes": {
+      "description": "Aktualizacje postępów, obserwacje lub ważne notatki",
+      "label": "Dodatkowe notatki",
+      "placeholder": "Notatki o postępach, działania niepożądane, zmiany, wyniki..."
+    },
+    "practitioner": {
+      "description": "Przypisz lekarza do tego leczenia",
+      "placeholder": "Wybierz lekarza (opcjonalnie)"
+    },
+    "relatedCondition": {
+      "description": "Powiąż to leczenie z konkretnym schorzeniem medycznym",
+      "label": "Powiązane schorzenie",
+      "placeholder": "Wybierz schorzenie (opcjonalnie)"
+    },
+    "startDate": {
+      "description": "Kiedy leczenie rozpoczyna się/rozpoczęło",
+      "placeholder": "Wybierz datę rozpoczęcia"
+    },
+    "treatmentDescription": {
+      "description": "Wyczerpujące szczegóły dotyczące podejścia do leczenia",
+      "label": "Opis leczenia",
+      "placeholder": "Szczegółowy opis planu leczenia..."
+    },
+    "treatmentName": {
+      "description": "Konkretna nazwa lub opis leczenia",
+      "label": "Nazwa leczenia",
+      "placeholder": "np. Fizjoterapia bólu dolnej części pleców"
+    },
+    "treatmentStatus": {
+      "description": "Obecny etap w procesie leczenia",
+      "label": "Status leczenia",
+      "options": {
+        "active": "Aktywne - Obecnie w trakcie leczenia",
+        "cancelled": "Anulowane - Leczenie przerwane",
+        "completed": "Zakończone - Leczenie ukończone pomyślnie",
+        "onHold": "Wstrzymane - Tymczasowo zatrzymane",
+        "planned": "Zaplanowane - Leczenie zaplanowane na przyszłość"
+      },
+      "placeholder": "Wybierz status"
+    },
+    "treatmentType": {
+      "description": "Kategoria leczenia",
+      "label": "Typ leczenia",
+      "options": {
+        "behavioralTherapy": "Terapia behawioralna - Leczenie zdrowia psychicznego",
+        "chemotherapy": "Chemioterapia - Leczenie nowotworów",
+        "dialysis": "Dializa - Wsparcie funkcji nerek",
+        "immunotherapy": "Immunoterapia - Leczenie układu immunologicznego",
+        "medication": "Leki - Terapia farmakologiczna",
+        "occupationalTherapy": "Terapia zajęciowa - Poprawa funkcjonowania",
+        "other": "Inne - Określ w opisie",
+        "physicalTherapy": "Fizjoterapia - Rehabilitacja",
+        "radiation": "Radioterapia - Terapia promieniowaniem",
+        "speechTherapy": "Logopedia - Poprawa komunikacji",
+        "surgery": "Chirurgia - Zabieg chirurgiczny"
+      },
+      "placeholder": "Wybierz typ"
+    }
+  },
+  "visits": {
+    "attendingPractitioner": {
+      "label": "Lekarz prowadzący"
+    },
+    "diagnosisAssessment": {
+      "label": "Diagnoza/Ocena"
+    },
+    "followUpInstructions": {
+      "label": "Zalecenia kontrolne"
+    },
+    "form": {
+      "dividers": {
+        "clinicalInformation": "Informacje kliniczne"
+      },
+      "fields": {
+        "additionalNotes": {
+          "description": "Wszelkie dodatkowe obserwacje, notatki lub ważne szczegóły",
+          "placeholder": "Wszelkie inne ważne szczegóły dotyczące wizyty..."
+        },
+        "attendingPractitioner": {
+          "description": "Lekarz, który przeprowadził wizytę",
+          "label": "Lekarz prowadzący",
+          "placeholder": "Wybierz lekarza (opcjonalnie)"
+        },
+        "chiefComplaint": {
+          "description": "Główny problem zdrowotny lub objaw, który spowodował wizytę",
+          "placeholder": "Główny problem lub objaw zgłaszany"
+        },
+        "diagnosisAssessment": {
+          "description": "Diagnoza medyczna lub ocena kliniczna",
+          "label": "Diagnoza/Ocena",
+          "placeholder": "Ocena kliniczna lub diagnoza z wizyty..."
+        },
+        "durationMinutes": {
+          "description": "Jak długo trwała wizyta",
+          "label": "Czas trwania (minuty)",
+          "placeholder": "Czas trwania wizyty"
+        },
+        "followUpInstructions": {
+          "description": "Zalecenia dalszej opieki i wizyt kontrolnych",
+          "placeholder": "Zalecenia opieki kontrolnej..."
+        },
+        "location": {
+          "description": "Miejsce, gdzie odbyła się wizyta",
+          "placeholder": "Gdzie odbyła się wizyta"
+        },
+        "priority": {
+          "description": "Poziom pilności wizyty",
+          "placeholder": "Wybierz poziom pilności"
+        },
+        "reason": {
+          "description": "Główny cel tej wizyty medycznej",
+          "label": "Powód wizyty",
+          "placeholder": "np. Badania kontrolne, Wizyta kontrolna, Przegląd objawów"
+        },
+        "relatedCondition": {
+          "description": "Powiąż tę wizytę z konkretnym schorzeniem, jeśli dotyczy",
+          "label": "Powiązane schorzenie (opcjonalnie)",
+          "placeholder": "Wybierz schorzenie związane z tą wizytą"
+        },
+        "treatmentPlan": {
+          "description": "Zalecenia leczenia i przepisane interwencje",
+          "placeholder": "Zalecane leczenie lub kolejne kroki..."
+        },
+        "visitDate": {
+          "description": "Kiedy odbyła się wizyta",
+          "label": "Data wizyty",
+          "placeholder": "Wybierz datę wizyty"
+        },
+        "visitType": {
+          "description": "Typ wizyty medycznej",
+          "placeholder": "Wybierz typ wizyty"
+        }
+      },
+      "locationOptions": {
+        "clinic": "Klinika",
+        "doctorsOffice": "Gabinet lekarski",
+        "emergencyRoom": "Oddział ratunkowy",
+        "homeVisit": "Wizyta domowa",
+        "hospital": "Szpital",
+        "telehealth": "Telemedycyna/Wizyta wirtualna",
+        "urgentCare": "Pomoc doraźna"
+      },
+      "priorityOptions": {
+        "routine": "Rutynowa",
+        "urgent": "Pilna"
+      },
+      "visitTypeOptions": {
+        "annualCheckup": "Badania kontrolne",
+        "consultation": "Konsultacja",
+        "emergency": "Nagły wypadek",
+        "followUp": "Wizyta kontrolna",
+        "preventiveCare": "Opieka profilaktyczna",
+        "routineVisit": "Wizyta rutynowa",
+        "specialistReferral": "Skierowanie do specjalisty"
+      }
+    },
+    "relatedCondition": {
+      "label": "Powiązane schorzenie (opcjonalnie)"
+    },
+    "table": {
+      "visitType": "Typ wizyty"
+    },
+    "viewModal": {
+      "chiefComplaint": "Główna dolegliwość",
+      "followUpInstructions": "Zalecenia kontrolne",
+      "priority": "Pilność"
+    }
+  }
+}

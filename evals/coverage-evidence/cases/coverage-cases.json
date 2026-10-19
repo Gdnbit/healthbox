@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {"case_id":"CASE-COV-001","rule_ids":["R-COV-001"],"input":"no observation and no statement","expected":"no-evidence; no database write"},
+    {"case_id":"CASE-COV-002","rule_ids":["R-COV-002","R-COV-003"],"input":"explicit past-date statement","expected":"only not-performed, not-applicable or unknown accepted"},
+    {"case_id":"CASE-COV-003","rule_ids":["R-COV-004"],"input":"revise then void","expected":"immutable versions 1..n; current view excludes voided"},
+    {"case_id":"CASE-COV-004","rule_ids":["R-COV-004"],"input":"duplicate current identity or stale expected_version","expected":"HTTP 409"},
+    {"case_id":"CASE-COV-005","rule_ids":["R-COV-005"],"input":"foreign member/source or orphan locator","expected":"403 or 422; no write"},
+    {"case_id":"CASE-COV-006","rule_ids":["R-COV-006"],"input":"same metric/date formal observation plus confirmed absence","expected":"conflict with both evidence IDs preserved"},
+    {"case_id":"CASE-COV-007","rule_ids":["R-COV-006"],"input":"same year, different dates, recorded and not performed","expected":"annual cell preserves both without same-date conflict"},
+    {"case_id":"CASE-COV-008","rule_ids":["R-COV-007"],"input":"mixed evidence","expected":"counts only; no percentage or score"},
+    {"case_id":"CASE-COV-009","rule_ids":["R-COV-008"],"input":"all-data export after revisions","expected":"every version, FHIR system URI, source IDs, no server path"},
+    {"case_id":"CASE-COV-010","rule_ids":["R-COV-008"],"input":"note and change note contain synthetic text","expected":"audit metadata excludes both bodies"},
+    {"case_id":"CASE-COV-011","rule_ids":["R-ZH-001","R-ZH-004","R-ZH-009"],"input":"desktop and 390px UI workflow","expected":"Chinese accessible create/revise/void and matrix states; no critical overflow"},
+    {"case_id":"CASE-COV-012","rule_ids":["R-COV-009"],"input":"synthetic browser cleanup","expected":"ten formal health tables count zero; no private path"}
+  ]
+}

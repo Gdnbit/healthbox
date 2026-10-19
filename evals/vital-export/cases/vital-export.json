@@ -1,0 +1,17 @@
+{
+  "patientLabel": "Synthetic Household",
+  "generatedAt": "2026-07-22T06:00:00.000Z",
+  "timeRangeLabel": "All dates",
+  "trend": {
+    "vital_type": "blood_pressure",
+    "vital_type_label": "Synthetic blood pressure",
+    "unit": "mmHg",
+    "data_points": [
+      {"id": 903, "value": 123, "secondary_value": 81, "recorded_date": "2026-03-01T08:00:00Z", "glucose_context": null},
+      {"id": 901, "value": 118, "secondary_value": 76, "recorded_date": "2026-01-01T08:00:00Z", "glucose_context": null},
+      {"id": 902, "value": 121, "secondary_value": 79, "recorded_date": "2026-02-01T08:00:00Z", "glucose_context": null}
+    ],
+    "statistics": {"count": 3, "latest": 123, "average": 120.6667, "min": 118, "max": 123, "std_dev": 2.0548, "secondary_latest": 81, "secondary_average": 78.6667, "secondary_min": 76, "secondary_max": 81, "secondary_std_dev": 2.0548},
+    "reference_range": null
+  }
+}

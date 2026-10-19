@@ -1,0 +1,780 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "admin": {
+    "createUser": {
+      "linkPatient": {
+        "hint": "Istället för att skapa en ny patientpost, länka den nya användaren till en befintlig patient (t.ex. ett barn som nu behöver en egen inloggning).",
+        "selfRecordBadge": "Egen journal",
+        "selfRecordWarning": "Detta är den nuvarande ägarens egen journal. En ny egen journal skapas för den ursprungliga ägaren med deras demografiska uppgifter kopierade. Den ursprungliga ägaren får redigeringsbehörighet till denna patient."
+      },
+      "passwordReqs": {
+        "hasLetter": "Innehåller minst en bokstav",
+        "hasNumber": "Innehåller minst en siffra",
+        "minLength": "Minst 6 tecken"
+      }
+    }
+  },
+  "analytics": {
+    "activityByRecordType": "Aktivitet per posttyp",
+    "activityTrend": "Aktivitetstrend",
+    "analyticsDateRange": "Analysdatumintervall",
+    "axisLabels": {
+      "activities": "Aktiviteter"
+    },
+    "breakdownByType": "Uppdelning per typ",
+    "chartLabels": {
+      "patients": "Patienter",
+      "userActivity": "Användaraktivitet"
+    },
+    "customDateRange": "Anpassat datumintervall",
+    "dailyAverage": "Dagligt genomsnitt",
+    "filterByDays": "Filtrera efter senaste {{days}} dagarna",
+    "loading": "Laddar analys...",
+    "period": "Period",
+    "recordsDistribution": "Postfördelning",
+    "subtitle": "Aktivitetstrender, jämförelser och postfördelning",
+    "title": "Analys",
+    "totalActivities": "Totala aktiviteter",
+    "userInteractions": "Användarinteraktioner",
+    "vsPreviousPeriod": "jämfört med föregående period"
+  },
+  "auditLog": {
+    "actionFilter": "Åtgärd",
+    "dateRange": "Datumintervall",
+    "entityTypeFilter": "Enhetstyp",
+    "errorLoading": "Fel vid laddning av granskningslogg",
+    "filterByAction": "Filtrera efter åtgärd",
+    "filterByDateRange": "Filtrera efter datumintervall",
+    "filterByEntityType": "Filtrera efter enhetstyp",
+    "filterByUser": "Filtrera efter användare",
+    "loading": "Laddar granskningslogg...",
+    "noLogs": "Inga aktivitetsloggar hittades",
+    "pageInfo": "sida {{page}} av {{totalPages}}",
+    "searchAriaLabel": "Sök aktivitetslogg",
+    "searchPlaceholder": "Sök beskrivningar...",
+    "showingResults": "Visar {{shown}} av {{total}} resultat",
+    "subtitle": "Fullständig aktivitetsspårning för efterlevnad och granskning",
+    "system": "System",
+    "tableHeaders": {
+      "action": "Åtgärd",
+      "entityType": "Enhetstyp",
+      "recordId": "Post-ID",
+      "timestamp": "Tidsstämpel"
+    },
+    "viewRecord": "Visa {{type}}-post",
+    "viewRecordAriaLabel": "Visa {{type}} #{{id}}"
+  },
+  "backup": {
+    "existingBackups": {
+      "count_one": "{{count}} säkerhetskopia",
+      "count_other": "{{count}} säkerhetskopior",
+      "download": "Ladda ner",
+      "noBackups": "Inga säkerhetskopior hittades",
+      "previewRestore": "Förhandsgranska återställning",
+      "restore": "Återställ",
+      "tableHeaders": {
+        "fileExists": "Fil finns",
+        "filename": "Filnamn",
+        "integrity": "Integrity",
+        "restoreDrill": "Restore Drill"
+      },
+      "title": "Befintliga säkerhetskopior",
+      "verify": "Verifiera"
+    },
+    "healthOverview": {
+      "title": "Backup readiness",
+      "description": "Creation, integrity verification and restore testing are separate checks.",
+      "latestFull": "Latest full backup",
+      "integrity": "Archive integrity",
+      "restoreDrill": "Isolated restore drill",
+      "schedule": "Automatic schedule",
+      "replica": "Configured copy target",
+      "none": "None",
+      "noAge": "No backup age available",
+      "ageHours": "{{count}} hours old",
+      "neverChecked": "Not checked yet",
+      "neverTested": "Not tested yet",
+      "nextRun": "Next: {{date}}",
+      "noNextRun": "No next run scheduled",
+      "copiedAt": "Copied: {{date}}",
+      "noReplicaTarget": "No copy target configured",
+      "ready": "Ready",
+      "attention": "{{count}} items to review",
+      "warningTitle": "Readiness notes",
+      "scopeNote": "Integrity verification checks the archive; only an isolated restore drill checks whether its database can actually be restored. Neither proves that an off-device copy exists.",
+      "statuses": {
+        "verified": "Verified",
+        "passed": "Passed",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "copied": "Copied and verified",
+        "not_copied": "Not copied",
+        "not_configured": "Not configured",
+        "not_checked": "Not checked",
+        "not_tested": "Not tested",
+        "failed": "Failed",
+        "missing": "Missing",
+        "corrupted": "Corrupted",
+        "size_mismatch": "Size mismatch",
+        "checksum_failed": "Checksum failed"
+      },
+      "warnings": {
+        "noFullBackup": "No full backup is recorded",
+        "fileMissing": "The latest full backup file is missing",
+        "backupOld": "The latest full backup is more than seven days old",
+        "integrityPending": "The latest full backup has not passed its current integrity check",
+        "restorePending": "The latest full backup has not passed an isolated restore drill",
+        "restoreFailed": "The latest isolated restore drill failed",
+        "scheduleDisabled": "Automatic full backups are disabled",
+        "replicaNotConfigured": "No second copy target is configured",
+        "replicaPending": "The latest full backup has not been copied to the configured target",
+        "replicaFailed": "The latest copy or its checksum verification failed"
+      }
+    },
+    "loading": "Laddar säkerhetskopieringshantering...",
+    "modals": {
+      "analyzingBackup": "Analyserar säkerhetskopians innehåll...",
+      "cannotBeUndone": "Denna åtgärd kan inte ångras.",
+      "cleanupItems": {
+        "oldBackups": "Gamla säkerhetskopior",
+        "orphanedFiles": "Föräldralösa filer",
+        "trashFiles": "Filer i papperskorgen"
+      },
+      "cleanupWarning": "Detta kommer permanent att ta bort:",
+      "completeCleanup": "Fullständig systemrensning",
+      "deleteBackup": "Radera säkerhetskopia",
+      "deleteConfirm": "Är du säker på att du vill radera säkerhetskopian \"{{filename}}\"?",
+      "discardChanges": "Förkasta ändringar",
+      "executeCleanup": "Utför rensning",
+      "proceedWithRestore": "Fortsätt med återställning",
+      "restoreFromBackup": "Återställ från säkerhetskopia",
+      "restoreNow": "Återställ nu",
+      "restorePreview": "Förhandsgranskning av återställning",
+      "restoreSafetyNote": "En säkerhetskopia skapas automatiskt innan återställningsprocessen påbörjas.",
+      "restoreWarning": "Detta kommer att återställa från säkerhetskopia och ERSÄTTA aktuell data!",
+      "stayOnSettings": "Stanna på inställningar",
+      "typeCleanupToConfirm": "Skriv <strong>RENSNING</strong> för att bekräfta",
+      "unsavedChanges": "Osparade ändringar",
+      "unsavedWarning": "Du har osparade ändringar i dina lagringsinställningar. Om du lämnar denna flik försvinner dina ändringar."
+    },
+    "operations": {
+      "advancedOptions": "Avancerade alternativ",
+      "advancedOptionsDesc": "Ytterligare säkerhetskopierings- och rensningsåtgärder",
+      "chooseFile": "Välj säkerhetskopieringsfil",
+      "cleanupOld": "Rensa gamla säkerhetskopior",
+      "completeCleanup": "Fullständig rensning",
+      "createFullBackup": "Skapa fullständig säkerhetskopia",
+      "creating": "Skapar...",
+      "databaseOnly": "Endast databas",
+      "filesOnly": "Endast filer",
+      "fullBackup": "Fullständig systemsäkerhetskopia",
+      "fullBackupDesc": "Komplett säkerhetskopia (databas + filer)",
+      "invalidFileType": "Ogiltig filtyp",
+      "invalidFileTypeDesc": "Välj en .sql- eller .zip-säkerhetskopieringsfil.",
+      "moreOptions": "Fler alternativ",
+      "title": "Säkerhetskopieringsåtgärder",
+      "uploadBackup": "Ladda upp säkerhetskopia",
+      "uploadBackupDesc": "Ladda upp en extern säkerhetskopieringsfil (.sql eller .zip)"
+    },
+    "preview": {
+      "affectedData": "Påverkad data",
+      "analysisNotAvailable": "Säkerhetskopieanalys inte tillgänglig",
+      "backupContent": "Säkerhetskopians innehåll",
+      "backupDetails": "Detaljer om säkerhetskopia",
+      "backupFiles": "Säkerhetskopieringsfiler",
+      "components": "Komponenter",
+      "createdAt": "Skapad: {{date}}",
+      "currentDatabase": "Aktuell databas",
+      "currentFiles": "Aktuella filer",
+      "manifest": "Manifest",
+      "noAffectedData": "Ingen information om påverkad data tillgänglig",
+      "noStatistics": "Ingen statistik tillgänglig",
+      "restoreMethod": "Återställningsmetod",
+      "unknownType": "Okänd typ av säkerhetskopia"
+    },
+    "retention": {
+      "backupsUnit": "säkerhetskopior",
+      "currentStatus_one": "<strong>Aktuell status:</strong> {{count}} säkerhetskopia lagrad (max: {{max}})",
+      "currentStatus_other": "<strong>Aktuell status:</strong> {{count}} säkerhetskopior lagrade (max: {{max}})",
+      "daysUnit": "dagar",
+      "maximumCount": "Maximalt antal säkerhetskopior",
+      "maximumCountDesc": "Varna när antalet säkerhetskopior överstiger denna gräns (valfritt)",
+      "minimumCount": "Minsta antal säkerhetskopior",
+      "minimumCountDesc": "Behåll alltid minst detta antal säkerhetskopior (oavsett ålder)",
+      "priority": "<strong>Prioritet:</strong> Minsta antal har alltid företräde framför tidsgränser",
+      "retentionDays": "Lagringstid (dagar)",
+      "retentionDaysDesc": "Radera säkerhetskopior äldre än detta antal dagar (utöver minsta antal)",
+      "retentionLogic": "Lagringslogik",
+      "saveRetention": "Spara lagringsinställningar",
+      "timeBasedCleanup": "<strong>Tidsbaserad rensning:</strong> Radera säkerhetskopior äldre än {{days}} dagar (utöver minsta antal)",
+      "title": "Inställningar för lagringstid"
+    },
+    "schedule": {
+      "completedWithCopyWarning": "Backup verified, but the configured copy failed: {{error}}",
+      "pipelineSummary": "Backup #{{id}} · integrity {{integrity}} · cleanup removed {{count}} item(s) · copy {{replica}}",
+      "timezone": "Schedule timezone",
+      "completedSuccessfully": "Slutfördes framgångsrikt",
+      "dayOfWeek": "Veckodag",
+      "dayOfWeekDesc": "Vilken dag ska den veckovisa säkerhetskopieringen köras?",
+      "days": {
+        "fri": "Fredag",
+        "mon": "Måndag",
+        "sat": "Lördag",
+        "sun": "Söndag",
+        "thu": "Torsdag",
+        "tue": "Tisdag",
+        "wed": "Onsdag"
+      },
+      "failed": "Misslyckades: {{error}}",
+      "frequency": "Säkerhetskopieringsfrekvens",
+      "frequencyDesc": "Schemalägg automatiska fullständiga säkerhetskopior (databas + filer)",
+      "lastBackup": "Senaste säkerhetskopia:",
+      "nextScheduledRun": "Nästa schemalagda körning",
+      "presets": {
+        "daily": "Dagligen",
+        "every12Hours": "Var 12:e timme",
+        "every6Hours": "Var 6:e timme"
+      },
+      "saveSchedule": "Spara schema",
+      "timeOfDay": "Tid på dygnet",
+      "timeOfDayDesc": "När ska säkerhetskopieringen köras? (24-timmarsformat)",
+      "title": "Schema för automatisk säkerhetskopiering",
+      "unknownError": "Okänt fel"
+    },
+    "subtitle": "Skapa och hantera systemsäkerhetskopior",
+    "tabs": {
+      "backups": "Säkerhetskopior"
+    },
+    "unsavedBadge": "Osparat"
+  },
+  "createUser": {
+    "autoFeatures": {
+      "editAccess": "Ursprunglig ägare behåller redigeringsåtkomst till länkade patienter",
+      "immediateLogin": "Användaren kan logga in direkt efter skapandet",
+      "linkExisting": "Använd \"Länka till befintlig patient\" för att överföra en patientpost till den nya användaren",
+      "patientRecord": "Patientpost skapas automatiskt (eller länkas till en befintlig)",
+      "timestamps": "Kontotidsstämplar ställs in automatiskt"
+    },
+    "autoFeaturesTitle": "Autogenererade funktioner",
+    "cardSubtitle": "Fyll i formuläret nedan för att skapa ett nytt användarkonto",
+    "cardTitle": "Användarkontodetaljer",
+    "emailPlaceholder": "Ange e-postadress",
+    "errors": {
+      "accountCreateFailed": "Kunde inte skapa konto",
+      "createFailed": "Kunde inte skapa användare",
+      "createRetry": "Kunde inte skapa användare. Försök igen."
+    },
+    "firstNamePlaceholder": "Ange förnamn",
+    "lastNamePlaceholder": "Ange efternamn",
+    "linkPatient": {
+      "checkbox": "Länka till befintlig patientpost",
+      "currentOwner": "Nuvarande ägare",
+      "dob": "Födelsedatum",
+      "hint": "Istället för att skapa en ny patientpost, länka den nya användaren till en befintlig patient (t.ex. ett barn som nu behöver en egen inloggning).",
+      "loading": "Laddar patienter...",
+      "owner": "Ägare",
+      "patientId": "ID",
+      "selectPlaceholder": "Välj en patient...",
+      "selfRecordBadge": "Egen journal",
+      "selfRecordWarning": "Detta är den nuvarande ägarens egen journal. En ny egen journal skapas för den ursprungliga ägaren med deras demografiska uppgifter kopierade. Den ursprungliga ägaren får redigeringsåtkomst till denna patient."
+    },
+    "noteText": "En patientpost skapas automatiskt för denna användare med standardrollen \"user\".",
+    "pageSubtitle": "Skapa ett nytt användarkonto med patientprofil",
+    "pageTitle": "Skapa ny användare",
+    "passwordPlaceholder": "Ange lösenord (minst 6 tecken, inkludera bokstav och siffra)",
+    "passwordReqs": {
+      "hasLetter": "Innehåller minst en bokstav",
+      "hasNumber": "Innehåller minst en siffra",
+      "minLength": "Minst 6 tecken"
+    },
+    "submitButton": "Skapa konto",
+    "successRedirect": "Användare \"{{username}}\" skapades framgångsrikt!",
+    "usernamePlaceholder": "Ange användarnamn",
+    "validation": {
+      "firstNameRequired": "Ange förnamnet",
+      "lastNameRequired": "Ange efternamnet",
+      "passwordMinLength": "Lösenordet måste vara minst 6 tecken långt",
+      "passwordRequirements": "Lösenordet måste innehålla minst en bokstav och en siffra",
+      "usernameMinLength": "Användarnamnet måste vara minst 3 tecken långt"
+    }
+  },
+  "dashboard": {
+    "loading": "Laddar omfattande instrumentpanel...",
+    "quickActions": {
+      "auditLogDesc": "Visa systemaktivitetslogg",
+      "backups": "Säkerhetskopior",
+      "backupsDesc": "Hantera säkerhetskopior",
+      "createUser": "Skapa ny användare",
+      "createUserDesc": "Skapa användarkonto med patientprofil",
+      "dataModelsDesc": "Visa och hantera databastabeller",
+      "manageUsers": "Hantera användare",
+      "manageUsersDesc": "Visa och hantera användarkonton",
+      "settingsDesc": "Systemkonfiguration",
+      "subtitle": "Vanliga administrativa uppgifter",
+      "systemHealthDesc": "Övervaka systemstatus",
+      "title": "Snabbåtgärder",
+      "trash": "Papperskorg",
+      "trashDesc": "Återställ raderade filer"
+    },
+    "recentActivity": {
+      "errorLoading": "Fel vid laddning av aktivitet",
+      "noActivity": "Ingen senaste aktivitet att visa",
+      "subtitle": "Senaste systemhändelser",
+      "title": "Senaste aktivitet",
+      "viewAll": "Visa all aktivitet"
+    },
+    "refreshAll": "Uppdatera allt",
+    "stats": {
+      "activePatients": "Aktiva patienter",
+      "totalUsers": "Totalt antal användare"
+    },
+    "subtitle": "Omfattande systemöversikt och hantering",
+    "systemHealth": {
+      "databaseStatus": "Databasstatus",
+      "errorLoading": "Fel vid laddning av systemhälsa",
+      "lastBackup": "Senaste säkerhetskopia",
+      "noBackup": "Ingen säkerhetskopia",
+      "subtitle": "Aktuell systemstatus",
+      "uptime": "Drifttid"
+    }
+  },
+  "dataModels": {
+    "categories": {
+      "coreMedical": "Medicinsk kärna",
+      "fileManagement": "Filhantering",
+      "healthcareDirectory": "Vårdkatalog",
+      "patientSupport": "Patientstöd",
+      "sharingAccess": "Delning och åtkomst",
+      "system": "System"
+    },
+    "clearFilter": "Rensa filter",
+    "descriptions": {
+      "allergy": "Patientallergier och reaktioner",
+      "condition": "Medicinska tillstånd och diagnoser",
+      "emergency_contact": "Kontaktuppgifter vid nödsituation för patienter",
+      "encounter": "Patientbesök och bokningar",
+      "entity_file": "Filbilagor för alla enhetstyper",
+      "family_condition": "Medicinska tillstånd hos familjemedlemmar",
+      "family_history_share": "Delningsrelationer för familjemedicinsk historik",
+      "family_member": "Familjemedlemsposter för medicinsk historik",
+      "immunization": "Vaccinationsregister och scheman",
+      "injury": "Fysiska skador, stukning, frakturer och brännskador",
+      "injury_type": "Återanvändbara skadetypsdefinitioner för rullgardinsmenyer",
+      "insurance": "Patientförsäkringsinformation",
+      "invitation": "Systeminbjudningar för delning och samarbete",
+      "lab_result": "Laboratorietestresultat och värden",
+      "lab_result_file": "Labbresultatdokument och bilagor",
+      "medical_equipment": "Medicintekniska produkter och utrustning förskrivna till patienter",
+      "medical_specialty": "Medical specialties (e.g. Cardiology) assigned to practitioners",
+      "medication": "Förskrivna mediciner och doseringar",
+      "patient": "Patientdemografi och kontaktinformation",
+      "patient_share": "Delningsrelationer av patientdata mellan användare",
+      "pharmacy": "Apoteksplatser och kontaktinformation",
+      "practice": "Medical practices — contact details and multiple locations",
+      "practitioner": "Vårdgivare och specialister",
+      "procedure": "Medicinska ingrepp och operationer",
+      "symptom": "Symtomdefinitioner och uppföljning",
+      "symptom_occurrence": "Enskilda symptomhändelseposter",
+      "treatment": "Behandlingsplaner och terapier",
+      "user": "Systemanvändare och administratörer",
+      "vitals": "Blodtryck, hjärtfrekvens, temperatur"
+    },
+    "displayNames": {
+      "medical_specialty": "Medical Specialties",
+      "practice": "Practices"
+    },
+    "fallbackWarning": "Kunde inte ladda modeller från servern. Visar inbyggd modellista.",
+    "filterAriaLabel": "Filtrera datamodeller",
+    "filterPlaceholder": "Filtrera modeller...",
+    "noMatchFilter": "Inga modeller matchar \"{{query}}\"",
+    "subtitle": "Hantera och visa alla databastabeller och poster"
+  },
+  "directoryCard": {
+    "files": "filer",
+    "mb": "MB",
+    "ok": "OK"
+  },
+  "fieldRenderer": {
+    "autoGenerated": "Autogenererat",
+    "autoPopulated": "Fylls i automatiskt från aktuell användare",
+    "computedField": "Computed from related record (read-only)",
+    "enterField": "Ange {{field}}...",
+    "enterPassword": "Ange lösenord för ny användare...",
+    "notApplicable": "Ej tillämpligt",
+    "passwordHash": "Lösenordshash (skrivskyddad av säkerhetsskäl)",
+    "passwordNote": "Ange ett lösenord i klartext (minst {{minLength}} tecken med bokstav och siffra) - det kommer att hashas säkert",
+    "passwordNotSupported": "Lösenordsfält stöds inte för denna modell",
+    "patientIdAutoPopulated": "Patient-ID (fylls i automatiskt)",
+    "patientIdLocked": "Patient-ID (låst till aktuell användare)",
+    "primaryKeyAutoGenerated": "Primärnyckel (autogenererad)",
+    "primaryKeyReadOnly": "Primärnyckel (skrivskyddad)",
+    "selectDefault": "-- Välj --",
+    "selectField": "-- Välj {{field}} --",
+    "systemTimestamp": "Systemtidsstämpel (autogenererad)"
+  },
+  "header": {
+    "administrator": "Administratör",
+    "logout": "Logga ut",
+    "returnToDashboard": "Tillbaka till instrumentpanelen",
+    "searchAriaLabel": "Sök datamodeller",
+    "searchPlaceholder": "Sök journaler, användare eller data...",
+    "switchToMode": "Växla till {{mode}}-läge",
+    "title": "HealthBox · Administration av medicinska journaler"
+  },
+  "health": {
+    "applicationUptime": "Applikationens drifttid",
+    "database": {
+      "activeUsers": "Aktiva användare",
+      "connectionStatus": "Anslutningsstatus",
+      "connectionTest": "Anslutningstest",
+      "databaseSize": "Databasstorlek",
+      "failed": "Misslyckades",
+      "passed": "Godkänd",
+      "patientRecords": "Patientposter",
+      "title": "Databashälsa"
+    },
+    "lastBackup": "Senaste säkerhetskopia",
+    "lastRunFailed": "Senaste körningen misslyckades",
+    "lastUpdated": "Senast uppdaterad: {{time}}",
+    "loading": "Laddar systemhälsa...",
+    "next": "Nästa: {{time}}",
+    "noneYet": "Ingen ännu",
+    "noScheduleConfigured": "Inget schema konfigurerat",
+    "overallStatus": "Övergripande systemstatus",
+    "performance": {
+      "appMemory": "Appminne (RSS)",
+      "cpuDetails": "App: {{appPercent}}% av {{cores}} kärnor (system: {{systemPercent}}%)",
+      "cpuUsage": "CPU-användning",
+      "memoryUsage": "Minnesanvändning",
+      "memoryUsed": "{{used}} MB använt (system: {{percent}}% av {{total}} MB)",
+      "responseTime": "Svarstid",
+      "systemLoad": "Systembelastning",
+      "title": "Applikationsprestanda"
+    },
+    "scheduled": "Schemalagd: {{schedule}}",
+    "schedulePresets": {
+      "daily": "Dagligen",
+      "every_12_hours": "Var 12:e timme",
+      "every_6_hours": "Var 6:e timme"
+    },
+    "services": {
+      "adminInterface": "Administrationsgränssnitt",
+      "apiStatus": "API-status",
+      "authService": "Autentiseringstjänst",
+      "frontendLogging": "Frontend-loggning",
+      "title": "Applikationstjänster"
+    },
+    "sso": {
+      "allowed": "Tillåten",
+      "blocked": "Blockerad",
+      "passwordOnlyInfo": "Användare kan bara logga in med användarnamn/lösenord",
+      "providerType": "Leverantörstyp",
+      "registrationViaSso": "Registrering via SSO",
+      "ssoStatus": "SSO-status",
+      "title": "Enkel inloggning (SSO)"
+    },
+    "storage": {
+      "appStorage": "Applagring",
+      "diskUsage": "Diskanvändning",
+      "freeOf": "{{free}} GB ledigt av {{total}} GB",
+      "title": "Lagringshälsa"
+    },
+    "subtitle": "Systemstatus och prestandamått i realtid",
+    "title": "Systemhälsoövervakning"
+  },
+  "medicalSpecialty": {
+    "description": "Description",
+    "name": "Name"
+  },
+  "models": {
+    "backToDataModels": "Tillbaka till datamodeller",
+    "backToModel": "Tillbaka till {{modelName}}",
+    "bulkDeleteAssociated": "All tillhörande data (inklusive {{types}}) kommer också att raderas.",
+    "bulkDeleteFailed": "Massradering misslyckades",
+    "bulkDeleteWarning": "Du håller på att permanent radera {{count}} {{modelName}}-poster.",
+    "bulkDeleteWarning_one": "Du håller på att permanent radera {{count}} {{modelName}}-post.",
+    "bulkDeleteWarning_other": "Du håller på att permanent radera {{count}} {{modelName}}-poster.",
+    "changeRole": "Ändra roll",
+    "changesSaved": "Ändringar sparade",
+    "changeUsername": "Ändra användarnamn",
+    "clearSearch": "Rensa sökning",
+    "columnVisibility": "Kolumnsynlighet",
+    "confirmBulkDeletion": "Bekräfta massradering",
+    "confirmDeletion": "Bekräfta radering",
+    "createNew": "Skapa ny {{modelName}}",
+    "createRecord": "Skapa post",
+    "deleteFailed": "Radering misslyckades",
+    "deleteRecords": "Radera {{count}} poster",
+    "deleteRecords_one": "Radera {{count}} post",
+    "deleteRecords_other": "Radera {{count}} poster",
+    "deleteSelected": "Radera markerade",
+    "deleteWarning": "Detta kommer permanent att radera denna {{modelName}}-post och all tillhörande data:",
+    "editRecord": "Redigera {{modelName}}",
+    "exportFailed": "Export misslyckades",
+    "exportToCSV": "Exportera till CSV",
+    "failedToBulkDelete": "Kunde inte radera poster",
+    "failedToDelete": "Kunde inte radera post",
+    "failedToExport": "Kunde inte exportera data",
+    "failedToGetPatient": "Kunde inte hämta patientinformation. Se till att du har en patientpost.",
+    "failedToSave": "Kunde inte spara post",
+    "fieldMaxLength": "Maxlängd: {{length}}",
+    "fieldReferences": "Refererar till: {{reference}}",
+    "fieldRequired": "Obligatorisk",
+    "fieldType": "Typ: {{type}}",
+    "fillForm": "Fyll i formuläret nedan för att skapa en ny post",
+    "loadingForm": "Laddar formulär för att skapa modell...",
+    "noRecordsFound": "Inga poster hittades",
+    "perPage": "{{count}} per sida",
+    "perPage_one": "{{count}} per sida",
+    "perPage_other": "{{count}} per sida",
+    "rawDataJson": "Rådata (JSON)",
+    "recordDeleted": "Post raderad",
+    "recordDeletedMessage": "Raderade {{modelName}}-post #{{id}}",
+    "recordId": "Post-ID: {{id}}",
+    "recordsDeleted": "Poster raderade",
+    "recordsDeletedMessage": "{{count}} poster har raderats",
+    "recordsDeletedMessage_one": "{{count}} post har raderats",
+    "recordsDeletedMessage_other": "{{count}} poster har raderats",
+    "recordUpdated": "Posten har uppdaterats",
+    "resetToDefault": "Återställ till standard",
+    "roleChangeLastAdmin": "Om detta är den sista administratören i systemet kan du förlora adminåtkomst.",
+    "roleChangeText": "Du är på väg att ta bort adminbehörigheter från denna användare.",
+    "roleChangeWarning": "Varning om rolländring",
+    "saveFailed": "Sparning misslyckades",
+    "searchPlaceholder": "Sök {{modelName}}...",
+    "searchRecords": "Sök poster",
+    "searchResult": "{{count}} resultat för \"{{query}}\"",
+    "searchResult_one": "{{count}} resultat för \"{{query}}\"",
+    "searchResult_other": "{{count}} resultat för \"{{query}}\"",
+    "selected": "{{count}} markerade",
+    "selected_one": "{{count}} markerad",
+    "selected_other": "{{count}} markerade",
+    "toggleColumnVisibility": "Växla kolumnsynlighet",
+    "typeDeleteToConfirm": "Skriv <strong>RADERA</strong> för att bekräfta",
+    "usernameChangeLogout": "Detta loggar ut dig omedelbart och du måste logga in igen med det nya användarnamnet.",
+    "usernameChangeText": "Du är på väg att ändra ditt eget användarnamn från <strong>\"{{oldUsername}}\"</strong> till <strong>\"{{newUsername}}\"</strong>.",
+    "usernameChangeWarning": "Varning om ändring av användarnamn",
+    "usernameUpdated": "Användarnamn uppdaterat",
+    "usernameUpdatedMessage": "Ditt användarnamn har ändrats. Logga in med ditt nya användarnamn: \"{{username}}\"",
+    "viewRecord": "Visa {{modelName}}",
+    "visibleColumns": "Synliga kolumner"
+  },
+  "practices": {
+    "locations": {
+      "add": "Add location",
+      "empty": "No locations yet.",
+      "labelField": "Label",
+      "labelPlaceholder": "Main office",
+      "locationNumber": "Location {{num}}",
+      "moveDown": "Move down",
+      "moveUp": "Move up",
+      "title": "Locations"
+    },
+    "subtitle": "Manage medical practices — contact details, locations, and more.",
+    "title": "Practices"
+  },
+  "practitioner": {
+    "quickAddSpecialty": "Add new specialty",
+    "specialtyPlaceholder": "Select a specialty",
+    "specialtySaved": "Specialty ready to use"
+  },
+  "settings": {
+    "dataRetention": {
+      "title": "Datalagring",
+      "trashRetention": "Lagringstid för papperskorg",
+      "trashRetentionDesc": "Antal dagar som raderade filer behålls i papperskorgen innan permanent radering"
+    },
+    "loading": "Laddar inställningar...",
+    "resetAll": "Återställ allt",
+    "saveAllChanges": "Spara alla ändringar",
+    "sso": {
+      "ssoDisabledInfo": "SSO är för närvarande inaktiverat. För att aktivera SSO, konfigurera följande miljövariabler och starta om applikationen:",
+      "ssoRegistration": "SSO-registrering",
+      "testConnection": "Testa anslutning",
+      "testConnectionDesc": "Testa SSO-leverantörens anslutning och konfiguration",
+      "testSsoConnection": "Testa SSO-anslutning",
+      "title": "Enkel inloggning (SSO)"
+    },
+    "subtitle": "Konfigurera systemövergripande inställningar och lagringspolicyer",
+    "title": "Admininställningar",
+    "userManagement": {
+      "allowRegistration": "Tillåt registrering av nya användare",
+      "allowRegistrationDesc": "Aktivera eller inaktivera möjligheten för nya användare att skapa konton från inloggningssidan"
+    }
+  },
+  "shared": {
+    "dark": "mörkt",
+    "healthy": "hälsosam",
+    "info": "Info",
+    "light": "ljust"
+  },
+  "sidebar": {
+    "adminNavigation": "Adminnavigering",
+    "comingSoon": "{{label}} (Kommer snart)",
+    "items": {
+      "analytics": "Analys",
+      "maintenance": "Underhåll",
+      "trash": "Papperskorg"
+    },
+    "sections": {
+      "dataManagement": "Datahantering",
+      "monitoring": "Övervakning",
+      "tools": "Verktyg"
+    },
+    "toggleSidebar": "Visa/dölj sidofält"
+  },
+  "tools": {
+    "subtitle": "Administrativa verktyg för systemunderhåll och datahantering",
+    "testLibrary": {
+      "categories": "Kategorier",
+      "forceSyncAll": "Tvinga synka alla",
+      "forceSyncAllDesc": "<strong>Tvinga synka alla:</strong> Matchar om alla komponenter (kategorier och kanoniska namn)",
+      "libraryReloaded": "Bibliotek omladdat",
+      "libraryVersion": "Biblioteksversion",
+      "operational": "I drift",
+      "reloadDesc": "<strong>Ladda om bibliotek:</strong> Uppdaterar testbiblioteket från disk (använd efter uppdatering av test_library.json)",
+      "reloadLibrary": "Ladda om bibliotek",
+      "syncComplete": "Synkronisering slutförd",
+      "syncUnmatched": "Synka omatchade",
+      "syncUnmatchedDesc": "<strong>Synka omatchade:</strong> Uppdaterar komponenter som ännu inte har ett kanoniskt namn",
+      "title": "Underhåll av testbibliotek",
+      "totalTests": "Totalt antal tester"
+    },
+    "title": "Verktyg och underhåll"
+  },
+  "trash": {
+    "clearFilters": "Rensa filter",
+    "deleteConfirm": "Är du säker på att du vill permanent radera <strong>{{filename}}</strong>?",
+    "deletedDateRange": "Datumintervall för radering",
+    "deleteFailed": "Radering misslyckades",
+    "deletePermanently": "Radera permanent",
+    "deleteWarning": "Denna åtgärd kan inte ångras. Filen kommer att tas bort permanent från systemet.",
+    "errorLoading": "Fel vid laddning av papperskorgen",
+    "fileCount_one": "{{count}} fil",
+    "fileCount_other": "{{count}} filer",
+    "fileDeleted": "Fil raderad",
+    "fileDeletedMessage": "{{filename}} permanent raderad",
+    "fileRestored": "Fil återställd",
+    "fileRestoredMessage": "{{filename}} återställd till ursprunglig plats",
+    "fileType": "Filtyp",
+    "filterByDeletedDate": "Filtrera efter raderingsdatum",
+    "filterByFileType": "Filtrera efter filtyp",
+    "filtered": "(filtrerat)",
+    "loading": "Laddar papperskorgens innehåll...",
+    "manualDeletion": "Manuell radering",
+    "noFilesInTrash": "Inga filer i papperskorgen",
+    "noFilesMatch": "Inga filer matchar dina filter",
+    "permanentlyDelete": "Radera permanent",
+    "permanentlyDeleteFile": "Radera fil permanent",
+    "purgedDirectories_one": "i {{count}} katalog",
+    "purgedDirectories_other": "i {{count}} kataloger",
+    "purgeDescription_one": "Filer som överskridit lagringstiden kommer att tas bort. För närvarande finns det <strong>{{count}} {{files}}</strong> i papperskorgen med en total storlek på <strong>{{size}}</strong>.",
+    "purgeDescription_other": "Filer som överskridit lagringstiden kommer att tas bort. För närvarande finns det <strong>{{count}} {{files}}</strong> i papperskorgen med en total storlek på <strong>{{size}}</strong>.",
+    "purgedMessage_one": "{{count}} utgången fil permanent raderad",
+    "purgedMessage_other": "{{count}} utgångna filer permanent raderade",
+    "purgeExpired": "Rensa utgångna",
+    "purgeExpiredButton": "Rensa utgångna",
+    "purgeExpiredFiles": "Rensa utgångna filer",
+    "purgeFailed": "Rensning misslyckades",
+    "purgeWarning": "Detta kommer permanent att radera alla utgångna filer från papperskorgen. Denna åtgärd kan inte ångras.",
+    "restoreConfirm": "Är du säker på att du vill återställa <strong>{{filename}}</strong>",
+    "restoreFailed": "Återställning misslyckades",
+    "restoreFile": "Återställ fil",
+    "restoreTo": "till",
+    "restoreToOriginal": "Återställ till ursprunglig plats",
+    "searchAriaLabel": "Sök filer i papperskorgen",
+    "searchPlaceholder": "Sök efter filnamn eller sökväg...",
+    "showingFiltered": "Visar {{shown}} av {{total}} {{files}}",
+    "subtitle": "Hantera raderade uppladdade filer. Återställ filer till deras ursprungliga plats eller ta bort dem permanent för att frigöra lagringsutrymme.",
+    "tableHeaders": {
+      "actions": "Åtgärder",
+      "deleted": "Raderad",
+      "filename": "Filnamn",
+      "originalLocation": "Ursprunglig plats",
+      "reason": "Anledning",
+      "size": "Storlek"
+    },
+    "title": "Papperskorgshantering",
+    "totalSize": "{{size}} totalt",
+    "trashPurged": "Papperskorg rensad"
+  },
+  "users": {
+    "actionsFor": "Åtgärder för {{username}}",
+    "activate": "Aktivera",
+    "authFilter": {
+      "all": "Alla autentiseringsmetoder",
+      "hybrid": "Hybrid",
+      "local": "Lokal",
+      "sso": "SSO"
+    },
+    "changeRole": "Ändra roll",
+    "clear": "Rensa",
+    "deactivate": "Inaktivera",
+    "deleteModal": {
+      "cannotDeleteLastAdmin": "Kan inte radera den sista administratören.",
+      "cannotDeleteSelf": "Du kan inte radera ditt eget konto.",
+      "title": "Radera användare",
+      "typeUsername": "Skriv \"{{username}}\" för att bekräfta",
+      "warning": "Denna åtgärd kan inte ångras. All data kopplad till denna användare kommer att raderas permanent."
+    },
+    "deleteUser": "Radera användare",
+    "justNow": "Just nu",
+    "loginHistory": "Inloggningshistorik",
+    "loginHistoryModal": {
+      "dateTime": "Datum och tid",
+      "ipAddress": "IP-adress",
+      "noHistory": "Ingen inloggningshistorik hittades",
+      "notAvailable": "Ej tillgänglig",
+      "title": "Inloggningshistorik: {{username}}"
+    },
+    "never": "Aldrig",
+    "noUsersFound": "Inga användare hittades",
+    "noUsersInSystem": "Inga användare i systemet.",
+    "noUsersMatchFilters": "Inga användare matchar dina filter. Försök justera eller rensa filter.",
+    "passwordModal": {
+      "bothFieldsRequired": "Båda lösenordsfälten måste fyllas i",
+      "confirmPlaceholder": "Bekräfta nytt lösenord",
+      "enterNewPassword": "Ange nytt lösenord",
+      "forceChange": "Tvinga lösenordsbyte vid nästa inloggning",
+      "immediateReset": "Detta återställer omedelbart användarens lösenord. De måste använda det nya lösenordet för att logga in.",
+      "newPassword": "Nytt lösenord",
+      "passwordDescription": "Minst 6 tecken, minst 1 bokstav och 1 siffra",
+      "passwordsDoNotMatch": "Lösenorden stämmer inte överens",
+      "resetFailed": "Kunde inte återställa lösenord. Försök igen.",
+      "resetSuccess": "Lösenord återställt för {{username}}!",
+      "resettingFor": "Återställ lösenord för <strong>{{username}}</strong>",
+      "ssoWarning": "Denna användare autentiseras via SSO ({{provider}}). Att ange ett lokalt lösenord möjliggör hybridautentisering.",
+      "title": "Återställ lösenord för {{username}}",
+      "userInfo": "Användare: {{username}} (ID: {{userId}})"
+    },
+    "roleFilter": {
+      "all": "Alla roller"
+    },
+    "roleModal": {
+      "cannotRemoveLastAdmin": "Kan inte ta bort den sista administratörsrollen.",
+      "changingRole": "Ändrar roll för <strong>{{username}}</strong>",
+      "grantAdmin": "Detta ger fullständiga administratörsbehörigheter.",
+      "revokeAdmin": "Detta tar bort administratörsbehörigheter.",
+      "title": "Ändra användarroll"
+    },
+    "searchPlaceholder": "Sök användare...",
+    "statusFilter": {
+      "all": "Alla statusar"
+    },
+    "tableHeaders": {
+      "auth": "Autentisering",
+      "lastLogin": "Senaste inloggning"
+    },
+    "toggleActiveModal": {
+      "activateConfirm": "Aktivera \"{{username}}\"? De kommer att kunna logga in igen.",
+      "activateTitle": "Aktivera användare",
+      "cannotDeactivateLastAdmin": "Kan inte inaktivera den sista administratören.",
+      "cannotDeactivateSelf": "Du kan inte inaktivera ditt eget konto.",
+      "deactivateConfirm": "Inaktivera \"{{username}}\"? De kommer inte att kunna logga in förrän kontot återaktiveras.",
+      "deactivateTitle": "Inaktivera användare"
+    },
+    "userCount": "{{count}} användare",
+    "userCount_one": "{{count}} användare",
+    "userCount_other": "{{count}} användare"
+  }
+}

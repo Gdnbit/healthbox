@@ -1,0 +1,13 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+# Legacy manual entry point; every branch is validated by docker-image.yml.
+name: HealthBox Container Validation (Manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/docker-image.yml

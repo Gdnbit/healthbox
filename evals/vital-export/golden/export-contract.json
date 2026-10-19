@@ -1,0 +1,13 @@
+{
+  "fileStem": "health-vital-blood-pressure-20260722T060000Z",
+  "mode": "comparison",
+  "dualSeries": true,
+  "visualExportAllowed": true,
+  "observationOrder": [901, 902, 903],
+  "primaryValues": [118, 121, 123],
+  "secondaryValues": [76, 79, 81],
+  "unit": "mmHg",
+  "csv": {"bom": true, "includesAllRecordIds": true, "formulaSafe": true},
+  "svg": {"title": true, "description": true, "twoSeries": true, "fullRecordTable": true, "externalUrls": false},
+  "boundary": "stored records only; not a diagnosis"
+}

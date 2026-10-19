@@ -1,0 +1,22 @@
+/* Conditions Page Specific Styles */
+/* These styles are specific to the Conditions page and complement the shared MedicalPageShared.css */
+
+/* Page-specific status badge colors moved to components/medical/StatusBadge.css */
+
+/* Conditions-specific animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.success-message {
+  animation: slideIn 0.3s ease;
+}
+
+/* Additional mobile responsive tweaks specific to conditions */

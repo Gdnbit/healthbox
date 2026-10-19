@@ -1,0 +1,114 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "alert": {
+    "errorCount": "{{count}} Błąd",
+    "errorCount_one": "{{count}} Błąd",
+    "errorCount_other": "{{count}} Błędów",
+    "formError": "Błąd formularza",
+    "highPriority": "{{count}} wysokiej ważności",
+    "highPriority_one": "{{count}} wysokiej ważności",
+    "highPriority_other": "{{count}} wysokiej ważności",
+    "suggestions": "Sugestie:"
+  },
+  "boundary": {
+    "componentLabel": "Komponent:",
+    "errorDetails": "Szczegóły błędu",
+    "errorIdLabel": "ID błędu:",
+    "errorLogged": "Błąd został automatycznie zarejestrowany do dalszej analizy.",
+    "reloadPage": "Przeładuj stronę",
+    "somethingWentWrong": "Coś poszło nie tak",
+    "tryAgain": "Spróbuj ponownie",
+    "unexpectedError": "Przepraszamy, ale wystąpiło coś nieoczekiwanego w systemie dokumentacji medycznej."
+  },
+  "file": {
+    "deleteFailed": "Nie udało się usunąć pliku. Proszę spróbować ponownie.",
+    "downloadFailed": "Nie udało się pobrać pliku. Proszę spróbować ponownie.",
+    "notFound": "Nie znaleziono pliku.",
+    "viewFailed": "Nie udało się otworzyć pliku do podglądu. Proszę spróbować ponownie."
+  },
+  "form": {
+    "conditionNotSelected": "Proszę wybrać schorzenie",
+    "entityNotFound": "Żądany element nie został znaleziony.",
+    "equipmentFieldsRequired": "Nazwa i typ sprzętu są wymagane",
+    "equipmentNotSelected": "Proszę wybrać co najmniej jeden sprzęt",
+    "invalidDate": "Proszę podać prawidłową datę.",
+    "invalidEmail": "Proszę podać prawidłowy adres e-mail.",
+    "invalidPhone": "Proszę podać prawidłowy numer telefonu.",
+    "invalidPhoneDigits": "Proszę podać prawidłowy numer telefonu",
+    "invalidWebsiteUrl": "Proszę podać prawidłowy adres URL strony internetowej",
+    "labResultNotSelected": "Please select at least one lab result",
+    "medicationNotSelected": "Proszę wybrać lek",
+    "mustBeValidNumber": "Musi być prawidłową liczbą",
+    "patientNotSelected": "Proszę wybrać pacjenta.",
+    "requiredFieldMissing": "Proszę wypełnić wszystkie wymagane pola.",
+    "submissionFailed": "Nie udało się zapisać formularza. Proszę sprawdzić wprowadzone dane i spróbować ponownie."
+  },
+  "general": {
+    "maintenanceMode": "System jest obecnie w trakcie konserwacji. Proszę spróbować ponownie później.",
+    "permissionDenied": "Nie masz uprawnień do wykonania tej akcji.",
+    "rateLimitExceeded": "Zbyt wiele żądań. Proszę poczekać chwilę i spróbować ponownie.",
+    "sessionExpired": "Twoja sesja wygasła. Proszę zalogować się ponownie.",
+    "storageFull": "Osiągnięto limit pamięci. Proszę zwolnić miejsce i spróbować ponownie.",
+    "unknownError": "Wystąpił nieoczekiwany błąd. Proszę spróbować ponownie.",
+    "validationError": "Proszę sprawdzić wprowadzone dane i spróbować ponownie."
+  },
+  "network": {
+    "connectionError": "Błąd połączenia. Proszę sprawdzić sieć i spróbować ponownie.",
+    "serverError": "Wystąpił błąd serwera. Proszę spróbować ponownie później.",
+    "timeout": "Upłynął limit czasu żądania. Proszę spróbować ponownie.",
+    "unavailable": "Sieć niedostępna. Proszę sprawdzić połączenie."
+  },
+  "paperless": {
+    "authFailed": "Uwierzytelnianie z usługą Paperless nie powiodło się. Proszę sprawdzić dane uwierzytelniające.",
+    "configIncomplete": "Konfiguracja Paperless jest niekompletna. Proszę sprawdzić ustawienia.",
+    "connectionFailed": "Nie można połączyć się z usługą Paperless. Proszę sprawdzić konfigurację.",
+    "duplicateDocument": "Ten dokument już istnieje w systemie Paperless. Identyczne dokumenty nie mogą być przesyłane dwukrotnie.",
+    "notEnabled": "Integracja z Paperless nie jest włączona. Proszę włączyć ją w ustawieniach.",
+    "taskFailed": "Przesyłanie dokumentu do systemu Paperless nie powiodło się. Proszę spróbować ponownie lub skontaktować się z pomocą techniczną.",
+    "taskTimeout": "Przetwarzanie dokumentu przekroczyło limit czasu. Dokument może być nadal przetwarzany w systemie Paperless.",
+    "unavailable": "Usługa zarządzania dokumentami jest obecnie niedostępna.",
+    "uploadFailed": "Nie udało się przesłać do systemu zarządzania dokumentami Paperless."
+  },
+  "patientForm": {
+    "birthDateFuture": "Data urodzenia nie może być w przyszłości",
+    "birthDateRequired": "Data urodzenia jest wymagana",
+    "createFailed": "Tworzenie nie powiodło się: {{message}}",
+    "firstNameRequired": "Imię jest wymagane",
+    "lastNameRequired": "Nazwisko jest wymagane",
+    "updateFailed": "Aktualizacja nie powiodła się: {{message}}"
+  },
+  "patientNotAvailable": "Informacje o pacjencie niedostępne",
+  "relationships": {
+    "addConditionFailed": "Nie udało się dodać powiązania ze schorzeniem",
+    "addFailed": "Nie udało się dodać powiązania",
+    "addMedicationFailed": "Nie udało się dodać powiązania z lekiem",
+    "deleteFailed": "Nie udało się usunąć powiązania",
+    "fetchFailed": "Nie udało się załadować powiązań",
+    "updateFailed": "Nie udało się zaktualizować powiązania"
+  },
+  "success": {
+    "batchUploadSuccess": "Wszystkie pliki zostały przesłane pomyślnie!",
+    "fileDeleted": "Plik został usunięty pomyślnie.",
+    "formSaved": "Formularz został zapisany pomyślnie!",
+    "paperlessSyncSuccess": "Pomyślnie zsynchronizowano z systemem zarządzania dokumentami Paperless.",
+    "uploadMultipleSuccess": "Wszystkie pliki zostały przesłane pomyślnie!",
+    "uploadSuccess": "Plik został przesłany pomyślnie!"
+  },
+  "upload": {
+    "allUploadsFailed": "Przesyłanie wszystkich plików nie powiodło się. Proszę sprawdzić połączenie i spróbować ponownie.",
+    "batchUploadFailed": "Niektóre pliki nie zostały przesłane. Proszę sprawdzić błędy poszczególnych plików.",
+    "connectionError": "Błąd połączenia. Proszę sprawdzić sieć i spróbować ponownie.",
+    "duplicateFile": "Ten plik został już przesłany.",
+    "failed": "Nie udało się przesłać pliku. Proszę spróbować ponownie.",
+    "fileProcessingFailed": "Nie udało się przetworzyć pliku. Proszę spróbować z innym plikiem.",
+    "fileTooLarge": "Rozmiar pliku przekracza maksymalny limit.",
+    "invalidFileType": "Typ pliku nie jest obsługiwany.",
+    "partialUploadSuccess": "Przesyłanie zostało zakończone z pewnymi błędami. Proszę przejrzeć pliki, których przesłanie się nie powiodło."
+  },
+  "warnings": {
+    "duplicateWarning": "Ten plik wydaje się być duplikatem.",
+    "largeFileWarning": "Wykryto duży plik. Przesyłanie może potrwać kilka minut.",
+    "partialSuccess": "Operacja została zakończona z pewnymi ostrzeżeniami.",
+    "slowConnection": "Przesyłanie trwa dłużej niż zwykle z powodu wolnego połączenia."
+  }
+}

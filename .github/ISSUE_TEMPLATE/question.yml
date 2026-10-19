@@ -1,0 +1,40 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+name: Question
+description: Ask a question about using or configuring HealthBox
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before asking, please take a moment to check the README, documentation, and existing issues — the answer might already be there.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What are you trying to figure out?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you already tried or checked?
+      description: Docs you've read, settings you've tried, related issues you've seen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: HealthBox revision and a generic setup description. Use fabricated examples only; no reports, patient screenshots, credentials, private hostnames or production logs.
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Acknowledgements
+      options:
+        - label: I searched the README, docs, and existing issues before asking.
+          required: true

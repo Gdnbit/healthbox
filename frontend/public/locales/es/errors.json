@@ -1,0 +1,114 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "alert": {
+    "errorCount": "{{count}} Error",
+    "errorCount_one": "{{count}} Error",
+    "errorCount_other": "{{count}} Errores",
+    "formError": "Error de Formulario",
+    "highPriority": "{{count}} alta prioridad",
+    "highPriority_one": "{{count}} alta prioridad",
+    "highPriority_other": "{{count}} alta prioridad",
+    "suggestions": "Sugerencias:"
+  },
+  "boundary": {
+    "componentLabel": "Componente:",
+    "errorDetails": "Detalles del error",
+    "errorIdLabel": "ID del error:",
+    "errorLogged": "El error ha sido registrado automáticamente para su investigación.",
+    "reloadPage": "Recargar página",
+    "somethingWentWrong": "Algo salió mal",
+    "tryAgain": "Intentar de nuevo",
+    "unexpectedError": "Lo sentimos, pero ocurrió algo inesperado en el sistema de registros médicos."
+  },
+  "file": {
+    "deleteFailed": "Error al eliminar el archivo. Por favor, inténtelo de nuevo.",
+    "downloadFailed": "Error al descargar el archivo. Por favor, inténtelo de nuevo.",
+    "notFound": "Archivo no encontrado.",
+    "viewFailed": "Error al abrir el archivo para visualizarlo. Por favor, inténtelo de nuevo."
+  },
+  "form": {
+    "conditionNotSelected": "Por favor, seleccione una condición",
+    "entityNotFound": "El elemento solicitado no se pudo encontrar.",
+    "equipmentFieldsRequired": "El nombre y tipo de equipo son obligatorios",
+    "equipmentNotSelected": "Por favor, seleccione al menos un equipo",
+    "invalidDate": "Por favor, introduzca una fecha válida.",
+    "invalidEmail": "Por favor, introduzca una dirección de correo electrónico válida.",
+    "invalidPhone": "Por favor, introduzca un número de teléfono válido.",
+    "invalidPhoneDigits": "Por favor, introduzca un número de teléfono válido",
+    "invalidWebsiteUrl": "Por favor, introduzca una URL de sitio web válida",
+    "labResultNotSelected": "Please select at least one lab result",
+    "medicationNotSelected": "Por favor, seleccione un medicamento",
+    "mustBeValidNumber": "Debe ser un número válido",
+    "patientNotSelected": "Por favor, seleccione un paciente.",
+    "requiredFieldMissing": "Por favor, complete todos los campos obligatorios.",
+    "submissionFailed": "Error al guardar el formulario. Por favor, verifique su entrada y vuelva a intentarlo."
+  },
+  "general": {
+    "maintenanceMode": "El sistema está actualmente en mantenimiento. Por favor, inténtelo de nuevo más tarde.",
+    "permissionDenied": "No tiene permiso para realizar esta acción.",
+    "rateLimitExceeded": "Demasiadas solicitudes. Por favor, espere un momento y vuelva a intentarlo.",
+    "sessionExpired": "Su sesión ha expirado. Por favor, vuelva a iniciar sesión.",
+    "storageFull": "Límite de almacenamiento alcanzado. Por favor, libere espacio y vuelva a intentarlo.",
+    "unknownError": "Se produjo un error inesperado. Por favor, inténtelo de nuevo.",
+    "validationError": "Por favor, verifique su entrada y vuelva a intentarlo."
+  },
+  "network": {
+    "connectionError": "Error de conexión. Por favor, verifique su red e inténtelo de nuevo.",
+    "serverError": "Se produjo un error en el servidor. Por favor, inténtelo de nuevo más tarde.",
+    "timeout": "Solicitud expirada. Por favor, inténtelo de nuevo.",
+    "unavailable": "Red no disponible. Por favor, verifique su conexión."
+  },
+  "paperless": {
+    "authFailed": "Error de autenticación con el servicio Paperless. Por favor, verifique las credenciales.",
+    "configIncomplete": "La configuración de Paperless está incompleta. Por favor, verifique sus ajustes.",
+    "connectionFailed": "No se puede conectar al servicio Paperless. Por favor, verifique la configuración.",
+    "duplicateDocument": "Este documento ya existe en Paperless. Los documentos idénticos no pueden subirse dos veces.",
+    "notEnabled": "La integración con Paperless no está habilitada. Por favor, habilítela en Configuración.",
+    "taskFailed": "Error al subir el documento a Paperless. Por favor, inténtelo de nuevo o contacte con soporte.",
+    "taskTimeout": "Tiempo de procesamiento del documento agotado. Es posible que el documento aún se esté procesando en Paperless.",
+    "unavailable": "El servicio de gestión de documentos no está disponible actualmente.",
+    "uploadFailed": "Error al subir al sistema de gestión de documentos Paperless."
+  },
+  "patientForm": {
+    "birthDateFuture": "La fecha de nacimiento no puede ser en el futuro",
+    "birthDateRequired": "La fecha de nacimiento es obligatoria",
+    "createFailed": "Error de creación: {{message}}",
+    "firstNameRequired": "El nombre es obligatorio",
+    "lastNameRequired": "El apellido es obligatorio",
+    "updateFailed": "Error de actualización: {{message}}"
+  },
+  "patientNotAvailable": "Información del paciente no disponible",
+  "relationships": {
+    "addConditionFailed": "Error al agregar la relación de condición",
+    "addFailed": "Error al agregar la relación",
+    "addMedicationFailed": "Error al agregar la relación de medicamento",
+    "deleteFailed": "Error al eliminar la relación",
+    "fetchFailed": "Error al cargar las relaciones",
+    "updateFailed": "Error al actualizar la relación"
+  },
+  "success": {
+    "batchUploadSuccess": "¡Todos los archivos se subieron exitosamente!",
+    "fileDeleted": "Archivo eliminado exitosamente.",
+    "formSaved": "¡Formulario guardado exitosamente!",
+    "paperlessSyncSuccess": "Sincronización exitosa con la gestión de documentos Paperless.",
+    "uploadMultipleSuccess": "¡Todos los archivos se subieron exitosamente!",
+    "uploadSuccess": "¡Archivo subido exitosamente!"
+  },
+  "upload": {
+    "allUploadsFailed": "Todas las subidas de archivos fallaron. Por favor, verifique su conexión y vuelva a intentarlo.",
+    "batchUploadFailed": "Algunos archivos no se pudieron subir. Por favor, revise los errores de archivos individuales.",
+    "connectionError": "Error de conexión. Por favor, verifique su red e inténtelo de nuevo.",
+    "duplicateFile": "Este archivo ya ha sido subido.",
+    "failed": "Error al subir el archivo. Por favor, inténtelo de nuevo.",
+    "fileProcessingFailed": "Error al procesar el archivo. Por favor, intente con un archivo diferente.",
+    "fileTooLarge": "El tamaño del archivo excede el límite máximo.",
+    "invalidFileType": "Tipo de archivo no compatible.",
+    "partialUploadSuccess": "Subida completada con algunos errores. Por favor, revise los archivos que fallaron."
+  },
+  "warnings": {
+    "duplicateWarning": "Este archivo parece ser un duplicado.",
+    "largeFileWarning": "Archivo grande detectado. La subida puede tardar varios minutos.",
+    "partialSuccess": "Operación completada con algunas advertencias.",
+    "slowConnection": "La subida está tardando más de lo usual debido a una conexión lenta."
+  }
+}

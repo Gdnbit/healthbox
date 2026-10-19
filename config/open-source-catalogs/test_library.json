@@ -1,0 +1,21 @@
+{
+  "version": "healthbox-starter-1",
+  "lastUpdated": "2026-10-19",
+  "_source": "Original minimal HealthBox starter list of common measurement labels. No standard codes, clinical thresholds or patient observations.",
+  "_license": "Apache-2.0",
+  "tests": [
+    {"test_name":"Glucose","abbreviation":"GLU","category":"chemistry","common_names":["血糖"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":1},
+    {"test_name":"Total Cholesterol","abbreviation":"TC","category":"lipids","common_names":["总胆固醇"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":2},
+    {"test_name":"Triglycerides","abbreviation":"TG","category":"lipids","common_names":["甘油三酯"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":3},
+    {"test_name":"HDL Cholesterol","abbreviation":"HDL-C","category":"lipids","common_names":["高密度脂蛋白胆固醇"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":4},
+    {"test_name":"LDL Cholesterol","abbreviation":"LDL-C","category":"lipids","common_names":["低密度脂蛋白胆固醇"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":5},
+    {"test_name":"Hemoglobin","abbreviation":"HGB","category":"hematology","common_names":["血红蛋白"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":6},
+    {"test_name":"White Blood Cell Count","abbreviation":"WBC","category":"hematology","common_names":["白细胞计数"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":7},
+    {"test_name":"Red Blood Cell Count","abbreviation":"RBC","category":"hematology","common_names":["红细胞计数"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":8},
+    {"test_name":"Platelet Count","abbreviation":"PLT","category":"hematology","common_names":["血小板计数"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":9},
+    {"test_name":"Alanine Aminotransferase","abbreviation":"ALT","category":"hepatology","common_names":["丙氨酸氨基转移酶"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":10},
+    {"test_name":"Aspartate Aminotransferase","abbreviation":"AST","category":"hepatology","common_names":["天门冬氨酸氨基转移酶"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":11},
+    {"test_name":"Creatinine","abbreviation":"CREA","category":"chemistry","common_names":["肌酐"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":12},
+    {"test_name":"Uric Acid","abbreviation":"UA","category":"chemistry","common_names":["尿酸"],"default_unit":"","result_type":"quantitative","is_common":true,"display_order":13}
+  ]
+}

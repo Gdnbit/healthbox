@@ -1,0 +1,35 @@
+{
+  "contract_id": "report-archive-filter-v1",
+  "scope": "current-authorized-loaded-snapshot",
+  "search_fields": [
+    "title",
+    "original_filename",
+    "date",
+    "facility",
+    "type_label",
+    "status_label"
+  ],
+  "normalization": {
+    "unicode": "NFKC",
+    "latin_case_insensitive": true,
+    "trim_query": true
+  },
+  "filters": ["status", "type", "year"],
+  "combination": "AND",
+  "required_feedback": [
+    "visible_result_count",
+    "total_report_count",
+    "active_filter_count",
+    "clear_all_conditions"
+  ],
+  "permission_invariants": {
+    "does_not_fetch_other_subjects": true,
+    "does_not_expand_source_access": true,
+    "does_not_change_preview_download_or_parse_capabilities": true
+  },
+  "responsive_invariants": {
+    "mobile_width_px": 390,
+    "minimum_interactive_height_px": 44,
+    "no_page_level_horizontal_overflow": true
+  }
+}

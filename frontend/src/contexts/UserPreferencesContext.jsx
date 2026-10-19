@@ -1,0 +1,237 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
+import {
+  getUserPreferences,
+  updateUserPreferences,
+} from '../services/api/userPreferencesApi';
+import { useAuth } from './AuthContext';
+import frontendLogger from '../services/frontendLogger';
+import { PAPERLESS_SETTING_DEFAULTS } from '../constants/paperlessSettings';
+import { timezoneService } from '../services/timezoneService';
+import { DATE_FORMAT_OPTIONS, DEFAULT_DATE_FORMAT } from '../utils/constants';
+import i18n from '../i18n';
+
+// Supported languages - must match backend validation
+const SUPPORTED_LANGUAGES = [
+  'en',
+  'fr',
+  'de',
+  'es',
+  'it',
+  'pt',
+  'ru',
+  'sv',
+  'nl',
+  'pl',
+  'zh',
+];
+
+/**
+ * User Preferences Context
+ * Provides user preferences (including unit system) throughout the app
+ */
+
+const UserPreferencesContext = createContext();
+
+export const useUserPreferences = () => {
+  const context = useContext(UserPreferencesContext);
+  if (!context) {
+    throw new Error(
+      'useUserPreferences must be used within a UserPreferencesProvider'
+    );
+  }
+  return context;
+};
+
+export const UserPreferencesProvider = ({ children }) => {
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+  const [preferences, setPreferences] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Load user preferences when authenticated user changes
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const userPrefs = await getUserPreferences();
+        setPreferences(userPrefs);
+
+        // Apply the backend-stored language to i18next if it differs from the current language.
+        // Without this, the saved language preference is ignored on every page load because
+        // i18next only reads from localStorage/browser detection on startup.
+        if (
+          userPrefs.language &&
+          SUPPORTED_LANGUAGES.includes(userPrefs.language) &&
+          userPrefs.language !== i18n.language
+        ) {
+          try {
+            await i18n.changeLanguage(userPrefs.language);
+          } catch (langErr) {
+            frontendLogger.logError(
+              'Failed to apply saved language preference',
+              {
+                language: userPrefs.language,
+                error: langErr.message,
+                component: 'UserPreferencesContext',
+              }
+            );
+          }
+        }
+
+        frontendLogger.logInfo('User preferences loaded', {
+          unitSystem: userPrefs.unit_system,
+          paperlessEnabled: userPrefs.paperless_enabled,
+          userId: user?.id,
+          component: 'UserPreferencesContext',
+        });
+      } catch (err) {
+        const errorMessage = err.message || 'Failed to load user preferences';
+        setError(errorMessage);
+
+        // Set default preferences on error
+        const defaultPrefs = {
+          language: 'zh',
+          unit_system: 'imperial',
+          session_timeout_minutes: 120,
+          date_format: 'mdy',
+          ...PAPERLESS_SETTING_DEFAULTS,
+          // Override the sync tags default for this context
+          paperless_sync_tags: true,
+        };
+        setPreferences(defaultPrefs);
+
+        frontendLogger.logError(
+          'Failed to load user preferences, using defaults',
+          {
+            error: errorMessage,
+            defaultPreferences: defaultPrefs,
+            userId: user?.id,
+            component: 'UserPreferencesContext',
+          }
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only load preferences if user is authenticated
+    if (isAuthenticated && user) {
+      loadPreferences();
+    } else if (!authLoading) {
+      // Only clear preferences when not authenticated AND auth is not loading
+      setPreferences(null);
+      setLoading(false);
+      setError(null);
+
+      frontendLogger.logInfo('User logged out, clearing preferences', {
+        component: 'UserPreferencesContext',
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-load on auth state or user ID change; full user object would re-trigger on every refresh
+  }, [isAuthenticated, user?.id, authLoading]);
+
+  // Function to update preferences and save to server
+  const updatePreferences = useCallback(async newPreferences => {
+    try {
+      // Save to server first
+      const updatedPreferences = await updateUserPreferences(newPreferences);
+
+      // Then update local state with server response
+      setPreferences(prev => ({
+        ...prev,
+        ...updatedPreferences,
+      }));
+
+      frontendLogger.logInfo('User preferences updated and saved', {
+        updatedFields: Object.keys(newPreferences),
+        component: 'UserPreferencesContext',
+      });
+
+      return updatedPreferences;
+    } catch (err) {
+      const errorMessage = err.message || 'Failed to save user preferences';
+      setError(errorMessage);
+
+      frontendLogger.logError('Failed to save user preferences', {
+        error: errorMessage,
+        updatedFields: Object.keys(newPreferences),
+        component: 'UserPreferencesContext',
+      });
+
+      throw err;
+    }
+  }, []);
+
+  // Sync date format locale to timezoneService when preferences change
+  useEffect(() => {
+    const formatCode = preferences?.date_format || DEFAULT_DATE_FORMAT;
+    const config =
+      DATE_FORMAT_OPTIONS[formatCode] ||
+      DATE_FORMAT_OPTIONS[DEFAULT_DATE_FORMAT];
+    timezoneService.setDateLocale(config.locale, formatCode);
+  }, [preferences?.date_format]);
+
+  // Function to update local preferences only (for internal use)
+  const updateLocalPreferences = newPreferences => {
+    setPreferences(prev => ({
+      ...prev,
+      ...newPreferences,
+    }));
+  };
+
+  // Function to refresh preferences from server
+  const refreshPreferences = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const userPrefs = await getUserPreferences();
+      setPreferences(userPrefs);
+      return userPrefs;
+    } catch (err) {
+      const errorMessage = err.message || 'Failed to refresh user preferences';
+      setError(errorMessage);
+      frontendLogger.logError('Failed to refresh user preferences', {
+        error: errorMessage,
+        component: 'UserPreferencesContext',
+      });
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const value = {
+    preferences,
+    loading,
+    error,
+    updatePreferences, // Now saves to server automatically
+    updateLocalPreferences, // Local state update only (for backwards compatibility)
+    refreshPreferences,
+    // Convenience getters for unit system
+    unitSystem: preferences?.unit_system || 'imperial',
+    isMetric: preferences?.unit_system === 'metric',
+    isImperial: preferences?.unit_system === 'imperial',
+    // Convenience getters for date format
+    dateFormat: preferences?.date_format || 'mdy',
+    isUSDateFormat:
+      preferences?.date_format === 'mdy' || !preferences?.date_format,
+    isEuropeanDateFormat: preferences?.date_format === 'dmy',
+    isISODateFormat: preferences?.date_format === 'ymd',
+  };
+
+  return (
+    <UserPreferencesContext.Provider value={value}>
+      {children}
+    </UserPreferencesContext.Provider>
+  );
+};
+
+export default UserPreferencesContext;

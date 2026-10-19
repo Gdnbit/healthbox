@@ -1,0 +1,11 @@
+{
+  "version": "healthbox-starter-1",
+  "lastUpdated": "2026-10-19",
+  "_source": "Original HealthBox organizational labels, not standardized panel definitions or screening recommendations.",
+  "_license": "Apache-2.0",
+  "panels": [
+    {"panel_name":"Blood count","abbreviation":"CBC","category":"hematology","common_names":["血常规"],"is_common":true,"display_order":1},
+    {"panel_name":"Blood lipids","abbreviation":"LIPIDS","category":"lipids","common_names":["血脂"],"is_common":true,"display_order":2},
+    {"panel_name":"Liver measurements","abbreviation":"LIVER","category":"hepatology","common_names":["肝功能"],"is_common":true,"display_order":3}
+  ]
+}

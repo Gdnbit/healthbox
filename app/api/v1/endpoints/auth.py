@@ -1,0 +1,687 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+from datetime import date, datetime, timedelta, timezone
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel, Field
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from app.api import deps
+from app.api.activity_logging import log_create, safe_log_activity
+from app.api.deps import BusinessLogicException, ConflictException, UnauthorizedException
+from app.core.config import settings
+from app.core.constants import is_admin_role
+from app.core.events import get_event_bus
+from app.core.http.error_handling import handle_database_errors
+from app.core.logging.config import get_logger
+from app.core.logging.helpers import log_endpoint_access, log_endpoint_error, log_security_event
+from app.core.utils.cookie_auth import clear_auth_cookie, set_auth_cookie
+from app.core.utils.security import create_access_token, verify_password
+from app.crud.user import user
+from app.events.security_events import PasswordChangedEvent
+from app.models.activity_log import ActionType, EntityType
+from app.models.base import get_utc_now
+from app.models.models import User as DBUser
+from app.schemas.user import User, UserCreate, UserRegistration
+from app.services.admin_mfa_service import (
+    MFA_CHALLENGE_TTL_MINUTES,
+    MfaError,
+    confirm_totp_enrollment,
+    has_enabled_totp,
+    issue_challenge,
+    prepare_totp_enrollment,
+    validate_challenge,
+    verify_recovery_code,
+    verify_totp,
+)
+
+router = APIRouter()
+
+# Initialize loggers
+logger = get_logger(__name__, "app")
+security_logger = get_logger(__name__, "security")
+
+
+def _consume_member_reset_login(db: Session, db_user: DBUser, request: Request) -> None:
+    """Consume a short-lived reset password before issuing its only session."""
+
+    if db_user.password_reset_expires_at is None:
+        return
+    now = get_utc_now()
+    consumed = (
+        db.query(DBUser)
+        .filter(
+            DBUser.id == db_user.id,
+            DBUser.password_reset_expires_at.is_not(None),
+            DBUser.password_reset_expires_at > now,
+            DBUser.password_reset_consumed_at.is_(None),
+        )
+        .update(
+            {DBUser.password_reset_consumed_at: now},
+            synchronize_session=False,
+        )
+    )
+    if consumed != 1:
+        db.rollback()
+        log_security_event(
+            logger,
+            "member_reset_login_rejected",
+            request,
+            "Expired or consumed temporary member credential was rejected",
+            user_id=db_user.id,
+            username=db_user.username,
+        )
+        raise UnauthorizedException(
+            message="Temporary password expired or already used. Contact the administrator.",
+            request=request,
+        )
+    db.commit()
+    db.refresh(db_user)
+
+
+@router.get("/registration-status")
+def get_registration_status():
+    """Check if new user registration is enabled."""
+    return {
+        "registration_enabled": settings.public_registration_enabled,
+        "message": (
+            "Registration is currently disabled. Please contact an administrator."
+            if not settings.public_registration_enabled
+            else None
+        ),
+    }
+
+
+@router.post("/register", response_model=User)
+def register(
+    *,
+    db: Session = Depends(deps.get_db),
+    user_in: UserRegistration,
+    request: Request,
+):
+    """
+    Register a new user.
+
+    Creates a new user account with username and password.
+    The password will be automatically hashed for security.
+    A basic patient record is automatically created for the user.
+    """
+    # Check if registration is enabled
+    if not settings.public_registration_enabled:
+        log_security_event(
+            logger,
+            "registration_blocked",
+            request,
+            f"Registration attempt blocked - registration disabled. Username: {user_in.username}",
+            username=user_in.username,
+        )
+        raise UnauthorizedException(
+            message="New user registration is currently disabled. Please contact an administrator.",
+            request=request,
+        )
+
+    user_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Log registration attempt using security audit system
+    log_security_event(
+        logger,
+        "user_registration_attempt",
+        request,
+        f"User registration attempt for username: {user_in.username}",
+        username=user_in.username,
+    )
+
+    # Check if username already exists
+    existing_user = user.get_by_username(db, username=user_in.username)
+    if existing_user:
+        raise ConflictException(
+            message=f"An account with the username '{user_in.username}' already exists. Please choose a different username.",
+            request=request,
+        )
+
+    # Check if email already exists
+    existing_email = user.get_by_email(db, email=user_in.email)
+    if existing_email:
+        raise ConflictException(
+            message=f"An account with the email address '{user_in.email}' already exists. Please use a different email or try logging in.",
+            request=request,
+        )
+
+    # SECURITY: Force role='user' for all public registrations (GHSA-xx23-8fx5-ph4q)
+    user_create = UserCreate(
+        username=user_in.username,
+        email=user_in.email,
+        full_name=user_in.full_name,
+        password=user_in.password,
+        first_name=user_in.first_name,
+        last_name=user_in.last_name,
+        role="user",
+    )
+
+    # Create new user with database error handling
+    with handle_database_errors(request=request):
+        new_user = user.create(db, obj_in=user_create)
+
+    # Log user registration in activity log
+    log_create(
+        db=db,
+        entity_type=EntityType.USER,
+        entity_obj=new_user,
+        user_id=new_user.id,
+        request=request,
+    )
+
+    # Create a basic patient record for the new user using Phase 1 approach
+    # Extract first/last names from available user data
+    first_name = getattr(user_in, "first_name", None)
+    last_name = getattr(user_in, "last_name", None)
+
+    # If first/last names aren't provided, try to parse from full_name
+    if not first_name or not last_name:
+        full_name = getattr(user_in, "full_name", "")
+        if full_name:
+            name_parts = full_name.strip().split()
+            if len(name_parts) >= 2:
+                first_name = first_name or name_parts[0]
+                last_name = last_name or " ".join(name_parts[1:])
+            elif len(name_parts) == 1:
+                first_name = first_name or name_parts[0]
+                last_name = last_name or name_parts[0]  # Use same name for both
+
+    # Final fallbacks
+    first_name = first_name or "Update"
+    last_name = last_name or "Your Name"
+
+    try:  # Get the actual user ID value from the SQLAlchemy model
+        user_id = getattr(new_user, "id", None)
+        if user_id is None:
+            raise ValueError("User ID not found after creation")
+
+        # Use Phase 1 patient management service to create self-record
+        from app.services.patient_management import PatientManagementService
+
+        patient_service = PatientManagementService(db)
+
+        patient_data = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "birth_date": date.today().replace(year=date.today().year - 25),  # 25 years ago as reasonable default
+            "gender": "OTHER",  # Neutral default
+            "address": "Please update your address in your profile",  # Placeholder address
+        }
+
+        # Create self-record for the new user and set as active
+        # Note: PatientManagementService.create_patient() handles its own transaction
+        created_patient = patient_service.create_patient(user=new_user, patient_data=patient_data, is_self_record=True)
+
+        # Try to set the newly created patient as the user's active patient
+        try:
+            new_user.active_patient_id = created_patient.id
+            db.commit()
+            db.refresh(new_user)
+
+            # Log successful patient creation and activation
+            log_endpoint_access(
+                logger,
+                request,
+                user_id,
+                "patient_creation_success",
+                message="Patient record created and set as active for new user",
+                username=user_in.username,
+                patient_id=created_patient.id,
+            )
+        except Exception as active_patient_error:
+            # Patient was created successfully, but setting as active failed
+            # This is not critical - user can set active patient later
+            log_endpoint_error(
+                logger,
+                request,
+                "Patient created but failed to set as active during registration",
+                active_patient_error,
+                user_id=user_id,
+                username=user_in.username,
+                patient_id=created_patient.id,
+            )
+            # Continue - patient exists, just not set as active
+
+    except Exception as e:
+        # If patient creation fails, we should still return the user
+        # but log the error for debugging
+        log_endpoint_error(
+            logger,
+            request,
+            f"Failed to create patient record for user {user_id}: {e}",
+            e,
+            user_id=user_id,
+            username=user_in.username,
+        )
+        # For new user registration failures, we may want to consider rolling back
+        # the user creation as well, but for now we'll just continue without a patient
+
+    return new_user
+
+
+def log_successful_login(user_id: int, username: str, request: Request):
+    """
+    Logs a successful login event.
+    """
+    log_endpoint_access(
+        logger,
+        request,
+        user_id,
+        "login_success",
+        message=f"Login successful for username: {username}",
+        username=username,
+    )
+
+
+def _create_authenticated_response(
+    *,
+    db: Session,
+    db_user: DBUser,
+    request: Request,
+    mfa_verified: bool,
+    recovery_codes: list[str] | None = None,
+) -> JSONResponse:
+    """Issue a full business session after every required factor is complete."""
+    full_name = getattr(db_user, "full_name", None) or db_user.username
+
+    from app.crud.user_preferences import user_preferences
+
+    preferences = user_preferences.get_or_create_by_user_id(db, user_id=db_user.id)
+    session_timeout_minutes = (
+        preferences.session_timeout_minutes if preferences else settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+    jwt_lifetime = max(settings.ACCESS_TOKEN_EXPIRE_MINUTES, session_timeout_minutes)
+    access_token = create_access_token(
+        data={
+            "sub": db_user.username,
+            "role": (db_user.role if db_user.role in ["admin", "user", "guest"] else "user"),
+            "user_id": db_user.id,
+            "full_name": full_name,
+            "token_use": "access",
+            "auth_version": db_user.auth_version,
+            "mfa_verified": mfa_verified,
+        },
+        expires_delta=timedelta(minutes=jwt_lifetime),
+    )
+
+    safe_log_activity(
+        db=db,
+        action=ActionType.LOGIN,
+        entity_type=EntityType.USER,
+        entity_obj=db_user,
+        user_id=db_user.id,
+        description=f"User logged in: {db_user.username}",
+        request=request,
+        metadata={"mfa_verified": mfa_verified},
+    )
+    try:
+        db_user.last_login_at = get_utc_now()
+        db.commit()
+    except Exception:
+        db.rollback()
+
+    log_successful_login(getattr(db_user, "id", 0), db_user.username, request)
+    log_endpoint_access(
+        logger,
+        request,
+        db_user.id,
+        "token_created",
+        message=f"JWT token created with {jwt_lifetime} minute expiration",
+        username=db_user.username,
+        jwt_expiry_minutes=jwt_lifetime,
+        inactivity_timeout_minutes=session_timeout_minutes,
+        mfa_verified=mfa_verified,
+    )
+
+    from app.services.privacy_consent_service import privacy_consent_required
+
+    content = {
+        "status": "authenticated",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "session_timeout_minutes": session_timeout_minutes,
+        "must_change_password": bool(db_user.must_change_password),
+        "privacy_consent_required": privacy_consent_required(db, db_user.id),
+    }
+    if recovery_codes is not None:
+        content["recovery_codes"] = recovery_codes
+    response = JSONResponse(content=content)
+    set_auth_cookie(response, access_token, max_age_minutes=jwt_lifetime)
+    return response
+
+
+def _create_admin_challenge_response(
+    db: Session,
+    db_user: DBUser,
+    request: Request,
+) -> JSONResponse:
+    enrolled = has_enabled_totp(db, db_user.id)
+    purpose: Literal["enroll", "verify"] = "verify" if enrolled else "enroll"
+    challenge_token = issue_challenge(db, db_user, purpose)
+    status = "mfa_required" if enrolled else "mfa_enrollment_required"
+    log_security_event(
+        security_logger,
+        "admin_mfa_challenge_issued",
+        request,
+        "Restricted administrator MFA challenge issued",
+        user_id=db_user.id,
+        username=db_user.username,
+        purpose=purpose,
+    )
+    return JSONResponse(
+        content={
+            "status": status,
+            "challenge_token": challenge_token,
+            "challenge_expires_in": MFA_CHALLENGE_TTL_MINUTES * 60,
+        }
+    )
+
+
+@router.post("/login")
+def login(
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    form_data: OAuth2PasswordRequestForm = Depends(),
+):
+    """
+    Login with username and password to get an access token.
+
+    Returns a JWT token that can be used for authenticated requests.
+    """
+    user_ip = getattr(request.client, "host", "unknown") if request.client else "unknown"
+
+    # Log login attempt
+    log_security_event(
+        logger,
+        "login_attempt",
+        request,
+        f"Login attempt for username: {form_data.username}",
+        username=form_data.username,
+    )
+
+    # Authenticate user
+    db_user = user.authenticate(db, username=form_data.username, password=form_data.password)
+
+    if not db_user:
+        # Log failed login attempt
+        log_security_event(
+            logger,
+            "login_failed",
+            request,
+            f"Failed login attempt for username: {form_data.username}",
+            username=form_data.username,
+        )
+
+        raise UnauthorizedException(
+            message="Incorrect username or password",
+            request=request,
+        )
+
+    # Validate required fields
+    if db_user.id is None:
+        raise BusinessLogicException(
+            message="User account is incomplete. Please contact support.",
+            request=request,
+        )
+
+    # Check if user account is active
+    if not db_user.is_active:
+        log_security_event(
+            logger,
+            "login_rejected_inactive",
+            request,
+            f"Login rejected for inactive user: {form_data.username}",
+            username=form_data.username,
+        )
+        raise UnauthorizedException(
+            message="This account has been deactivated. Please contact an administrator.",
+            request=request,
+        )
+
+    _consume_member_reset_login(db, db_user, request)
+
+    # Check if user has an active patient, if not try to set one
+    if not db_user.active_patient_id:
+        from app.services.patient_management import PatientManagementService
+
+        try:
+            patient_service = PatientManagementService(db)
+            patient_service.ensure_active_patient(db_user)
+        except (SQLAlchemyError, ValueError) as e:
+            db.rollback()
+            log_endpoint_error(
+                logger,
+                request,
+                "Failed to set active patient during login",
+                e,
+                user_id=db_user.id,
+            )
+            # Continue login without active patient - user can set it later
+
+    if is_admin_role(db_user.role):
+        return _create_admin_challenge_response(db, db_user, request)
+
+    return _create_authenticated_response(
+        db=db,
+        db_user=db_user,
+        request=request,
+        mfa_verified=False,
+    )
+
+
+class MfaChallengeRequest(BaseModel):
+    challenge_token: str = Field(min_length=20, max_length=4096)
+
+
+class TotpConfirmRequest(MfaChallengeRequest):
+    code: str = Field(min_length=1, max_length=128)
+
+
+class MfaVerifyRequest(TotpConfirmRequest):
+    method: Literal["totp", "recovery_code"]
+
+
+def _raise_mfa_failure(request: Request) -> None:
+    raise UnauthorizedException(
+        message="MFA verification failed",
+        request=request,
+    )
+
+
+@router.post("/mfa/totp/setup")
+def setup_admin_totp(
+    payload: MfaChallengeRequest,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+):
+    """Prepare the sole administrator's first TOTP enrollment."""
+    try:
+        db_user, _ = validate_challenge(db, payload.challenge_token, expected_purpose="enroll")
+        manual_key, provisioning_uri = prepare_totp_enrollment(db, db_user)
+    except MfaError:
+        db.rollback()
+        _raise_mfa_failure(request)
+    return {
+        "status": "totp_setup_ready",
+        "manual_key": manual_key,
+        "provisioning_uri": provisioning_uri,
+    }
+
+
+@router.post("/mfa/totp/confirm")
+def confirm_admin_totp(
+    payload: TotpConfirmRequest,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+):
+    """Confirm enrollment, display recovery codes once, then issue a full session."""
+    try:
+        db_user, challenge = validate_challenge(db, payload.challenge_token, expected_purpose="enroll")
+        recovery_codes = confirm_totp_enrollment(db, db_user, challenge, payload.code)
+    except MfaError:
+        db.rollback()
+        _raise_mfa_failure(request)
+
+    log_security_event(
+        security_logger,
+        "admin_mfa_enrolled",
+        request,
+        "Administrator TOTP enrollment completed",
+        user_id=db_user.id,
+        username=db_user.username,
+    )
+    return _create_authenticated_response(
+        db=db,
+        db_user=db_user,
+        request=request,
+        mfa_verified=True,
+        recovery_codes=recovery_codes,
+    )
+
+
+@router.post("/mfa/verify")
+def verify_admin_mfa(
+    payload: MfaVerifyRequest,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+):
+    """Exchange a valid TOTP or unused recovery code for a full session."""
+    try:
+        db_user, challenge = validate_challenge(db, payload.challenge_token, expected_purpose="verify")
+        if payload.method == "totp":
+            verify_totp(db, db_user, challenge, payload.code)
+        else:
+            verify_recovery_code(db, db_user, challenge, payload.code)
+    except (MfaError, UnicodeEncodeError, ValueError):
+        db.rollback()
+        _raise_mfa_failure(request)
+
+    log_security_event(
+        security_logger,
+        "admin_mfa_verified",
+        request,
+        "Administrator second factor verified",
+        user_id=db_user.id,
+        username=db_user.username,
+        method=payload.method,
+    )
+    return _create_authenticated_response(
+        db=db,
+        db_user=db_user,
+        request=request,
+        mfa_verified=True,
+    )
+
+
+@router.post("/logout")
+def logout(
+    request: Request,
+    current_user: DBUser = Depends(deps.get_current_user),
+):
+    """
+    Logout the current user.
+
+    JWT is stateless, so this endpoint simply confirms the logout server-side.
+    The client is responsible for discarding the token after calling this endpoint.
+    """
+    log_security_event(
+        security_logger,
+        "user_logout",
+        request,
+        f"User logged out: {current_user.username}",
+        user_id=current_user.id,
+        username=current_user.username,
+    )
+
+    response = JSONResponse(content={"status": "success", "data": {}, "message": "Logged out successfully"})
+    clear_auth_cookie(response)
+    return response
+
+
+class ChangePasswordRequest(BaseModel):
+    currentPassword: str
+    newPassword: str
+
+
+@router.post("/change-password")
+async def change_password(
+    password_data: ChangePasswordRequest,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    current_user: DBUser = Depends(deps.get_current_user),
+):
+    """
+    Change user password.
+
+    Requires the current password to be provided for security.
+    """
+    log_security_event(
+        logger,
+        "password_change_attempt",
+        request,
+        f"Password change attempt for user: {current_user.username}",
+        user_id=current_user.id,
+        username=current_user.username,
+    )
+
+    # Verify current password
+    if not verify_password(password_data.currentPassword, str(current_user.password_hash)):
+        log_security_event(
+            logger,
+            "password_change_failed_verification",
+            request,
+            f"Failed password change attempt - incorrect current password for user: {current_user.username}",
+            user_id=current_user.id,
+            username=current_user.username,
+        )
+        raise UnauthorizedException(message="Current password is incorrect", request=request)
+
+    # Validate new password
+    if len(password_data.newPassword) < 6:
+        raise BusinessLogicException(message="New password must be at least 6 characters long", request=request)
+
+    has_letter = any(c.isalpha() for c in password_data.newPassword)
+    has_number = any(c.isdigit() for c in password_data.newPassword)
+    if not (has_letter and has_number):
+        raise BusinessLogicException(
+            message="New password must contain at least one letter and one number",
+            request=request,
+        )
+
+    # Update password (also clears must_change_password flag)
+    user.update_password_by_user(db, user_obj=current_user, new_password=password_data.newPassword)
+
+    # Log password change in activity log
+    safe_log_activity(
+        db=db,
+        action=ActionType.UPDATED,
+        entity_type=EntityType.USER,
+        entity_obj=current_user,
+        user_id=current_user.id,
+        description=f"Password changed for user: {current_user.username}",
+        request=request,
+    )
+
+    log_security_event(
+        logger,
+        "password_change_success",
+        request,
+        f"Password changed successfully for user: {current_user.username}",
+        user_id=current_user.id,
+        username=current_user.username,
+    )
+
+    # Publish password changed event
+    event = PasswordChangedEvent(
+        user_id=current_user.id,
+        change_time=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+    )
+    await get_event_bus().publish(event)
+
+    return {"message": "Password changed successfully"}

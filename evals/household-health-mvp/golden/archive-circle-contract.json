@@ -1,0 +1,64 @@
+{
+  "schema_version": "archive-circle-v1",
+  "ordinary_scope": "structured_dashboard",
+  "ordinary_subject_fields": [
+    "patient_id",
+    "display_name",
+    "scope",
+    "available",
+    "relationship_changed_at"
+  ],
+  "ordinary_forbidden_fields": [
+    "archive_circle_id",
+    "circle_id",
+    "circle_name",
+    "membership_id",
+    "user_id",
+    "username",
+    "email",
+    "birth_date",
+    "address"
+  ],
+  "dashboard_allowed_point_fields": [
+    "id",
+    "date",
+    "value",
+    "secondary_value",
+    "status",
+    "reference_min",
+    "reference_max",
+    "reference_text"
+  ],
+  "dashboard_forbidden_fields": [
+    "notes",
+    "location",
+    "device_used",
+    "import_source",
+    "practitioner_id",
+    "source_document_id",
+    "source_page",
+    "source_locator",
+    "original_filename",
+    "facility",
+    "report_text"
+  ],
+  "membership_statuses": [
+    "active",
+    "paused",
+    "removed"
+  ],
+  "circle_statuses": [
+    "active",
+    "paused",
+    "archived"
+  ],
+  "access_invariants": [
+    "same_active_circle_is_reciprocal",
+    "overlap_is_not_transitive",
+    "membership_changes_are_transactional",
+    "ordinary_users_cannot_discover_circle_metadata",
+    "legacy_patient_shares_are_preserved",
+    "owner_global_read_is_independent",
+    "writes_sources_exports_and_ai_are_not_granted"
+  ]
+}

@@ -1,0 +1,719 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import math
+from datetime import date, datetime
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, field_validator, model_validator
+
+from app.core.constants import (
+    LAB_TEST_COMPONENT_CATEGORIES,
+    LAB_TEST_COMPONENT_LIMITS,
+    LAB_TEST_COMPONENT_QUALITATIVE_VALUES,
+    LAB_TEST_COMPONENT_RESULT_TYPES,
+    LAB_TEST_COMPONENT_STATUSES,
+)
+
+
+class LabTestComponentBase(BaseModel):
+    """Base schema for LabTestComponent - individual test results within lab result"""
+
+    test_name: str
+    abbreviation: Optional[str] = None
+    test_code: Optional[str] = None
+    value: Optional[float] = None
+    unit: Optional[str] = None
+    ref_range_min: Optional[float] = None
+    ref_range_max: Optional[float] = None
+    ref_range_text: Optional[str] = None
+    status: Optional[str] = None
+    category: Optional[str] = None
+    display_order: Optional[int] = None
+    canonical_test_name: Optional[str] = (
+        None  # Links to standardized test name for trend matching
+    )
+    notes: Optional[str] = None
+    lab_result_id: int
+    result_type: Optional[str] = "quantitative"
+    qualitative_value: Optional[str] = None
+    textual_value: Optional[str] = None
+
+    @field_validator("test_name")
+    @classmethod
+    def validate_test_name(cls, v):
+        """Validate test name"""
+        if not v or len(v.strip()) < 1:
+            raise ValueError("Test name is required")
+        if len(v) > LAB_TEST_COMPONENT_LIMITS["MAX_TEST_NAME_LENGTH"]:
+            raise ValueError(
+                f"Test name must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_TEST_NAME_LENGTH']} characters"
+            )
+        return v.strip()
+
+    @field_validator("abbreviation")
+    @classmethod
+    def validate_abbreviation(cls, v):
+        """Validate test abbreviation"""
+        if v and len(v.strip()) > LAB_TEST_COMPONENT_LIMITS["MAX_ABBREVIATION_LENGTH"]:
+            raise ValueError(
+                f"Abbreviation must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_ABBREVIATION_LENGTH']} characters"
+            )
+        return v.strip().upper() if v else None
+
+    @field_validator("test_code")
+    @classmethod
+    def validate_test_code(cls, v):
+        """Validate test code (LOINC, CPT, etc.)"""
+        if v and len(v.strip()) > LAB_TEST_COMPONENT_LIMITS["MAX_TEST_CODE_LENGTH"]:
+            raise ValueError(
+                f"Test code must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_TEST_CODE_LENGTH']} characters"
+            )
+        return v.strip().upper() if v else None
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, v):
+        """Validate test value - allow None for qualitative tests"""
+        if v is None:
+            return None
+        if math.isnan(v) or math.isinf(v):
+            raise ValueError("Test value must be a finite number")
+        if abs(v) > 1e15:
+            raise ValueError("Test value is out of reasonable range")
+        return float(v)
+
+    @field_validator("unit")
+    @classmethod
+    def validate_unit(cls, v):
+        """Validate test unit - allow None for qualitative tests"""
+        if v is None:
+            return None
+        if len(v.strip()) < 1:
+            return None
+        if len(v) > LAB_TEST_COMPONENT_LIMITS["MAX_UNIT_LENGTH"]:
+            raise ValueError(
+                f"Unit must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_UNIT_LENGTH']} characters"
+            )
+        return v.strip()
+
+    @field_validator("ref_range_min")
+    @classmethod
+    def validate_ref_range_min(cls, v):
+        """Validate reference range minimum"""
+        if v is not None:
+            if math.isnan(v) or math.isinf(v):
+                raise ValueError("Reference range minimum must be a finite number")
+            if abs(v) > 1e15:
+                raise ValueError("Reference range minimum is out of reasonable range")
+        return float(v) if v is not None else None
+
+    @field_validator("ref_range_max")
+    @classmethod
+    def validate_ref_range_max(cls, v):
+        """Validate reference range maximum"""
+        if v is not None:
+            if math.isnan(v) or math.isinf(v):
+                raise ValueError("Reference range maximum must be a finite number")
+            if abs(v) > 1e15:
+                raise ValueError("Reference range maximum is out of reasonable range")
+        return float(v) if v is not None else None
+
+    @field_validator("ref_range_text")
+    @classmethod
+    def validate_ref_range_text(cls, v):
+        """Validate reference range text"""
+        if (
+            v
+            and len(v.strip()) > LAB_TEST_COMPONENT_LIMITS["MAX_REF_RANGE_TEXT_LENGTH"]
+        ):
+            raise ValueError(
+                f"Reference range text must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_REF_RANGE_TEXT_LENGTH']} characters"
+            )
+        return v.strip() if v else None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        """Validate test status"""
+        if v and v.lower() not in LAB_TEST_COMPONENT_STATUSES:
+            raise ValueError(
+                f"Status must be one of: {', '.join(LAB_TEST_COMPONENT_STATUSES)}"
+            )
+        return v.lower() if v else None
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v):
+        """Validate test category"""
+        if v and v.lower() not in LAB_TEST_COMPONENT_CATEGORIES:
+            raise ValueError(
+                f"Category must be one of: {', '.join(LAB_TEST_COMPONENT_CATEGORIES)}"
+            )
+        return v.lower() if v else None
+
+    @field_validator("display_order")
+    @classmethod
+    def validate_display_order(cls, v):
+        """Validate display order"""
+        if v is not None and (not isinstance(v, int) or v < 0):
+            raise ValueError("Display order must be a positive integer")
+        return v
+
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, v):
+        """Validate notes"""
+        if v and len(v.strip()) > LAB_TEST_COMPONENT_LIMITS["MAX_NOTES_LENGTH"]:
+            raise ValueError(
+                f"Notes must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_NOTES_LENGTH']} characters"
+            )
+        return v.strip() if v else None
+
+    @field_validator("canonical_test_name")
+    @classmethod
+    def validate_canonical_test_name(cls, v):
+        """Validate canonical test name for trend matching"""
+        if v is None:
+            return None
+        stripped = v.strip()
+        if not stripped:
+            return None
+        if len(stripped) > LAB_TEST_COMPONENT_LIMITS["MAX_TEST_NAME_LENGTH"]:
+            raise ValueError(
+                f"Canonical test name must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_TEST_NAME_LENGTH']} characters"
+            )
+        return stripped
+
+    @field_validator("lab_result_id")
+    @classmethod
+    def validate_lab_result_id(cls, v):
+        """Validate lab result ID"""
+        if v <= 0:
+            raise ValueError("Lab result ID must be a positive integer")
+        return v
+
+    @field_validator("result_type")
+    @classmethod
+    def validate_result_type(cls, v):
+        """Validate result type"""
+        if v is None:
+            return "quantitative"
+        if v.lower() not in LAB_TEST_COMPONENT_RESULT_TYPES:
+            raise ValueError(
+                f"Result type must be one of: {', '.join(LAB_TEST_COMPONENT_RESULT_TYPES)}"
+            )
+        return v.lower()
+
+    @field_validator("qualitative_value")
+    @classmethod
+    def validate_qualitative_value(cls, v):
+        """Validate qualitative value"""
+        if v is None:
+            return None
+        stripped = v.strip()
+        if not stripped:
+            return None
+        normalized = stripped.lower()
+        if normalized not in LAB_TEST_COMPONENT_QUALITATIVE_VALUES:
+            raise ValueError(
+                f"Qualitative value must be one of: {', '.join(LAB_TEST_COMPONENT_QUALITATIVE_VALUES)}"
+            )
+        return normalized
+
+    @field_validator("textual_value")
+    @classmethod
+    def validate_textual_value(cls, v):
+        """Validate textual result value"""
+        if v is None:
+            return None
+        stripped = v.strip()
+        if not stripped:
+            return None
+        if len(stripped) > 5000:
+            raise ValueError("Textual result must be less than 5000 characters")
+        return stripped
+
+
+# Fields that participate in result-type validity checks (used by Update validator)
+_RESULT_TYPE_FIELDS = frozenset(
+    {"result_type", "value", "unit", "qualitative_value", "textual_value"}
+)
+
+
+class LabTestComponentCreate(LabTestComponentBase):
+    """Schema for creating a new lab test component"""
+
+    @model_validator(mode="after")
+    def validate_ref_range(self):
+        """Validate that ref_range_max is greater than ref_range_min"""
+        if self.ref_range_min is not None and self.ref_range_max is not None:
+            if self.ref_range_max <= self.ref_range_min:
+                raise ValueError("Reference range maximum must be greater than minimum")
+        return self
+
+    @model_validator(mode="after")
+    def validate_result_type_fields(self):
+        """Cross-field validation for quantitative vs qualitative vs textual tests.
+
+        Values are intentionally optional on create so panel templates can be saved
+        without pre-filled results and filled in later via edit.
+        """
+        rt = self.result_type or "quantitative"
+
+        if rt in ("qualitative", "textual"):
+            if self.value is not None:
+                raise ValueError(f"Numeric value must be empty for {rt} tests")
+            if self.ref_range_min is not None or self.ref_range_max is not None:
+                raise ValueError(f"Reference ranges are not applicable for {rt} tests")
+            if rt == "textual" and self.qualitative_value is not None:
+                raise ValueError("Qualitative value must be empty for textual tests")
+        return self
+
+    @model_validator(mode="after")
+    def auto_calculate_status(self):
+        """Auto-calculate status based on value and reference ranges or qualitative value"""
+        if self.status is not None:
+            return self
+
+        rt = self.result_type or "quantitative"
+
+        if rt == "textual":
+            return self
+
+        if rt == "qualitative" and self.qualitative_value:
+            # Qualitative: positive/detected -> abnormal, negative/undetected -> normal
+            if self.qualitative_value in ("positive", "detected"):
+                self.status = "abnormal"
+            elif self.qualitative_value in ("negative", "undetected"):
+                self.status = "normal"
+            return self
+
+        # Quantitative: existing numeric logic
+        if self.value is None:
+            return self
+
+        if self.ref_range_min is not None and self.ref_range_max is not None:
+            if self.value < self.ref_range_min:
+                self.status = "low"
+            elif self.value > self.ref_range_max:
+                self.status = "high"
+            else:
+                self.status = "normal"
+        elif self.ref_range_max is not None:
+            # Upper bound only (e.g., "< 0.41")
+            self.status = "high" if self.value > self.ref_range_max else "normal"
+        elif self.ref_range_min is not None:
+            # Lower bound only (e.g., "> 39")
+            self.status = "low" if self.value < self.ref_range_min else "normal"
+        return self
+
+
+class LabTestComponentUpdate(BaseModel):
+    """Schema for updating an existing lab test component"""
+
+    test_name: Optional[str] = None
+    abbreviation: Optional[str] = None
+    test_code: Optional[str] = None
+    value: Optional[float] = None
+    unit: Optional[str] = None
+    ref_range_min: Optional[float] = None
+    ref_range_max: Optional[float] = None
+    ref_range_text: Optional[str] = None
+    status: Optional[str] = None
+    category: Optional[str] = None
+    display_order: Optional[int] = None
+    canonical_test_name: Optional[str] = (
+        None  # Links to standardized test name for trend matching
+    )
+    notes: Optional[str] = None
+    result_type: Optional[str] = None
+    qualitative_value: Optional[str] = None
+    textual_value: Optional[str] = None
+
+    @field_validator("test_name")
+    @classmethod
+    def validate_test_name(cls, v):
+        if v is not None:
+            if not v or len(v.strip()) < 1:
+                raise ValueError("Test name is required")
+            if len(v) > LAB_TEST_COMPONENT_LIMITS["MAX_TEST_NAME_LENGTH"]:
+                raise ValueError(
+                    f"Test name must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_TEST_NAME_LENGTH']} characters"
+                )
+            return v.strip()
+        return v
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, v):
+        if v is not None:
+            return float(v)
+        return v
+
+    @field_validator("unit")
+    @classmethod
+    def validate_unit(cls, v):
+        if v is not None:
+            if len(v.strip()) < 1:
+                return None
+            if len(v) > LAB_TEST_COMPONENT_LIMITS["MAX_UNIT_LENGTH"]:
+                raise ValueError(
+                    f"Unit must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_UNIT_LENGTH']} characters"
+                )
+            return v.strip()
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        if v is not None:
+            if v.lower() not in LAB_TEST_COMPONENT_STATUSES:
+                raise ValueError(
+                    f"Status must be one of: {', '.join(LAB_TEST_COMPONENT_STATUSES)}"
+                )
+            return v.lower()
+        return v
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v):
+        if v is not None:
+            if v.lower() not in LAB_TEST_COMPONENT_CATEGORIES:
+                raise ValueError(
+                    f"Category must be one of: {', '.join(LAB_TEST_COMPONENT_CATEGORIES)}"
+                )
+            return v.lower()
+        return v
+
+    @field_validator("result_type")
+    @classmethod
+    def validate_result_type(cls, v):
+        if v is not None:
+            if v.lower() not in LAB_TEST_COMPONENT_RESULT_TYPES:
+                raise ValueError(
+                    f"Result type must be one of: {', '.join(LAB_TEST_COMPONENT_RESULT_TYPES)}"
+                )
+            return v.lower()
+        return v
+
+    @field_validator("qualitative_value")
+    @classmethod
+    def validate_qualitative_value(cls, v):
+        if v is not None:
+            stripped = v.strip()
+            if not stripped:
+                return None
+            normalized = stripped.lower()
+            if normalized not in LAB_TEST_COMPONENT_QUALITATIVE_VALUES:
+                raise ValueError(
+                    f"Qualitative value must be one of: {', '.join(LAB_TEST_COMPONENT_QUALITATIVE_VALUES)}"
+                )
+            return normalized
+        return v
+
+    @field_validator("canonical_test_name")
+    @classmethod
+    def validate_canonical_test_name(cls, v):
+        """Normalize empty/whitespace to None — grouping query treats only NULL as 'unlinked'."""
+        if v is None:
+            return None
+        stripped = v.strip()
+        if not stripped:
+            return None
+        if len(stripped) > LAB_TEST_COMPONENT_LIMITS["MAX_TEST_NAME_LENGTH"]:
+            raise ValueError(
+                f"Canonical test name must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_TEST_NAME_LENGTH']} characters"
+            )
+        return stripped
+
+    @field_validator("ref_range_text")
+    @classmethod
+    def validate_ref_range_text(cls, v):
+        """Validate reference range text length on update.
+
+        Mirrors LabTestComponentBase so the update path cannot persist an
+        over-limit value that would later crash response serialization (#894).
+        """
+        if v is None:
+            return None
+        if len(v.strip()) > LAB_TEST_COMPONENT_LIMITS["MAX_REF_RANGE_TEXT_LENGTH"]:
+            raise ValueError(
+                f"Reference range text must be less than {LAB_TEST_COMPONENT_LIMITS['MAX_REF_RANGE_TEXT_LENGTH']} characters"
+            )
+        stripped = v.strip()
+        return stripped if stripped else None
+
+    @model_validator(mode="after")
+    def validate_ref_range(self):
+        """Validate that ref_range_max is greater than ref_range_min"""
+        if self.ref_range_min is not None and self.ref_range_max is not None:
+            if self.ref_range_max <= self.ref_range_min:
+                raise ValueError("Reference range maximum must be greater than minimum")
+        return self
+
+    @field_validator("textual_value")
+    @classmethod
+    def validate_textual_value(cls, v):
+        if v is not None:
+            stripped = v.strip()
+            if not stripped:
+                return None
+            if len(stripped) > 5000:
+                raise ValueError("Textual result must be less than 5000 characters")
+            return stripped
+        return v
+
+    @model_validator(mode="after")
+    def validate_result_type_fields(self):
+        """Prevent updates that would leave a component in a logically inconsistent state."""
+        if not _RESULT_TYPE_FIELDS.intersection(self.model_fields_set):
+            return self
+
+        rt = self.result_type
+
+        # Clearing value without specifying result_type is ambiguous
+        if "value" in self.model_fields_set and self.value is None and rt is None:
+            raise ValueError(
+                "When clearing value, result_type must be provided to avoid ambiguity"
+            )
+
+        if rt == "quantitative":
+            if "value" in self.model_fields_set and self.value is None:
+                raise ValueError("Value cannot be cleared for quantitative tests")
+            if (
+                "result_type" in self.model_fields_set
+                and "value" not in self.model_fields_set
+            ):
+                raise ValueError(
+                    "When switching to quantitative, value must be provided in the same update"
+                )
+        elif rt in ("qualitative", "textual"):
+            if self.value is not None:
+                raise ValueError(f"Numeric value must be empty for {rt} tests")
+            if self.ref_range_min is not None or self.ref_range_max is not None:
+                raise ValueError(f"Reference ranges are not applicable for {rt} tests")
+            if rt == "textual" and self.qualitative_value is not None:
+                raise ValueError("Qualitative value must be empty for textual tests")
+            if rt == "qualitative":
+                if (
+                    "qualitative_value" in self.model_fields_set
+                    and self.qualitative_value is None
+                ):
+                    raise ValueError(
+                        "Qualitative value cannot be cleared for qualitative tests"
+                    )
+                if (
+                    "result_type" in self.model_fields_set
+                    and "qualitative_value" not in self.model_fields_set
+                ):
+                    raise ValueError(
+                        "When switching to qualitative, qualitative_value must be provided in the same update"
+                    )
+        return self
+
+
+class LabTestComponentResponse(LabTestComponentBase):
+    """Schema for lab test component response"""
+
+    id: int
+    lab_result_id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    source_document_id: Optional[int] = None
+    source_page: Optional[int] = None
+    source_locator: Optional[str] = None
+    import_batch_id: Optional[int] = None
+
+    model_config = {"from_attributes": True}
+
+    @field_validator("ref_range_text")
+    @classmethod
+    def validate_ref_range_text(cls, v):
+        """Tolerate any stored length on read (#894).
+
+        Overrides the length-enforcing validator in LabTestComponentBase: the
+        response model must serialize whatever is in the database so legacy or
+        over-limit records stay viewable and editable instead of raising
+        ResponseValidationError. Length is enforced on the input schemas.
+        """
+        return v.strip() if v else None
+
+    @field_validator("textual_value")
+    @classmethod
+    def validate_textual_value(cls, v):
+        """Tolerate any stored length on read — normalize only."""
+        if v is None:
+            return None
+        stripped = v.strip()
+        return stripped if stripped else None
+
+
+class LabTestComponentWithLabResult(LabTestComponentResponse):
+    """Schema for lab test component with related lab result data"""
+
+    lab_result: Optional[dict] = None  # Will contain lab result details
+
+    model_config = {"from_attributes": True}
+
+
+class LabTestComponentForStack(LabTestComponentResponse):
+    """Schema for lab test component enriched with parent dates for stack drill-down."""
+
+    completed_date: Optional[date] = None
+    ordered_date: Optional[date] = None
+    facility: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Bulk operations schemas
+
+
+class LabTestComponentBulkCreate(BaseModel):
+    """Schema for creating multiple lab test components at once"""
+
+    lab_result_id: int
+    components: List[LabTestComponentCreate]
+
+    @field_validator("components")
+    @classmethod
+    def validate_components(cls, v):
+        """Validate components list"""
+        if not v or len(v) == 0:
+            raise ValueError("At least one component is required")
+        if len(v) > LAB_TEST_COMPONENT_LIMITS["MAX_BULK_COMPONENTS"]:
+            raise ValueError(
+                f"Maximum {LAB_TEST_COMPONENT_LIMITS['MAX_BULK_COMPONENTS']} components per bulk operation"
+            )
+        return v
+
+    @field_validator("lab_result_id")
+    @classmethod
+    def validate_lab_result_id(cls, v):
+        """Validate lab result ID"""
+        if v <= 0:
+            raise ValueError("Lab result ID must be a positive integer")
+        return v
+
+
+class LabTestComponentBulkResponse(BaseModel):
+    """Schema for bulk operation response"""
+
+    created_count: int
+    components: List[LabTestComponentResponse]
+    errors: Optional[List[str]] = []
+
+    model_config = {"from_attributes": True}
+
+
+# Trend tracking schemas
+
+
+class LabResultBasicForTrend(BaseModel):
+    """Minimal lab result info for trend data points"""
+
+    id: int
+    test_name: str
+    completed_date: Optional[date] = None
+
+    model_config = {"from_attributes": True}
+
+
+class LabTestComponentTrendDataPoint(BaseModel):
+    """Single data point in trend data"""
+
+    id: int
+    value: Optional[float] = None
+    unit: Optional[str] = None
+    status: Optional[str] = None
+    ref_range_min: Optional[float] = None
+    ref_range_max: Optional[float] = None
+    ref_range_text: Optional[str] = None
+    recorded_date: Optional[date] = None
+    created_at: datetime
+    lab_result: LabResultBasicForTrend
+    result_type: Optional[str] = "quantitative"
+    qualitative_value: Optional[str] = None
+    textual_value: Optional[str] = None
+    source_document_id: Optional[int] = None
+    source_page: Optional[int] = None
+    source_locator: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class LabTestComponentTrendStatistics(BaseModel):
+    """Statistics for trend data"""
+
+    count: int
+    latest: Optional[float] = None
+    average: Optional[float] = None
+    min: Optional[float] = None
+    max: Optional[float] = None
+    std_dev: Optional[float] = None
+    trend_direction: (
+        str  # "increasing", "decreasing", "stable", "worsening", "improving"
+    )
+    time_in_range_percent: Optional[float] = None
+    normal_count: int
+    abnormal_count: int
+    result_type: Optional[str] = "quantitative"
+    qualitative_summary: Optional[Dict[str, int]] = (
+        None  # e.g., {"positive": 3, "negative": 5}
+    )
+
+
+class LabTestComponentTrendResponse(BaseModel):
+    """Response for trend data request"""
+
+    test_name: str
+    unit: Optional[str] = None
+    category: Optional[str] = None
+    data_points: List[LabTestComponentTrendDataPoint]
+    statistics: LabTestComponentTrendStatistics
+    is_aggregated: bool = False
+    aggregation_period: Optional[str] = None  # "month", "week", etc.
+    result_type: Optional[str] = "quantitative"
+
+
+# Component Catalog schemas
+
+
+class ComponentCatalogEntry(BaseModel):
+    """Single entry in the component catalog – one per unique test name."""
+
+    test_name: str
+    trend_test_name: (
+        str  # canonical_test_name or stripped test_name – use for trend lookups
+    )
+    abbreviation: Optional[str] = None
+    latest_value: Optional[float] = None
+    latest_qualitative_value: Optional[str] = None
+    latest_textual_value: Optional[str] = None
+    unit: Optional[str] = None
+    status: Optional[str] = None
+    category: Optional[str] = None
+    result_type: Optional[str] = "quantitative"
+    reading_count: int = 1
+    trend_direction: str = "stable"
+    latest_date: Optional[str] = None
+    ref_range_min: Optional[float] = None
+    ref_range_max: Optional[float] = None
+    ref_range_text: Optional[str] = None
+
+
+class ComponentCatalogResponse(BaseModel):
+    """Paginated response for component catalog."""
+
+    items: List[ComponentCatalogEntry]
+    total: int
+
+
+class TestComponentDefaults(BaseModel):
+    """Default values for a new test component, sourced from the most recent prior entry."""
+
+    unit: Optional[str] = None
+    ref_range_min: Optional[float] = None
+    ref_range_max: Optional[float] = None
+    ref_range_text: Optional[str] = None
+    category: Optional[str] = None
+    abbreviation: Optional[str] = None

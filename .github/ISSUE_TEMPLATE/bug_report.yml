@@ -1,0 +1,112 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+name: Bug report
+description: Report a problem with the experimental HealthBox source preview
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the fields below so the issue can be reproduced and triaged quickly.
+
+        **Public issue:** use fabricated examples only. Never attach real reports, patient screenshots, databases, raw production logs, HAR files, credentials or personal information. See SECURITY.md for private security reporting.
+
+  - type: input
+    id: version
+    attributes:
+      label: HealthBox source revision
+      description: Found in the app footer or Settings page (e.g. `0.64.0`).
+      placeholder: "0.64.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: docker-tag
+    attributes:
+      label: Docker tag
+      description: Which image tag are you running?
+      options:
+        - latest
+        - develop
+        - specific version tag
+        - custom build
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: Host OS running the Docker container, and the OS of the machine used to access the UI if different.
+      placeholder: "Ubuntu 22.04 (host), Windows 11 (client)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the unexpected behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps that reliably trigger the bug.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or screen recording
+      description: Optional synthetic-only UI reproduction. Do not upload real records or patient screenshots, even with names blurred.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        Provide a short error code/message from an isolated synthetic reproduction only.
+        Do not paste production logs, request bodies, cookies, authorization headers,
+        HAR files, local usernames, private hostnames, or full filesystem paths.
+      render: shell
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Acknowledgements
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I removed any PHI, personal data, and secrets from logs, screenshots, and descriptions.
+          required: true
+        - label: I understand this is an experimental HealthBox source preview, not a production-approved release.
+          required: true

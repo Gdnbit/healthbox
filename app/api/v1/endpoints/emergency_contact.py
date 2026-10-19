@@ -1,0 +1,280 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+from typing import Any, List, Optional
+
+from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy.orm import Session
+
+from app.api import deps
+from app.api.activity_logging import log_create
+from app.api.deps import NotFoundException
+from app.api.v1.endpoints.utils import (
+    handle_delete_with_logging,
+    handle_update_with_logging,
+)
+from app.core.http.error_handling import handle_database_errors
+from app.core.logging.config import get_logger
+from app.core.logging.helpers import log_data_access
+from app.crud.emergency_contact import emergency_contact
+from app.models.activity_log import EntityType
+from app.models.models import EmergencyContact, User
+from app.schemas.emergency_contact import (
+    EmergencyContactCreate,
+    EmergencyContactResponse,
+    EmergencyContactUpdate,
+    EmergencyContactWithRelations,
+)
+
+router = APIRouter()
+
+# Initialize logger
+logger = get_logger(__name__, "app")
+
+
+@router.post("/", response_model=EmergencyContactResponse)
+def create_emergency_contact(
+    *,
+    db: Session = Depends(deps.get_db),
+    emergency_contact_in: EmergencyContactCreate,
+    current_user_id: int = Depends(deps.get_current_user_id),
+    current_user: User = Depends(deps.get_current_user),
+    current_user_patient_id: int = Depends(deps.get_current_user_patient_id),
+    target_patient_id: int = Depends(deps.get_accessible_patient_id),
+) -> Any:
+    """Create new emergency contact."""
+    # Verify user has edit permission (get_accessible_patient_id only checks 'view')
+    deps.verify_patient_record_access(
+        record_patient_id=target_patient_id,
+        current_user_patient_id=current_user_patient_id,
+        record_type="emergency_contact",
+        db=db,
+        current_user=current_user,
+        permission="edit",
+    )
+
+    # Use the specialized method that handles patient_id properly
+    emergency_contact_obj = emergency_contact.create_for_patient(
+        db=db, patient_id=target_patient_id, obj_in=emergency_contact_in
+    )
+
+    # Log the creation activity using centralized logging
+    log_create(
+        db=db,
+        entity_type=EntityType.EMERGENCY_CONTACT,
+        entity_obj=emergency_contact_obj,
+        user_id=current_user_id,
+    )
+
+    return emergency_contact_obj
+
+
+@router.get("/", response_model=List[EmergencyContactResponse])
+def read_emergency_contacts(
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    skip: int = 0,
+    limit: int = Query(default=10000, le=10000),
+    is_active: Optional[bool] = Query(None),
+    is_primary: Optional[bool] = Query(None),
+    target_patient_id: int = Depends(deps.get_accessible_patient_id),
+    current_user_id: int = Depends(deps.get_current_user_id),
+) -> Any:
+    """Retrieve emergency contacts for the current user or accessible patient."""
+
+    # Start with base query
+    query = db.query(EmergencyContact).filter(
+        EmergencyContact.patient_id == target_patient_id
+    )
+
+    # Apply optional filters
+    if is_active is not None:
+        query = query.filter(EmergencyContact.is_active == is_active)
+
+    if is_primary is not None:
+        query = query.filter(EmergencyContact.is_primary == is_primary)
+
+    # Order by primary first, then by name
+    query = query.order_by(EmergencyContact.is_primary.desc(), EmergencyContact.name)
+
+    # Apply pagination
+    contacts = query.offset(skip).limit(limit).all()
+
+    log_data_access(
+        logger,
+        request,
+        current_user_id,
+        "read",
+        "EmergencyContact",
+        patient_id=target_patient_id,
+        count=len(contacts),
+    )
+
+    return contacts
+
+
+@router.get("/{emergency_contact_id}", response_model=EmergencyContactWithRelations)
+def read_emergency_contact(
+    emergency_contact_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    target_patient_id: int = Depends(deps.get_accessible_patient_id),
+    current_user_id: int = Depends(deps.get_current_user_id),
+) -> Any:
+    """Get emergency contact by ID with related information - only allows access to user's own contacts."""
+    with handle_database_errors(request=request):
+        # Use direct query with joinedload for relations
+        from sqlalchemy.orm import joinedload
+
+        contact_obj = (
+            db.query(EmergencyContact)
+            .options(joinedload(EmergencyContact.patient))
+            .filter(EmergencyContact.id == emergency_contact_id)
+            .first()
+        )
+
+        if not contact_obj:
+            raise NotFoundException(
+                resource="Emergency Contact",
+                message="Emergency Contact not found",
+                request=request,
+            )
+
+        # Security check: ensure the contact belongs to the current user
+        deps.verify_patient_record_access(
+            getattr(contact_obj, "patient_id"), target_patient_id, "emergency contact"
+        )
+
+        log_data_access(
+            logger,
+            request,
+            current_user_id,
+            "read",
+            "EmergencyContact",
+            record_id=emergency_contact_id,
+            patient_id=target_patient_id,
+        )
+
+        return contact_obj
+
+
+@router.put("/{emergency_contact_id}", response_model=EmergencyContactResponse)
+def update_emergency_contact(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    emergency_contact_id: int,
+    emergency_contact_in: EmergencyContactUpdate,
+    current_user_id: int = Depends(deps.get_current_user_id),
+    current_user: User = Depends(deps.get_current_user),
+    current_user_patient_id: int = Depends(deps.get_current_user_patient_id),
+    target_patient_id: int = Depends(deps.get_accessible_patient_id),
+) -> Any:
+    """Update an emergency contact."""
+    return handle_update_with_logging(
+        db=db,
+        crud_obj=emergency_contact,
+        entity_id=emergency_contact_id,
+        obj_in=emergency_contact_in,
+        entity_type=EntityType.EMERGENCY_CONTACT,
+        user_id=current_user_id,
+        entity_name="Emergency Contact",
+        request=request,
+        current_user=current_user,
+        current_user_patient_id=current_user_patient_id,
+    )
+
+
+@router.delete("/{emergency_contact_id}")
+def delete_emergency_contact(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    emergency_contact_id: int,
+    current_user_id: int = Depends(deps.get_current_user_id),
+    current_user: User = Depends(deps.get_current_user),
+    current_user_patient_id: int = Depends(deps.get_current_user_patient_id),
+    target_patient_id: int = Depends(deps.get_accessible_patient_id),
+) -> Any:
+    """Delete an emergency contact."""
+    return handle_delete_with_logging(
+        db=db,
+        crud_obj=emergency_contact,
+        entity_id=emergency_contact_id,
+        entity_type=EntityType.EMERGENCY_CONTACT,
+        user_id=current_user_id,
+        entity_name="Emergency Contact",
+        request=request,
+        current_user=current_user,
+        current_user_patient_id=current_user_patient_id,
+    )
+
+
+@router.get("/patient/{patient_id}/primary", response_model=EmergencyContactResponse)
+def get_primary_emergency_contact(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    patient_id: int = Depends(deps.verify_patient_access),
+    current_user_id: int = Depends(deps.get_current_user_id),
+) -> Any:
+    """Get the primary emergency contact for a patient."""
+    with handle_database_errors(request=request):
+        primary_contact = emergency_contact.get_primary_contact(
+            db, patient_id=patient_id
+        )
+        if not primary_contact:
+            raise NotFoundException(
+                resource="Emergency Contact",
+                message="Primary Emergency Contact not found",
+                request=request,
+            )
+
+        log_data_access(
+            logger,
+            request,
+            current_user_id,
+            "read",
+            "EmergencyContact",
+            record_id=getattr(primary_contact, "id", None),
+            patient_id=patient_id,
+        )
+
+        return primary_contact
+
+
+@router.post(
+    "/{emergency_contact_id}/set-primary", response_model=EmergencyContactResponse
+)
+def set_primary_emergency_contact(
+    *,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    emergency_contact_id: int,
+    current_user_patient_id: int = Depends(deps.get_current_user_patient_id),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Set an emergency contact as the primary contact."""
+    with handle_database_errors(request=request):
+        # Verify the contact belongs to the current user
+        contact_obj = emergency_contact.get(db, id=emergency_contact_id)
+        if not contact_obj:
+            raise NotFoundException(
+                resource="Emergency Contact",
+                message="Emergency Contact not found",
+                request=request,
+            )
+
+        # Security check: ensure the contact belongs to the current user
+        deps.verify_patient_record_access(
+            getattr(contact_obj, "patient_id"),
+            current_user_patient_id,
+            "emergency contact",
+            db=db,
+            current_user=current_user,
+            permission="edit",
+        )
+
+        # Set as primary
+        updated_contact = emergency_contact.set_primary_contact(
+            db, contact_id=emergency_contact_id, patient_id=current_user_patient_id
+        )
+        return updated_contact

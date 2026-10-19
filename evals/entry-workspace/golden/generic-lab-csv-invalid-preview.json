@@ -1,0 +1,14 @@
+{
+  "total_rows": 3,
+  "valid_rows": 0,
+  "invalid_rows": 3,
+  "skipped_blank_rows": 0,
+  "encoding": "utf-8-sig",
+  "delimiter": ",",
+  "rows": [],
+  "errors": [
+    {"row_number": 2, "field": "observed_date", "code": "invalid_date", "message": "Use a supported calendar date format."},
+    {"row_number": 3, "field": "test_name", "code": "unsafe_formula", "message": "Spreadsheet formulas are not allowed in text fields."},
+    {"row_number": 4, "field": "value", "code": "unsupported_qualitative", "message": "Use a supported qualitative result."}
+  ]
+}

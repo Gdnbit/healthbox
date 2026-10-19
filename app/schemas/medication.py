@@ -1,0 +1,459 @@
+from datetime import date
+from typing import TYPE_CHECKING, List, Optional
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
+
+from app.core.utils.datetime_utils import HHMM_24H_RE
+from app.models.enums import get_all_medication_statuses, get_all_medication_types
+from app.schemas.base_tags import TaggedEntityMixin
+from app.schemas.validators import validate_text_field
+
+if TYPE_CHECKING:
+    from app.schemas.pharmacy import Pharmacy
+    from app.schemas.practitioner import Practitioner
+
+
+MAX_REMINDER_TIMES = 12
+MAX_REMINDER_MESSAGE_LENGTH = 200
+VALID_REMINDER_DAYS = frozenset(range(7))  # 0 = Monday … 6 = Sunday
+
+
+def _normalize_reminder_times(value):
+    """Shared validator body for reminder_times — sorts, dedups, enforces HH:MM."""
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise ValueError("reminder_times must be a list of HH:MM strings")
+    if len(value) > MAX_REMINDER_TIMES:
+        raise ValueError(
+            f"At most {MAX_REMINDER_TIMES} reminder times allowed"
+        )
+    seen = set()
+    for entry in value:
+        if not isinstance(entry, str) or not HHMM_24H_RE.match(entry):
+            raise ValueError(
+                f"Reminder time '{entry}' must be in HH:MM 24-hour format"
+            )
+        if entry in seen:
+            raise ValueError(f"Duplicate reminder time: {entry}")
+        seen.add(entry)
+    return sorted(seen)
+
+
+def _normalize_reminder_days(value):
+    """Shared validator body for reminder_days — deduplicates, sorts, validates 0-6."""
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise ValueError("reminder_days must be a list of integers (0=Mon - 6=Sun)")
+    invalid = [d for d in value if isinstance(d, bool) or not isinstance(d, int) or d not in VALID_REMINDER_DAYS]
+    if invalid:
+        raise ValueError(
+            f"reminder_days values must be integers 0-6 (Mon=0, Sun=6); invalid: {invalid}"
+        )
+    return sorted(set(value))
+
+
+class MedicationBase(TaggedEntityMixin):
+    """Base schema for Medication"""
+
+    medication_name: str
+    alternative_name: Optional[str] = None
+    medication_type: Optional[str] = "prescription"
+    dosage: Optional[str] = None
+    frequency: Optional[str] = None
+    route: Optional[str] = None
+    indication: Optional[str] = None
+    effective_period_start: Optional[date] = None
+    effective_period_end: Optional[date] = None
+    status: Optional[str] = None
+    practitioner_id: Optional[int] = None
+    pharmacy_id: Optional[int] = None
+    notes: Optional[str] = None
+    side_effects: Optional[str] = None
+    reminder_enabled: bool = False
+    reminder_times: Optional[List[str]] = None
+    reminder_message: Optional[str] = None
+    reminder_days: Optional[List[int]] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def clean_empty_strings(cls, values):
+        """Convert empty strings to None for optional date fields"""
+        if isinstance(values, dict):
+            for field in [
+                "effective_period_start",
+                "effective_period_end",
+                "alternative_name",
+                "dosage",
+                "frequency",
+                "route",
+                "indication",
+                "status",
+                "medication_type",
+                "practitioner_id",
+                "pharmacy_id",
+                "notes",
+                "side_effects",
+                "reminder_message",
+            ]:
+                if field in values and values[field] == "":
+                    values[field] = None
+        return values
+
+    @field_validator("reminder_times")
+    @classmethod
+    def validate_reminder_times(cls, v):
+        return _normalize_reminder_times(v)
+
+    @field_validator("reminder_message")
+    @classmethod
+    def validate_reminder_message(cls, v):
+        return validate_text_field(v, max_length=MAX_REMINDER_MESSAGE_LENGTH, field_name="Reminder message")
+
+    @field_validator("reminder_days")
+    @classmethod
+    def validate_reminder_days(cls, v):
+        return _normalize_reminder_days(v)
+
+    @field_validator("medication_name")
+    @classmethod
+    def validate_medication_name(cls, v):
+        """
+        Validate medication name requirements.
+
+        Args:
+            v: The medication name value to validate
+
+        Returns:
+            Cleaned medication name (stripped whitespace)
+
+        Raises:
+            ValueError: If medication name doesn't meet requirements
+        """
+        if not v or len(v.strip()) < 2:
+            raise ValueError("Medication name must be at least 2 characters long")
+        if len(v) > 100:
+            raise ValueError("Medication name must be less than 100 characters")
+        return v.strip()
+
+    @field_validator("alternative_name")
+    @classmethod
+    def validate_alternative_name(cls, v):
+        if v is not None:
+            if len(v.strip()) < 2:
+                raise ValueError("Alternative name must be at least 2 characters long")
+            if len(v) > 100:
+                raise ValueError("Alternative name must be 100 characters or fewer")
+            return v.strip()
+        return v
+
+    @field_validator("dosage")
+    @classmethod
+    def validate_dosage(cls, v):
+        """Validate dosage format"""
+        if v and len(v.strip()) > 50:
+            raise ValueError("Dosage must be less than 50 characters")
+        return v.strip() if v else None
+
+    @field_validator("frequency")
+    @classmethod
+    def validate_frequency(cls, v):
+        """Validate frequency format"""
+        if v and len(v.strip()) > 50:
+            raise ValueError("Frequency must be less than 50 characters")
+        return v.strip() if v else None
+
+    @field_validator("route")
+    @classmethod
+    def validate_route(cls, v):
+        """Validate route of administration"""
+        valid_routes = [
+            "oral",
+            "injection",
+            "topical",
+            "intravenous",
+            "intramuscular",
+            "subcutaneous",
+            "inhalation",
+            "nasal",
+            "rectal",
+            "sublingual",
+        ]
+        if v and v.lower() not in valid_routes:
+            raise ValueError(f"Route must be one of: {', '.join(valid_routes)}")
+        return v.lower() if v else None
+
+    @field_validator("medication_type")
+    @classmethod
+    def validate_medication_type(cls, v):
+        """Validate medication type using enum"""
+        if v is not None:
+            valid_types = get_all_medication_types()
+            if v not in valid_types:
+                raise ValueError(
+                    f"Medication type must be one of: {', '.join(valid_types)}"
+                )
+            return v
+        return "prescription"
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        """Validate medication status using enum"""
+        if v is not None:
+            valid_statuses = get_all_medication_statuses()
+            if v.lower() not in valid_statuses:
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+            return v.lower()
+        return v
+
+    @field_validator("effective_period_end")
+    @classmethod
+    def validate_effective_period(cls, v, info: ValidationInfo):
+        """Validate that end date is after start date"""
+        # Only validate if both dates are provided and not None
+        if v and info.data.get("effective_period_start"):
+            if v < info.data["effective_period_start"]:
+                raise ValueError("End date must be after start date")
+        return v
+
+
+class MedicationCreate(MedicationBase):
+    """Schema for creating a new medication"""
+
+    patient_id: int
+    practitioner_id: Optional[int] = None
+    pharmacy_id: Optional[int] = None
+
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, v):
+        """Validate notes length"""
+        if not v:
+            return None
+        stripped = v.strip()
+        if len(stripped) > 1000:
+            raise ValueError("Notes must be less than 1000 characters")
+        return stripped or None
+
+    @field_validator("side_effects")
+    @classmethod
+    def validate_side_effects(cls, v):
+        """Validate side effects length"""
+        if not v:
+            return None
+        stripped = v.strip()
+        if len(stripped) > 1000:
+            raise ValueError("Side effects must be less than 1000 characters")
+        return stripped or None
+
+
+class MedicationUpdate(BaseModel):
+    """Schema for updating an existing medication"""
+
+    medication_name: Optional[str] = None
+    alternative_name: Optional[str] = None
+    medication_type: Optional[str] = None
+    dosage: Optional[str] = None
+    frequency: Optional[str] = None
+    route: Optional[str] = None
+    indication: Optional[str] = None
+    effective_period_start: Optional[date] = None
+    effective_period_end: Optional[date] = None
+    status: Optional[str] = None
+    practitioner_id: Optional[int] = None
+    pharmacy_id: Optional[int] = None
+    notes: Optional[str] = None
+    side_effects: Optional[str] = None
+    tags: Optional[List[str]] = None
+    reminder_enabled: Optional[bool] = None
+    reminder_times: Optional[List[str]] = None
+    reminder_message: Optional[str] = None
+    reminder_days: Optional[List[int]] = None
+
+    @field_validator("reminder_times")
+    @classmethod
+    def validate_reminder_times(cls, v):
+        return _normalize_reminder_times(v)
+
+    @field_validator("reminder_message")
+    @classmethod
+    def validate_reminder_message(cls, v):
+        return validate_text_field(v, max_length=MAX_REMINDER_MESSAGE_LENGTH, field_name="Reminder message")
+
+    @field_validator("reminder_days")
+    @classmethod
+    def validate_reminder_days(cls, v):
+        return _normalize_reminder_days(v)
+
+    @model_validator(mode="before")
+    @classmethod
+    def clean_empty_strings(cls, values):
+        """Convert empty strings to None for optional fields"""
+        if isinstance(values, dict):
+            for field in [
+                "medication_name",
+                "alternative_name",
+                "medication_type",
+                "dosage",
+                "frequency",
+                "route",
+                "indication",
+                "effective_period_start",
+                "effective_period_end",
+                "status",
+                "practitioner_id",
+                "pharmacy_id",
+                "notes",
+                "side_effects",
+                "reminder_message",
+            ]:
+                if field in values and values[field] == "":
+                    values[field] = None
+        return values
+
+    @field_validator("medication_name")
+    @classmethod
+    def validate_medication_name(cls, v):
+        if v is not None:
+            if not v or len(v.strip()) < 2:
+                raise ValueError("Medication name must be at least 2 characters long")
+            if len(v) > 100:
+                raise ValueError("Medication name must be less than 100 characters")
+            return v.strip()
+        return v
+
+    @field_validator("alternative_name")
+    @classmethod
+    def validate_alternative_name(cls, v):
+        if v is not None:
+            if len(v.strip()) < 2:
+                raise ValueError("Alternative name must be at least 2 characters long")
+            if len(v) > 100:
+                raise ValueError("Alternative name must be 100 characters or fewer")
+            return v.strip()
+        return v
+
+    @field_validator("effective_period_end")
+    @classmethod
+    def validate_end_date(cls, v, info: ValidationInfo):
+        """Validate end date - check against start date"""
+        # Only validate if both dates are provided and not None
+        if v and info.data.get("effective_period_start"):
+            if v < info.data["effective_period_start"]:
+                raise ValueError("End date must be after start date")
+        return v
+
+    @field_validator("route")
+    @classmethod
+    def validate_route(cls, v):
+        if v is not None:
+            valid_routes = [
+                "oral",
+                "injection",
+                "topical",
+                "intravenous",
+                "intramuscular",
+                "subcutaneous",
+                "inhalation",
+                "nasal",
+                "rectal",
+                "sublingual",
+            ]
+            if v.lower() not in valid_routes:
+                raise ValueError(f"Route must be one of: {', '.join(valid_routes)}")
+            return v.lower()
+        return v
+
+    @field_validator("medication_type")
+    @classmethod
+    def validate_medication_type(cls, v):
+        if v is not None:
+            valid_types = get_all_medication_types()
+            if v not in valid_types:
+                raise ValueError(
+                    f"Medication type must be one of: {', '.join(valid_types)}"
+                )
+            return v
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        if v is not None:
+            valid_statuses = get_all_medication_statuses()
+            if v.lower() not in valid_statuses:
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+            return v.lower()
+        return v
+
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, v):
+        """Validate notes length"""
+        if v is None:
+            return None
+        stripped = v.strip()
+        if len(stripped) > 1000:
+            raise ValueError("Notes must be less than 1000 characters")
+        return stripped or None
+
+    @field_validator("side_effects")
+    @classmethod
+    def validate_side_effects(cls, v):
+        """Validate side effects length"""
+        if v is None:
+            return None
+        stripped = v.strip()
+        if len(stripped) > 1000:
+            raise ValueError("Side effects must be less than 1000 characters")
+        return stripped or None
+
+
+class MedicationResponse(MedicationBase):
+    """Schema for medication response"""
+
+    id: int
+    patient_id: int
+    practitioner_id: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MedicationWithRelations(MedicationResponse):
+    """Schema for medication with related data"""
+
+    patient_name: Optional[str] = None
+    practitioner_name: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Enhanced response schema with nested objects
+class MedicationResponseWithNested(MedicationBase):
+    """Schema for medication response with nested practitioner and pharmacy objects"""
+
+    id: int
+    patient_id: int
+    practitioner: Optional["Practitioner"] = None
+    pharmacy: Optional["Pharmacy"] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Late imports to resolve forward references; must come after class definitions.
+# pylint: disable=wrong-import-position
+from app.schemas.pharmacy import Pharmacy
+from app.schemas.practitioner import Practitioner
+
+# pylint: enable=wrong-import-position
+
+# Rebuild the model to resolve forward references
+MedicationResponseWithNested.model_rebuild()

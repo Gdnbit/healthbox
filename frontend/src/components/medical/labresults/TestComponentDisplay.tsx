@@ -1,0 +1,510 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+/**
+ * TestComponentDisplay component for displaying lab test components
+ * Provides beautiful card-based display grouped by category with status indicators
+ */
+
+import React, { useMemo } from 'react';
+import {
+  Card,
+  Stack,
+  Group,
+  Text,
+  Badge,
+  SimpleGrid,
+  Divider,
+  Paper,
+  Box,
+  Tooltip,
+  ActionIcon,
+  Center,
+  Alert,
+  Skeleton,
+} from '@mantine/core';
+import {
+  IconInfoCircle,
+  IconEdit,
+  IconTrash,
+  IconChartLine,
+} from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
+import StatusBadge from '../StatusBadge';
+import { LabTestComponent } from '../../../services/api/labTestComponentApi';
+import {
+  getCategoryDisplayName,
+  getCategoryColor,
+  getQualitativeDisplayName,
+  getQualitativeColor,
+} from '../../../constants/labCategories';
+import logger from '../../../services/logger';
+
+interface TestComponentDisplayProps {
+  components: LabTestComponent[];
+  loading?: boolean;
+  error?: string | null;
+  groupByCategory?: boolean;
+  showActions?: boolean;
+  onEdit?: (_component: LabTestComponent) => void;
+  onDelete?: (_component: LabTestComponent) => void;
+  onTrendClick?: (_testName: string, _unit: string | null) => void;
+  onError?: (_error: Error) => void;
+}
+
+const TestComponentDisplay: React.FC<TestComponentDisplayProps> = ({
+  components,
+  loading = false,
+  error = null,
+  groupByCategory = true,
+  showActions = false,
+  onEdit,
+  onDelete,
+  onTrendClick,
+  onError,
+}) => {
+  const { t } = useTranslation(['labresults', 'medical', 'common', 'shared']);
+  const handleError = (error: Error, context: string) => {
+    logger.error('test_component_display_error', {
+      message: `Error in TestComponentDisplay: ${context}`,
+      error: error.message,
+      component: 'TestComponentDisplay',
+    });
+
+    if (onError) {
+      onError(error);
+    }
+  };
+
+  const getStatusColor = (
+    status: string | null | undefined,
+    value: number | null | undefined,
+    refMin?: number | null,
+    refMax?: number | null
+  ): string => {
+    if (status) {
+      switch (status.toLowerCase()) {
+        case 'normal':
+          return 'green';
+        case 'high':
+          return 'orange';
+        case 'low':
+          return 'orange';
+        case 'critical':
+          return 'red';
+        case 'abnormal':
+          return 'yellow';
+        case 'borderline':
+          return 'yellow';
+        default:
+          return 'gray';
+      }
+    }
+
+    // Auto-calculate status if not provided but ranges are available
+    if (value == null) return 'gray';
+    if (refMin != null && refMax != null) {
+      if (value < refMin || value > refMax) return 'orange';
+      return 'green';
+    } else if (refMax != null) {
+      return value > refMax ? 'orange' : 'green';
+    } else if (refMin != null) {
+      return value < refMin ? 'orange' : 'green';
+    }
+
+    return 'gray';
+  };
+
+  const formatReferenceRange = (component: LabTestComponent): string => {
+    const { ref_range_min, ref_range_max, ref_range_text } = component;
+
+    if (ref_range_text) return ref_range_text;
+    if (ref_range_min != null && ref_range_max != null)
+      return `${ref_range_min} - ${ref_range_max}`;
+    if (ref_range_min != null) return `≥ ${ref_range_min}`;
+    if (ref_range_max != null) return `≤ ${ref_range_max}`;
+    return 'Not specified';
+  };
+
+  const EditDeleteActions: React.FC<{
+    component: LabTestComponent;
+    onEdit?: (_component: LabTestComponent) => void;
+    onDelete?: (_component: LabTestComponent) => void;
+  }> = React.memo(({ component, onEdit, onDelete }) => {
+    const handleEdit = React.useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onEdit?.(component);
+      },
+      [component, onEdit]
+    );
+
+    const handleDelete = React.useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDelete?.(component);
+      },
+      [component, onDelete]
+    );
+
+    return (
+      <Group gap={4}>
+        <Tooltip label="Edit test component">
+          <ActionIcon
+            variant="subtle"
+            size="sm"
+            onClick={handleEdit}
+            aria-label={`Edit ${component.test_name}`}
+          >
+            <IconEdit size={14} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Delete test component">
+          <ActionIcon
+            variant="subtle"
+            color="red"
+            size="sm"
+            onClick={handleDelete}
+            aria-label={`Delete ${component.test_name}`}
+          >
+            <IconTrash size={14} />
+          </ActionIcon>
+        </Tooltip>
+      </Group>
+    );
+  });
+
+  EditDeleteActions.displayName = 'EditDeleteActions';
+
+  const TestComponentCard: React.FC<{ component: LabTestComponent }> =
+    React.memo(({ component }) => {
+      const statusColor = getStatusColor(
+        component.status,
+        component.value,
+        component.ref_range_min,
+        component.ref_range_max
+      );
+      const referenceRange = formatReferenceRange(component);
+
+      // Prefer canonical_test_name so synonyms (e.g. "WBC" + "White Blood Cell")
+      // resolve to the same trend series.
+      const trendTestName =
+        component.canonical_test_name || component.test_name;
+      const trendUnit = component.unit ?? null;
+      const isTextual = component.result_type === 'textual';
+
+      const handleCardClick = React.useCallback(
+        (e: React.MouseEvent) => {
+          if (isTextual) return;
+          // Don't trigger if clicking on action buttons
+          const target = e.target as HTMLElement;
+          if (target.closest('button')) {
+            return;
+          }
+          onTrendClick?.(trendTestName, trendUnit);
+        },
+        [isTextual, trendTestName, trendUnit]
+      );
+
+      const handleKeyDown = React.useCallback(
+        (e: React.KeyboardEvent) => {
+          if (isTextual) return;
+          // Support Enter and Space keys for accessibility
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onTrendClick?.(trendTestName, trendUnit);
+          }
+        },
+        [isTextual, trendTestName, trendUnit]
+      );
+
+      return (
+        <Card
+          withBorder
+          shadow="sm"
+          radius="md"
+          p="md"
+          style={{ cursor: isTextual ? 'default' : 'pointer' }}
+          onClick={handleCardClick}
+          onKeyDown={isTextual ? undefined : handleKeyDown}
+          tabIndex={isTextual ? undefined : 0}
+          role={isTextual ? undefined : 'button'}
+          aria-label={
+            isTextual
+              ? undefined
+              : `View trends for ${trendTestName}${trendUnit ? ` (${trendUnit})` : ''}`
+          }
+        >
+          <Stack gap="sm">
+            {/* Header */}
+            <Group justify="space-between" align="flex-start">
+              <Stack gap={4} style={{ flex: 1 }}>
+                <Group gap="xs" align="center">
+                  <Text fw={600} size="sm">
+                    {component.test_name}
+                  </Text>
+                  {component.abbreviation && (
+                    <Badge variant="light" color="gray" size="xs">
+                      {component.abbreviation}
+                    </Badge>
+                  )}
+                  {/* Trend indicator badge — not shown for textual results */}
+                  {!isTextual && (
+                    <Tooltip label={t('shared:labels.trendCharts')}>
+                      <Badge
+                        variant="light"
+                        color="blue"
+                        size="xs"
+                        leftSection={<IconChartLine size={10} />}
+                      >
+                        {t('shared:labels.trendCharts')}
+                      </Badge>
+                    </Tooltip>
+                  )}
+                </Group>
+                {component.test_code && (
+                  <Text size="xs" c="dimmed">
+                    {component.test_code}
+                  </Text>
+                )}
+              </Stack>
+
+              {/* Edit/Delete - only show when actions enabled */}
+              {showActions && (
+                <EditDeleteActions
+                  component={component}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                />
+              )}
+            </Group>
+
+            {/* Value and Status */}
+            <Group justify="space-between" align="center">
+              <div>
+                {component.result_type === 'qualitative' &&
+                component.qualitative_value ? (
+                  <Badge
+                    size="lg"
+                    variant="filled"
+                    color={getQualitativeColor(component.qualitative_value)}
+                  >
+                    {getQualitativeDisplayName(component.qualitative_value)}
+                  </Badge>
+                ) : component.result_type === 'textual' ? (
+                  <Text
+                    size="sm"
+                    style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
+                  >
+                    {component.textual_value ||
+                      t('labresults:textualResult.noText', '—')}
+                  </Text>
+                ) : (
+                  <Group gap="xs" align="baseline">
+                    <Text fw={700} size="lg" c={statusColor}>
+                      {component.value}
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      {component.unit}
+                    </Text>
+                  </Group>
+                )}
+              </div>
+
+              {component.status && (
+                <StatusBadge
+                  status={component.status}
+                  size="sm"
+                  color={getStatusColor(
+                    component.status,
+                    component.value,
+                    component.ref_range_min,
+                    component.ref_range_max
+                  )}
+                />
+              )}
+            </Group>
+
+            {/* Reference Range — only for quantitative results (null result_type = legacy quantitative) */}
+            {(!component.result_type ||
+              component.result_type === 'quantitative') && (
+              <Group gap="xs" align="center">
+                <Text size="xs" c="dimmed" fw={500}>
+                  {t('labresults:display.referenceLabel')}
+                </Text>
+                <Text size="xs">{referenceRange}</Text>
+                {component.unit && referenceRange !== 'Not specified' && (
+                  <Text size="xs" c="dimmed">
+                    {component.unit}
+                  </Text>
+                )}
+              </Group>
+            )}
+
+            {/* Notes */}
+            {component.notes && (
+              <Box>
+                <Divider size="xs" />
+                <Group gap="xs" align="flex-start" mt="xs">
+                  <IconInfoCircle
+                    size={14}
+                    style={{ marginTop: 2, flexShrink: 0 }}
+                  />
+                  <Text size="xs" c="dimmed" style={{ lineHeight: 1.4 }}>
+                    {component.notes}
+                  </Text>
+                </Group>
+              </Box>
+            )}
+          </Stack>
+        </Card>
+      );
+    });
+
+  TestComponentCard.displayName = 'TestComponentCard';
+
+  const LoadingSkeleton: React.FC = () => (
+    <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+      {[...Array(6)].map((_, index) => (
+        <Card key={index} withBorder p="md">
+          <Stack gap="sm">
+            <Skeleton height={20} width="70%" />
+            <Group justify="space-between">
+              <Skeleton height={28} width={80} />
+              <Skeleton height={24} width={60} />
+            </Group>
+            <Skeleton height={16} width="100%" />
+          </Stack>
+        </Card>
+      ))}
+    </SimpleGrid>
+  );
+
+  const EmptyState: React.FC = () => (
+    <Center p="xl">
+      <Stack align="center" gap="md">
+        <Text size="lg" c="dimmed">
+          {t('labresults:display.noComponents')}
+        </Text>
+        <Text size="sm" c="dimmed" ta="center">
+          {t('labresults:display.noComponentsDescription')}
+        </Text>
+      </Stack>
+    </Center>
+  );
+
+  // Memoize expensive grouping and sorting to prevent recalculation on every render
+  // Must be called before any early returns (React hooks rules)
+  const { sortedCategories, sortedGroupedComponents } = useMemo(() => {
+    if (!components || components.length === 0) {
+      return { sortedCategories: [], sortedGroupedComponents: {} };
+    }
+
+    // Group components by category
+    const groupedComponents = components.reduce(
+      (groups, component) => {
+        const category = component.category || 'other';
+        if (!groups[category]) {
+          groups[category] = [];
+        }
+        groups[category].push(component);
+        return groups;
+      },
+      {} as Record<string, LabTestComponent[]>
+    );
+
+    // Sort categories
+    const sortedCategories = Object.keys(groupedComponents).sort();
+
+    // Create sorted structure
+    const sortedGroupedComponents = sortedCategories.reduce(
+      (acc, category) => {
+        acc[category] = [...groupedComponents[category]].sort((a, b) => {
+          // Sort by display_order first, then by test_name
+          if (a.display_order != null && b.display_order != null) {
+            return a.display_order - b.display_order;
+          }
+          if (a.display_order != null) return -1;
+          if (b.display_order != null) return 1;
+          return a.test_name.localeCompare(b.test_name);
+        });
+        return acc;
+      },
+      {} as Record<string, LabTestComponent[]>
+    );
+
+    return { sortedCategories, sortedGroupedComponents };
+  }, [components]);
+
+  try {
+    if (loading) {
+      return <LoadingSkeleton />;
+    }
+
+    if (error) {
+      return (
+        <Alert color="red" title="Error loading test components">
+          {error}
+        </Alert>
+      );
+    }
+
+    if (!components || components.length === 0) {
+      return <EmptyState />;
+    }
+
+    if (!groupByCategory) {
+      return (
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+          {components.map(component => (
+            <TestComponentCard key={component.id} component={component} />
+          ))}
+        </SimpleGrid>
+      );
+    }
+
+    return (
+      <Stack gap="xl">
+        {sortedCategories.map(category => (
+          <Paper key={category} withBorder p="md" radius="md">
+            <Stack gap="md">
+              {/* Category Header */}
+              <Group gap="xs" align="center">
+                <Badge
+                  variant="light"
+                  color={getCategoryColor(category)}
+                  size="lg"
+                  leftSection={
+                    <Text fw={600} size="sm">
+                      {getCategoryDisplayName(category)}
+                    </Text>
+                  }
+                />
+                <Text size="sm" c="dimmed">
+                  {t('labresults:templates.testCount', {
+                    count: sortedGroupedComponents[category].length,
+                  })}
+                </Text>
+              </Group>
+
+              {/* Components Grid */}
+              <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+                {sortedGroupedComponents[category].map(component => (
+                  <TestComponentCard key={component.id} component={component} />
+                ))}
+              </SimpleGrid>
+            </Stack>
+          </Paper>
+        ))}
+      </Stack>
+    );
+  } catch (error) {
+    handleError(error as Error, 'render');
+
+    return (
+      <Alert color="red" title={t('labresults:display.errorDisplaying')}>
+        {t('common:messages.displayError')}
+      </Alert>
+    );
+  }
+};
+
+export default TestComponentDisplay;

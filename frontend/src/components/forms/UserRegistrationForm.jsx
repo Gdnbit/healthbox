@@ -1,0 +1,549 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { notifySuccess } from '../../utils/notifyTranslated';
+import { authService } from '../../services/auth/simpleAuthService';
+import { adminApiService } from '../../services/api/adminApi';
+import frontendLogger from '../../services/frontendLogger';
+import { Button, Checkbox, Select } from '../ui';
+import styles from './UserRegistrationForm.module.css';
+
+const UserRegistrationForm = ({
+  onSuccess,
+  onCancel,
+  isAdminContext = false,
+}) => {
+  const { t } = useTranslation(['admin', 'common', 'shared']);
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    role: 'user',
+  });
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState('');
+
+  // Patient linking state (admin only)
+  const [linkExistingPatient, setLinkExistingPatient] = useState(false);
+  const [allPatients, setAllPatients] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [isLoadingPatients, setIsLoadingPatients] = useState(false);
+
+  // Load all patients when linking is enabled
+  useEffect(() => {
+    if (!linkExistingPatient || !isAdminContext) {
+      return;
+    }
+
+    let cancelled = false;
+    const loadPatients = async () => {
+      setIsLoadingPatients(true);
+      try {
+        const response = await adminApiService.searchAllPatients();
+        if (!cancelled) {
+          setAllPatients(response.patients || []);
+        }
+      } catch (err) {
+        frontendLogger.logError('Failed to load patients', {
+          error: err.message,
+          component: 'UserRegistrationForm',
+        });
+        if (!cancelled) {
+          setAllPatients([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingPatients(false);
+        }
+      }
+    };
+
+    loadPatients();
+    return () => {
+      cancelled = true;
+    };
+  }, [linkExistingPatient, isAdminContext]);
+
+  // Build dropdown options from patient data
+  const patientOptions = useMemo(() => {
+    return allPatients.map(patient => {
+      const selfTag = patient.is_self_record ? ' [Self-Record]' : '';
+      const ownerInfo = patient.owner_full_name
+        ? ` (${t('createUser.linkPatient.owner', 'Owner')}: ${patient.owner_full_name})`
+        : '';
+      const dobInfo = patient.birth_date
+        ? ` - ${t('createUser.linkPatient.dob', 'DOB')}: ${patient.birth_date}`
+        : '';
+
+      return {
+        value: String(patient.id),
+        label: `${patient.first_name} ${patient.last_name}${selfTag}${dobInfo}${ownerInfo}`,
+      };
+    });
+  }, [allPatients, t]);
+
+  // Get the full patient object for the currently selected ID
+  const selectedPatient = useMemo(() => {
+    if (!selectedPatientId) return null;
+    return allPatients.find(p => String(p.id) === selectedPatientId) || null;
+  }, [selectedPatientId, allPatients]);
+
+  const handleChange = e => {
+    setError('');
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleLinkToggle = checked => {
+    setLinkExistingPatient(checked);
+    if (!checked) {
+      setSelectedPatientId(null);
+    }
+    setError('');
+  };
+
+  const handlePatientSelect = value => {
+    setSelectedPatientId(value);
+    setError('');
+  };
+
+  const validateForm = () => {
+    if (!formData.firstName.trim()) {
+      setError(
+        t(
+          'createUser.validation.firstNameRequired',
+          'Please enter the first name'
+        )
+      );
+      return false;
+    }
+
+    if (!formData.lastName.trim()) {
+      setError(
+        t(
+          'createUser.validation.lastNameRequired',
+          'Please enter the last name'
+        )
+      );
+      return false;
+    }
+
+    if (formData.username.length < 3) {
+      setError(
+        t(
+          'createUser.validation.usernameMinLength',
+          'Username must be at least 3 characters long'
+        )
+      );
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setError(
+        t(
+          'createUser.validation.passwordMinLength',
+          'Password must be at least 6 characters long'
+        )
+      );
+      return false;
+    }
+
+    if (!/[a-zA-Z]/.test(formData.password) || !/\d/.test(formData.password)) {
+      setError(
+        t(
+          'createUser.validation.passwordRequirements',
+          'Password must contain at least one letter and one number'
+        )
+      );
+      return false;
+    }
+
+    return true;
+  };
+
+  // Extract a user-friendly message from various API error shapes
+  const parseErrorMessage = (err, fallback) => {
+    if (typeof err === 'string') return err;
+
+    if (err?.detail && Array.isArray(err.detail)) {
+      return err.detail
+        .map(e =>
+          typeof e === 'object' && e.msg
+            ? `${e.loc?.join('.')} - ${e.msg}`
+            : String(e)
+        )
+        .join('; ');
+    }
+
+    if (err?.detail) return String(err.detail);
+    if (err?.message) return err.message;
+    if (typeof err === 'object') return JSON.stringify(err);
+
+    return fallback;
+  };
+
+  const buildPayload = () => {
+    const payload = {
+      username: formData.username,
+      password: formData.password,
+      email: formData.email,
+      full_name: `${formData.firstName} ${formData.lastName}`,
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+    };
+    if (isAdminContext) {
+      payload.role = formData.role;
+    }
+    return payload;
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsCreating(true);
+    setError('');
+
+    try {
+      if (isAdminContext) {
+        const payload = buildPayload();
+
+        if (linkExistingPatient && selectedPatient) {
+          payload.link_patient_id = selectedPatient.id;
+        }
+
+        const result = await adminApiService.createUserWithPatientLink(payload);
+
+        if (
+          result.status === 'success' ||
+          result.status === 'partial_success'
+        ) {
+          const successKey = result.data?.linked_patient_id
+            ? 'notifications:toasts.auth.userCreatedWithLinkSuccess'
+            : 'notifications:toasts.auth.userCreatedSuccess';
+
+          notifySuccess(successKey);
+
+          if (result.status === 'partial_success') {
+            frontendLogger.logError(
+              'Partial success creating user with patient link',
+              {
+                message: result.message,
+                component: 'UserRegistrationForm',
+              }
+            );
+          }
+
+          onSuccess?.({
+            userData: result.data,
+            formData,
+            isAdminContext: true,
+            linkedPatientId: result.data?.linked_patient_id,
+          });
+        } else {
+          setError(
+            result.message ||
+              t('createUser.errors.createFailed', 'Failed to create user')
+          );
+        }
+      } else {
+        const registerResult = await authService.register(buildPayload());
+
+        if (registerResult.success) {
+          notifySuccess('notifications:toasts.auth.accountCreatedSuccess');
+
+          onSuccess?.({
+            userData: registerResult.data,
+            formData,
+            isAdminContext: false,
+          });
+        } else {
+          setError(
+            parseErrorMessage(
+              registerResult.error,
+              t(
+                'createUser.errors.accountCreateFailed',
+                'Failed to create account'
+              )
+            )
+          );
+        }
+      }
+    } catch (err) {
+      frontendLogger.logError('Error creating user', {
+        error: err.message,
+        component: 'UserRegistrationForm',
+        isAdminContext,
+      });
+
+      setError(
+        parseErrorMessage(
+          err,
+          t(
+            'createUser.errors.createRetry',
+            'Failed to create user. Please try again.'
+          )
+        )
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className={styles.form}>
+      {error && <div className={styles.errorMessage}>{error}</div>}
+
+      <div className={styles.formGroup}>
+        <label htmlFor="username">
+          {t('shared:labels.username', 'Username')} *
+        </label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          value={formData.username}
+          onChange={handleChange}
+          required
+          disabled={isCreating}
+          placeholder={t('createUser.usernamePlaceholder', 'Enter username')}
+        />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="password">
+          {t('shared:labels.password', 'Password')} *
+        </label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          disabled={isCreating}
+          placeholder={t(
+            'createUser.passwordPlaceholder',
+            'Enter password (min 6 chars, include letter & number)'
+          )}
+          minLength={6}
+        />
+        <div className={styles.passwordRequirements}>
+          <div
+            className={`${styles.requirement} ${formData.password.length >= 6 ? styles.valid : ''}`}
+          >
+            {t(
+              'admin.createUser.passwordReqs.minLength',
+              'At least 6 characters'
+            )}
+          </div>
+          <div
+            className={`${styles.requirement} ${/[a-zA-Z]/.test(formData.password) ? styles.valid : ''}`}
+          >
+            {t(
+              'admin.createUser.passwordReqs.hasLetter',
+              'Contains at least one letter'
+            )}
+          </div>
+          <div
+            className={`${styles.requirement} ${/[0-9]/.test(formData.password) ? styles.valid : ''}`}
+          >
+            {t(
+              'admin.createUser.passwordReqs.hasNumber',
+              'Contains at least one number'
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="email">{t('shared:labels.email', 'Email')} *</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          disabled={isCreating}
+          placeholder={t('createUser.emailPlaceholder', 'Enter email address')}
+        />
+      </div>
+
+      {isAdminContext && (
+        <div className={styles.formGroup}>
+          <label htmlFor="role">{t('shared:labels.role', 'Role')} *</label>
+          <select
+            id="role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            required
+            disabled={isCreating}
+          >
+            <option value="user">{t('shared:labels.user', 'User')}</option>
+            <option value="admin">{t('shared:labels.admin', 'Admin')}</option>
+          </select>
+        </div>
+      )}
+
+      <div className={styles.formGroup}>
+        <label htmlFor="firstName">
+          {t('shared:labels.firstName', 'First Name')} *
+        </label>
+        <input
+          type="text"
+          id="firstName"
+          name="firstName"
+          value={formData.firstName}
+          onChange={handleChange}
+          required
+          disabled={isCreating}
+          placeholder={t('createUser.firstNamePlaceholder', 'Enter first name')}
+        />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="lastName">
+          {t('shared:labels.lastName', 'Last Name')} *
+        </label>
+        <input
+          type="text"
+          id="lastName"
+          name="lastName"
+          value={formData.lastName}
+          onChange={handleChange}
+          required
+          disabled={isCreating}
+          placeholder={t('createUser.lastNamePlaceholder', 'Enter last name')}
+        />
+      </div>
+
+      {isAdminContext && (
+        <div className={`${styles.formGroup} ${styles.patientLinkSection}`}>
+          <Checkbox
+            checked={linkExistingPatient}
+            onChange={handleLinkToggle}
+            label={t(
+              'createUser.linkPatient.checkbox',
+              'Link to existing patient record'
+            )}
+            disabled={isCreating}
+            id="linkExistingPatient"
+          />
+          <p className={styles.fieldHint}>
+            {t(
+              'admin.createUser.linkPatient.hint',
+              'Instead of creating a new patient record, link the new user to an existing patient (e.g., a child who now needs their own login).'
+            )}
+          </p>
+
+          {linkExistingPatient && (
+            <div className={styles.patientSelectContainer}>
+              <Select
+                value={selectedPatientId}
+                onChange={handlePatientSelect}
+                options={patientOptions}
+                placeholder={
+                  isLoadingPatients
+                    ? t('createUser.linkPatient.loading', 'Loading patients...')
+                    : t(
+                        'createUser.linkPatient.selectPlaceholder',
+                        'Select a patient...'
+                      )
+                }
+                disabled={isCreating || isLoadingPatients}
+                searchable
+                clearable
+              />
+
+              {selectedPatient && (
+                <div className={styles.selectedPatientCard}>
+                  <div className={styles.selectedPatientInfo}>
+                    <p>
+                      <strong>
+                        {selectedPatient.first_name} {selectedPatient.last_name}
+                      </strong>
+                      {selectedPatient.is_self_record && (
+                        <span className={styles.selfRecordBadge}>
+                          {t(
+                            'admin.createUser.linkPatient.selfRecordBadge',
+                            'Self-Record'
+                          )}
+                        </span>
+                      )}
+                    </p>
+                    <p>
+                      {t('createUser.linkPatient.patientId', 'ID')}:{' '}
+                      {selectedPatient.id}
+                    </p>
+                    {selectedPatient.birth_date && (
+                      <p>
+                        {t('createUser.linkPatient.dob', 'DOB')}:{' '}
+                        {selectedPatient.birth_date}
+                      </p>
+                    )}
+                    {selectedPatient.owner_full_name && (
+                      <p>
+                        {t(
+                          'createUser.linkPatient.currentOwner',
+                          'Current Owner'
+                        )}
+                        : {selectedPatient.owner_full_name}
+                      </p>
+                    )}
+                  </div>
+                  {selectedPatient.is_self_record && (
+                    <div className={styles.selfRecordWarning}>
+                      <strong>{t('shared:labels.note', 'Note:')}</strong>{' '}
+                      {t(
+                        'admin.createUser.linkPatient.selfRecordWarning',
+                        "This is the current owner's self-record. A new self-record will be created for the original owner with their demographics copied over. The original owner will receive edit access to this patient."
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className={styles.formActions}>
+        {onCancel && (
+          <Button variant="secondary" onClick={onCancel} disabled={isCreating}>
+            {t('shared:fields.cancel', 'Cancel')}
+          </Button>
+        )}
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={isCreating}
+          loading={isCreating}
+        >
+          {t('createUser.submitButton', 'Create Account')}
+        </Button>
+      </div>
+
+      {!isAdminContext && (
+        <div className={styles.createUserInfo}>
+          <p>
+            <strong>{t('shared:labels.note', 'Note:')}</strong>{' '}
+            {t(
+              'createUser.noteText',
+              'A patient record will be automatically created for this user with default role "user".'
+            )}
+          </p>
+        </div>
+      )}
+    </form>
+  );
+};
+
+export default UserRegistrationForm;

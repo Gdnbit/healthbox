@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "synthetic_only": true,
+  "required_capabilities": [
+    "digital_pdf",
+    "image_ocr",
+    "scanned_pdf_ocr",
+    "heic_image_ocr"
+  ],
+  "required_languages": [
+    "eng",
+    "chi_sim"
+  ],
+  "expected_candidate": {
+    "test_code": "GLU",
+    "numeric_value": 5.2,
+    "unit": "mmol/L",
+    "result_status": "normal"
+  },
+  "formal_write_count": 0
+}

@@ -1,0 +1,40 @@
+{
+  "contract_id": "MVP-ADMIN-TOTP-01",
+  "scope": "sole-public-administrator",
+  "ordinary_member": {
+    "password_only": true,
+    "mfa_ui_exposed": false
+  },
+  "administrator": {
+    "password_result_before_mfa": "restricted_challenge_only",
+    "challenge_ttl_seconds": 300,
+    "supported_first_factor": [
+      "password",
+      "sso"
+    ],
+    "supported_second_factor": [
+      "totp",
+      "single_use_recovery_code"
+    ],
+    "full_session_requires_mfa_verified": true
+  },
+  "enrollment": {
+    "secret_at_rest": "encrypted",
+    "recovery_code_count": 10,
+    "recovery_codes_displayed": "once",
+    "recovery_codes_at_rest": "irreversible_hash"
+  },
+  "revocation": {
+    "access_token_claim": "auth_version",
+    "password_or_mfa_change_increments_auth_version": true
+  },
+  "logging": {
+    "forbidden_values": [
+      "password",
+      "totp_code",
+      "recovery_code",
+      "totp_secret",
+      "challenge_token"
+    ]
+  }
+}

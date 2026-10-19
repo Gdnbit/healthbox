@@ -1,0 +1,779 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+"""
+Comprehensive global error handling system for the Medical Records Management System.
+
+This module provides a centralized error handling system with a local APIException base class,
+custom exception classes for different error types, database error handling,
+and integration with our structured logging system.
+"""
+
+import traceback
+from contextlib import contextmanager
+from typing import Any, Optional
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import (
+    DisconnectionError,
+    IntegrityError,
+    OperationalError,
+    SQLAlchemyError,
+)
+from starlette.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+    HTTP_422_UNPROCESSABLE_ENTITY,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_503_SERVICE_UNAVAILABLE,
+)
+
+from app.core.http.response_models import (
+    ExceptionCode,
+    ExceptionCodeDefinition,
+    ExceptionStatus,
+    ResponseModel,
+)
+from app.core.logging.config import get_logger
+from app.core.logging.constants import LogFields
+from app.core.logging.helpers import log_endpoint_error, log_security_event
+
+# Initialize logger for error handling
+logger = get_logger(__name__, "app")
+
+
+class APIException(Exception):
+    """Base exception for all API errors with standardized response formatting."""
+
+    def __init__(
+        self,
+        error_code,
+        http_status_code: int = 400,
+        status: ExceptionStatus = ExceptionStatus.FAIL,
+        message: Optional[str] = None,
+        description: Optional[str] = None,
+    ):
+        # Extract defaults from ExceptionCodeDefinition when provided
+        if isinstance(error_code, ExceptionCodeDefinition):
+            self.error_code = error_code.error_code
+            self.message = message or error_code.message
+            self.description = description or error_code.description
+        else:
+            self.error_code = str(error_code)
+            self.message = message or "An error occurred"
+            self.description = description or ""
+
+        self.http_status_code = http_status_code
+        self.status = status
+        self.headers: dict[str, str] = {}
+        super().__init__(self.message)
+
+    def to_response_model(self, data=None):
+        """Convert exception to a ResponseModel for JSON serialization."""
+        return ResponseModel(
+            data=data,
+            status=self.status,
+            message=self.message,
+            error_code=self.error_code,
+            description=self.description,
+        )
+
+
+class MedicalRecordsAPIException(APIException):
+    """APIException subclass with structured logging integration for the Medical Records system."""
+
+    def __init__(
+        self,
+        error_code,
+        http_status_code: int = 400,
+        status: ExceptionStatus = ExceptionStatus.FAIL,
+        message: Optional[str] = None,
+        description: Optional[str] = None,
+        request: Optional[Request] = None,
+        context: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
+    ):
+        super().__init__(error_code, http_status_code, status, message, description)
+        if headers:
+            self.headers = headers
+        self._log_exception(request, context)
+
+    def _log_exception(
+        self,
+        request: Optional[Request] = None,
+        context: Optional[dict[str, Any]] = None,
+    ):
+        """Log the exception with structured data, routing to the appropriate helper and level."""
+        extra_data = {
+            "error_code": self.error_code,
+            "http_status": self.http_status_code,
+            LogFields.STATUS: (
+                self.status.value if hasattr(self.status, "value") else str(self.status)
+            ),
+        }
+        if context:
+            extra_data.update(context)
+
+        code = self.http_status_code
+
+        if code >= 500:
+            if request:
+                log_endpoint_error(
+                    logger,
+                    request,
+                    f"Server Error: {self.message}",
+                    error=self.error_code,
+                    **extra_data,
+                )
+            else:
+                logger.error(
+                    f"Server Error: {self.message}",
+                    extra={
+                        LogFields.CATEGORY: "app",
+                        LogFields.EVENT: "api_exception",
+                        **extra_data,
+                    },
+                )
+
+        elif code in (401, 403):
+            if request:
+                log_security_event(
+                    logger,
+                    "authentication_error",
+                    request,
+                    f"Auth Error: {self.message}",
+                    **extra_data,
+                )
+            else:
+                logger.warning(
+                    f"Auth Error: {self.message}",
+                    extra={
+                        LogFields.CATEGORY: "security",
+                        LogFields.EVENT: "authentication_error",
+                        **extra_data,
+                    },
+                )
+
+        elif code >= 400:
+            if request:
+                log_endpoint_error(
+                    logger,
+                    request,
+                    f"Client Error: {self.message}",
+                    error=self.error_code,
+                    **extra_data,
+                )
+            else:
+                logger.warning(
+                    f"Client Error: {self.message}",
+                    extra={
+                        LogFields.CATEGORY: "app",
+                        LogFields.EVENT: "api_exception",
+                        **extra_data,
+                    },
+                )
+
+        else:
+            log_extra = {
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "api_exception",
+                **extra_data,
+            }
+            if request and request.client:
+                log_extra[LogFields.IP] = request.client.host
+            logger.info(f"Exception: {self.message}", extra=log_extra)
+
+
+# Custom exception classes for different error categories
+
+
+class ValidationException(MedicalRecordsAPIException):
+    """Exception for validation errors (422)."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        description: Optional[str] = None,
+        validation_errors: Optional[list[str]] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            error_code=ExceptionCode.VALIDATION_ERROR,
+            http_status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+            status=ExceptionStatus.FAIL,
+            message=message or "Validation failed",
+            description=description or "One or more fields failed validation",
+            **kwargs,
+        )
+        self.validation_errors = validation_errors or []
+
+    def to_response_model(self, data=None):
+        """Override to include validation_errors in the detail field."""
+        return ResponseModel(
+            data=data,
+            status=self.status,
+            message=self.message,
+            error_code=self.error_code,
+            description=self.description,
+            detail=self.validation_errors or None,
+        )
+
+
+class UnauthorizedException(MedicalRecordsAPIException):
+    """Exception for unauthorized access (401)."""
+
+    def __init__(
+        self, message: Optional[str] = None, description: Optional[str] = None, **kwargs
+    ):
+        super().__init__(
+            error_code=ExceptionCode.UNAUTHORIZED,
+            http_status_code=HTTP_401_UNAUTHORIZED,
+            status=ExceptionStatus.FAIL,
+            message=message or "Authentication required",
+            description=description
+            or "You must be authenticated to access this resource",
+            **kwargs,
+        )
+
+
+class ForbiddenException(MedicalRecordsAPIException):
+    """Exception for forbidden access (403)."""
+
+    def __init__(
+        self, message: Optional[str] = None, description: Optional[str] = None, **kwargs
+    ):
+        super().__init__(
+            error_code=ExceptionCode.FORBIDDEN,
+            http_status_code=HTTP_403_FORBIDDEN,
+            status=ExceptionStatus.FAIL,
+            message=message or "Access denied",
+            description=description
+            or "You do not have permission to access this resource",
+            **kwargs,
+        )
+
+
+class NotFoundException(MedicalRecordsAPIException):
+    """Exception for resource not found (404)."""
+
+    def __init__(
+        self,
+        resource: Optional[str] = None,
+        message: Optional[str] = None,
+        description: Optional[str] = None,
+        **kwargs,
+    ):
+        default_message = f"{resource} not found" if resource else "Resource not found"
+        default_description = (
+            f"The requested {resource.lower()} does not exist"
+            if resource
+            else "The requested resource does not exist"
+        )
+
+        super().__init__(
+            error_code=ExceptionCode.NOT_FOUND,
+            http_status_code=HTTP_404_NOT_FOUND,
+            status=ExceptionStatus.FAIL,
+            message=message or default_message,
+            description=description or default_description,
+            **kwargs,
+        )
+
+
+class ConflictException(MedicalRecordsAPIException):
+    """Exception for resource conflicts (409)."""
+
+    def __init__(
+        self, message: Optional[str] = None, description: Optional[str] = None, **kwargs
+    ):
+        super().__init__(
+            error_code=ExceptionCode.CONFLICT,
+            http_status_code=HTTP_409_CONFLICT,
+            status=ExceptionStatus.FAIL,
+            message=message or "Resource conflict",
+            description=description
+            or "The request conflicts with the current state of the resource",
+            **kwargs,
+        )
+
+
+class DatabaseException(MedicalRecordsAPIException):
+    """Exception for database errors (500)."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        description: Optional[str] = None,
+        original_error: Optional[Exception] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            error_code=ExceptionCode.DATABASE_ERROR,
+            http_status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            status=ExceptionStatus.FAIL,
+            message=message or "Database operation failed",
+            description=description or "An error occurred while accessing the database",
+            **kwargs,
+        )
+        self.original_error = original_error
+
+
+class BusinessLogicException(MedicalRecordsAPIException):
+    """Exception for business logic violations (400)."""
+
+    def __init__(
+        self, message: Optional[str] = None, description: Optional[str] = None, **kwargs
+    ):
+        super().__init__(
+            error_code=ExceptionCode.BUSINESS_LOGIC_ERROR,
+            http_status_code=HTTP_400_BAD_REQUEST,
+            status=ExceptionStatus.FAIL,
+            message=message or "Business rule violation",
+            description=description or "The operation violates business rules",
+            **kwargs,
+        )
+
+
+class ServiceUnavailableException(MedicalRecordsAPIException):
+    """Exception for service unavailable (503)."""
+
+    def __init__(
+        self, message: Optional[str] = None, description: Optional[str] = None, **kwargs
+    ):
+        super().__init__(
+            error_code=ExceptionCode.SERVICE_UNAVAILABLE,
+            http_status_code=HTTP_503_SERVICE_UNAVAILABLE,
+            status=ExceptionStatus.FAIL,
+            message=message or "Service temporarily unavailable",
+            description=description
+            or "The service is temporarily unavailable, please try again later",
+            **kwargs,
+        )
+
+
+@contextmanager
+def handle_database_errors(
+    request: Optional[Request] = None, context: Optional[dict[str, Any]] = None
+):
+    """
+    Context manager for handling database errors with proper logging and exception conversion.
+
+    Usage:
+        with handle_database_errors(request=request, context={"operation": "create_patient"}):
+            # database operation
+            db.add(patient)
+            db.commit()
+    """
+    try:
+        yield
+    except IntegrityError as e:
+        error_context = {"db_error_type": "integrity_error", "original_error": str(e)}
+        if context:
+            error_context.update(context)
+
+        # Check for common integrity constraint violations
+        error_msg = str(e.orig) if hasattr(e, "orig") else str(e)
+
+        if "UNIQUE constraint failed" in error_msg or "duplicate key" in error_msg:
+            raise ConflictException(
+                message="Duplicate entry detected",
+                description="A record with the same identifier already exists",
+                request=request,
+                context=error_context,
+            ) from e
+        elif "FOREIGN KEY constraint failed" in error_msg:
+            raise BusinessLogicException(
+                message="Invalid reference",
+                description="The operation references a non-existent record",
+                request=request,
+                context=error_context,
+            ) from e
+        else:
+            raise DatabaseException(
+                message="Data integrity violation",
+                description="The operation violates database constraints",
+                request=request,
+                context=error_context,
+                original_error=e,
+            ) from e
+
+    except (DisconnectionError, OperationalError) as e:
+        error_context = {"db_error_type": "connection_error", "original_error": str(e)}
+        if context:
+            error_context.update(context)
+
+        raise ServiceUnavailableException(
+            message="Database connection error",
+            description="Unable to connect to the database, please try again later",
+            request=request,
+            context=error_context,
+        ) from e
+
+    except SQLAlchemyError as e:
+        error_context = {"db_error_type": "general_db_error", "original_error": str(e)}
+        if context:
+            error_context.update(context)
+
+        raise DatabaseException(
+            message="Database operation failed",
+            description="An unexpected database error occurred",
+            request=request,
+            context=error_context,
+            original_error=e,
+        ) from e
+
+
+def create_enhanced_validation_error_handler():
+    """
+    Create an enhanced validation error handler that maintains our detailed error messages
+    while using the APIException framework.
+    """
+
+    async def enhanced_validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ):
+        """
+        Enhanced handler for Pydantic validation errors (422) with detailed feedback.
+        Maintains the same detailed error processing as the original handler.
+        """
+        user_ip = request.client.host if request.client else "unknown"
+
+        # Pydantic error dictionaries include the rejected input by default.
+        # Request bodies in this application can contain passwords, invitation
+        # tokens, health values, dates, and report text, so only structural
+        # validation metadata is safe to retain.
+        safe_validation_errors = [
+            {key: value for key, value in error.items() if key not in {"input", "url"}}
+            for error in exc.errors()
+        ]
+
+        # Log the validation error with structural metadata only.
+        logger.warning(
+            f"Validation error on {request.method} {request.url.path}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "validation_error",
+                LogFields.IP: user_ip,
+                "validation_errors": safe_validation_errors,
+                "url_path": str(request.url.path),
+                "method": request.method,
+                "error_count": len(safe_validation_errors),
+            },
+        )
+
+        # Create user-friendly error messages using Pydantic's ctx field
+        detailed_errors = []
+        for error in exc.errors():
+            # Extract basic error information
+            field = error.get("loc")[-1] if error.get("loc") else "unknown"
+            error_type = error.get("type", "")
+            ctx = error.get("ctx", {})
+            msg = error.get("msg", "Invalid value")
+
+            # Format field name: capitalize and replace underscores
+            field_name = str(field).replace("_", " ").title()
+
+            # Generate specific error message using ctx constraints
+            if error_type == "string_too_short":
+                min_len = ctx.get("min_length", "minimum")
+                detailed_errors.append(
+                    f"{field_name}: Must be at least {min_len} characters"
+                )
+
+            elif error_type == "string_too_long":
+                max_len = ctx.get("max_length", "maximum")
+                detailed_errors.append(
+                    f"{field_name}: Must be less than {max_len} characters"
+                )
+
+            elif error_type == "greater_than":
+                gt_value = ctx.get("gt", "minimum")
+                detailed_errors.append(f"{field_name}: Must be greater than {gt_value}")
+
+            elif error_type == "greater_than_equal":
+                ge_value = ctx.get("ge", "minimum")
+                detailed_errors.append(f"{field_name}: Must be {ge_value} or greater")
+
+            elif error_type == "less_than":
+                lt_value = ctx.get("lt", "maximum")
+                detailed_errors.append(f"{field_name}: Must be less than {lt_value}")
+
+            elif error_type == "less_than_equal":
+                le_value = ctx.get("le", "maximum")
+                detailed_errors.append(f"{field_name}: Must be {le_value} or less")
+
+            elif error_type == "missing":
+                detailed_errors.append(f"{field_name}: This field is required")
+
+            elif error_type == "value_error":
+                # Custom validators - use the error message from ctx or msg
+                custom_msg = ctx.get("error", msg)
+                detailed_errors.append(f"{field_name}: {custom_msg}")
+
+            else:
+                # Fallback for unknown error types - use the original message
+                detailed_errors.append(f"{field_name}: {msg}")
+
+        # Create ValidationException with our enhanced error details
+        validation_exception = ValidationException(
+            message="Validation failed",
+            description=f"Input validation failed for {len(detailed_errors)} field(s)",
+            validation_errors=detailed_errors,
+            request=request,
+            context={"field_count": len(detailed_errors)},
+        )
+
+        # Return standardized error response
+        return JSONResponse(
+            status_code=validation_exception.http_status_code,
+            content=validation_exception.to_response_model().model_dump(
+                exclude_none=False
+            ),
+        )
+
+    return enhanced_validation_exception_handler
+
+
+def create_fallback_exception_handler():
+    """
+    Create a fallback exception handler for unhandled exceptions with enhanced logging.
+    """
+
+    async def fallback_exception_handler(request: Request, exc: Exception):
+        """
+        Fallback handler for unhandled exceptions with detailed logging.
+        """
+        user_ip = request.client.host if request.client else "unknown"
+        tb = traceback.format_exc()
+
+        # Log comprehensive error information
+        logger.error(
+            f"Unhandled exception on {request.method} {request.url.path}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "unhandled_exception",
+                LogFields.IP: user_ip,
+                "url_path": str(request.url.path),
+                "method": request.method,
+                "exception_type": type(exc).__name__,
+                "exception_message": str(exc),
+                "traceback": tb,
+                "user_agent": request.headers.get("user-agent", "unknown"),
+            },
+        )
+
+        # Create internal server error response
+        internal_error = MedicalRecordsAPIException(
+            error_code=ExceptionCode.INTERNAL_SERVER_ERROR,
+            http_status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            status=ExceptionStatus.FAIL,
+            message="An unexpected error occurred",
+            description="The server encountered an unexpected error. Please try again later.",
+            request=request,
+            context={"exception_type": type(exc).__name__, "has_traceback": True},
+        )
+
+        return JSONResponse(
+            status_code=internal_error.http_status_code,
+            content=internal_error.to_response_model().model_dump(exclude_none=False),
+        )
+
+    return fallback_exception_handler
+
+
+# Map standard HTTP status codes to ExceptionCode definitions for HTTPException conversion
+_HTTP_STATUS_TO_CODE = {
+    400: ExceptionCode.BAD_REQUEST,
+    401: ExceptionCode.UNAUTHORIZED,
+    403: ExceptionCode.FORBIDDEN,
+    404: ExceptionCode.NOT_FOUND,
+    409: ExceptionCode.CONFLICT,
+    422: ExceptionCode.VALIDATION_ERROR,
+}
+
+
+def setup_error_handling(app: FastAPI):
+    """
+    Setup comprehensive error handling for the FastAPI application.
+
+    This function replaces the current basic validation error handler with a
+    comprehensive APIException-based system that handles all error types.
+
+    Args:
+        app: FastAPI application instance
+    """
+
+    @app.exception_handler(APIException)
+    async def api_exception_handler(_request: Request, exc: APIException):
+        return JSONResponse(
+            status_code=exc.http_status_code,
+            content=exc.to_response_model().model_dump(exclude_none=False),
+            headers=exc.headers or None,
+        )
+
+    # Replace default validation error handler with our enhanced version
+    app.add_exception_handler(
+        RequestValidationError, create_enhanced_validation_error_handler()
+    )
+
+    # Add fallback handler for any unhandled exceptions
+    app.add_exception_handler(Exception, create_fallback_exception_handler())
+
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException):
+        """Convert standard FastAPI HTTPExceptions to our standardized response format."""
+        error_code = _HTTP_STATUS_TO_CODE.get(
+            exc.status_code, ExceptionCode.INTERNAL_SERVER_ERROR
+        )
+
+        logger.warning(
+            f"HTTP Exception {exc.status_code} on {request.method} {request.url.path}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "http_exception",
+                LogFields.IP: request.client.host if request.client else "unknown",
+                "url_path": str(request.url.path),
+                "method": request.method,
+                "status_code": exc.status_code,
+                "detail": exc.detail,
+            },
+        )
+
+        # Convert to our standardized format
+        api_exception = MedicalRecordsAPIException(
+            error_code=error_code,
+            http_status_code=exc.status_code,
+            status=ExceptionStatus.FAIL,
+            message=exc.detail if isinstance(exc.detail, str) else "HTTP Error",
+            description=f"HTTP {exc.status_code} error occurred",
+            request=request,
+        )
+
+        content = api_exception.to_response_model().model_dump(exclude_none=False)
+        # ``HTTPException.detail`` is an explicitly public response contract.
+        # Preserve structured endpoint errors (for example the health-AI safe
+        # error code/message) instead of discarding them in the global wrapper.
+        content["detail"] = exc.detail
+        return JSONResponse(
+            status_code=api_exception.http_status_code,
+            content=content,
+            headers=exc.headers,
+        )
+
+    logger.info(
+        "Comprehensive error handling system initialized",
+        extra={
+            LogFields.CATEGORY: "app",
+            LogFields.EVENT: "error_handling_setup",
+            "handlers": [
+                "APIException",
+                "RequestValidationError",
+                "HTTPException",
+                "Exception (fallback)",
+            ],
+        },
+    )
+
+
+# Convenience functions for common error scenarios
+
+
+def raise_not_found(
+    resource: str, identifier: Optional[str] = None, request: Optional[Request] = None
+):
+    """
+    Convenience function to raise a not found exception with consistent messaging.
+
+    Args:
+        resource: Type of resource (e.g., "Patient", "Record")
+        identifier: Optional identifier of the resource
+        request: Optional request object for logging context
+    """
+    message = f"{resource} not found"
+    description = f"The requested {resource.lower()}"
+    if identifier:
+        description += f" with identifier '{identifier}'"
+    description += " does not exist"
+
+    raise NotFoundException(
+        resource=resource,
+        message=message,
+        description=description,
+        request=request,
+        context={"resource_type": resource, "identifier": identifier},
+    )
+
+
+def raise_validation_error(field: str, message: str, request: Optional[Request] = None):
+    """
+    Convenience function to raise validation errors for specific fields.
+
+    Args:
+        field: Field name that failed validation
+        message: Error message
+        request: Optional request object for logging context
+    """
+    raise ValidationException(
+        message=f"Validation failed for field '{field}'",
+        description=message,
+        validation_errors=[f"{field}: {message}"],
+        request=request,
+        context={"field": field},
+    )
+
+
+def raise_permission_denied(
+    action: Optional[str] = None,
+    resource: Optional[str] = None,
+    request: Optional[Request] = None,
+):
+    """
+    Convenience function to raise permission denied exceptions.
+
+    Args:
+        action: Action that was attempted (e.g., "delete", "update")
+        resource: Resource type (e.g., "Patient", "Record")
+        request: Optional request object for logging context
+    """
+    message = "Permission denied"
+    description = "You do not have permission"
+
+    if action and resource:
+        message = f"Cannot {action} {resource.lower()}"
+        description = f"You do not have permission to {action} this {resource.lower()}"
+    elif action:
+        message = f"Cannot {action}"
+        description = f"You do not have permission to {action}"
+    elif resource:
+        message = f"Access denied to {resource.lower()}"
+        description = f"You do not have permission to access this {resource.lower()}"
+
+    raise ForbiddenException(
+        message=message,
+        description=description,
+        request=request,
+        context={"action": action, "resource_type": resource},
+    )
+
+
+# Export commonly used items
+__all__ = [
+    "setup_error_handling",
+    "APIException",
+    "MedicalRecordsAPIException",
+    "ValidationException",
+    "UnauthorizedException",
+    "ForbiddenException",
+    "NotFoundException",
+    "ConflictException",
+    "DatabaseException",
+    "BusinessLogicException",
+    "ServiceUnavailableException",
+    "handle_database_errors",
+    "raise_not_found",
+    "raise_validation_error",
+    "raise_permission_denied",
+]

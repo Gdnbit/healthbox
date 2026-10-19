@@ -1,0 +1,780 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "admin": {
+    "createUser": {
+      "linkPatient": {
+        "hint": "En lugar de crear un nuevo registro de paciente, vincule al nuevo usuario a un paciente existente (por ejemplo, un hijo que ahora necesita su propio inicio de sesión).",
+        "selfRecordBadge": "Registro propio",
+        "selfRecordWarning": "Este es el registro propio del propietario actual. Se creará un nuevo registro propio para el propietario original con sus datos demográficos copiados. El propietario original recibirá acceso de edición a este paciente."
+      },
+      "passwordReqs": {
+        "hasLetter": "Contiene al menos una letra",
+        "hasNumber": "Contiene al menos un número",
+        "minLength": "Al menos 6 caracteres"
+      }
+    }
+  },
+  "analytics": {
+    "activityByRecordType": "Actividad por tipo de registro",
+    "activityTrend": "Tendencia de actividad",
+    "analyticsDateRange": "Rango de fechas de analíticas",
+    "axisLabels": {
+      "activities": "Actividades"
+    },
+    "breakdownByType": "Desglose por tipo",
+    "chartLabels": {
+      "patients": "Pacientes",
+      "userActivity": "Actividad de usuario"
+    },
+    "customDateRange": "Rango de fechas personalizado",
+    "dailyAverage": "Promedio diario",
+    "filterByDays": "Filtrar por los últimos {{days}} días",
+    "loading": "Cargando analíticas...",
+    "period": "Período",
+    "recordsDistribution": "Distribución de registros",
+    "subtitle": "Tendencias de actividad, comparaciones y distribución de registros",
+    "title": "Analíticas",
+    "totalActivities": "Total de actividades",
+    "userInteractions": "Interacciones de usuario",
+    "vsPreviousPeriod": "vs. período anterior"
+  },
+  "auditLog": {
+    "actionFilter": "Acción",
+    "dateRange": "Rango de fechas",
+    "entityTypeFilter": "Tipo de entidad",
+    "errorLoading": "Error al cargar el registro de auditoría",
+    "filterByAction": "Filtrar por acción",
+    "filterByDateRange": "Filtrar por rango de fechas",
+    "filterByEntityType": "Filtrar por tipo de entidad",
+    "filterByUser": "Filtrar por usuario",
+    "loading": "Cargando registro de auditoría...",
+    "noLogs": "No se encontraron registros de actividad",
+    "pageInfo": "página {{page}} de {{totalPages}}",
+    "searchAriaLabel": "Buscar registro de actividad",
+    "searchPlaceholder": "Buscar descripciones...",
+    "showingResults": "Mostrando {{shown}} de {{total}} resultados",
+    "subtitle": "Historial completo de actividad para cumplimiento y auditoría",
+    "system": "Sistema",
+    "tableHeaders": {
+      "action": "Acción",
+      "entityType": "Tipo de entidad",
+      "recordId": "ID del registro",
+      "timestamp": "Fecha y hora"
+    },
+    "viewRecord": "Ver registro de {{type}}",
+    "viewRecordAriaLabel": "Ver {{type}} #{{id}}"
+  },
+  "backup": {
+    "existingBackups": {
+      "count_one": "{{count}} copia de seguridad",
+      "count_other": "{{count}} copias de seguridad",
+      "download": "Descargar",
+      "noBackups": "No se encontraron copias de seguridad",
+      "previewRestore": "Vista previa de restauración",
+      "restore": "Restaurar",
+      "tableHeaders": {
+        "fileExists": "Archivo existente",
+        "filename": "Nombre del archivo",
+        "integrity": "Integrity",
+        "restoreDrill": "Restore Drill"
+      },
+      "title": "Copias de seguridad existentes",
+      "verify": "Verificar"
+    },
+    "healthOverview": {
+      "title": "Backup readiness",
+      "description": "Creation, integrity verification and restore testing are separate checks.",
+      "latestFull": "Latest full backup",
+      "integrity": "Archive integrity",
+      "restoreDrill": "Isolated restore drill",
+      "schedule": "Automatic schedule",
+      "replica": "Configured copy target",
+      "none": "None",
+      "noAge": "No backup age available",
+      "ageHours": "{{count}} hours old",
+      "neverChecked": "Not checked yet",
+      "neverTested": "Not tested yet",
+      "nextRun": "Next: {{date}}",
+      "noNextRun": "No next run scheduled",
+      "copiedAt": "Copied: {{date}}",
+      "noReplicaTarget": "No copy target configured",
+      "ready": "Ready",
+      "attention": "{{count}} items to review",
+      "warningTitle": "Readiness notes",
+      "scopeNote": "Integrity verification checks the archive; only an isolated restore drill checks whether its database can actually be restored. Neither proves that an off-device copy exists.",
+      "statuses": {
+        "verified": "Verified",
+        "passed": "Passed",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "copied": "Copied and verified",
+        "not_copied": "Not copied",
+        "not_configured": "Not configured",
+        "not_checked": "Not checked",
+        "not_tested": "Not tested",
+        "failed": "Failed",
+        "missing": "Missing",
+        "corrupted": "Corrupted",
+        "size_mismatch": "Size mismatch",
+        "checksum_failed": "Checksum failed"
+      },
+      "warnings": {
+        "noFullBackup": "No full backup is recorded",
+        "fileMissing": "The latest full backup file is missing",
+        "backupOld": "The latest full backup is more than seven days old",
+        "integrityPending": "The latest full backup has not passed its current integrity check",
+        "restorePending": "The latest full backup has not passed an isolated restore drill",
+        "restoreFailed": "The latest isolated restore drill failed",
+        "scheduleDisabled": "Automatic full backups are disabled",
+        "replicaNotConfigured": "No second copy target is configured",
+        "replicaPending": "The latest full backup has not been copied to the configured target",
+        "replicaFailed": "The latest copy or its checksum verification failed"
+      }
+    },
+    "loading": "Cargando gestión de copias de seguridad...",
+    "modals": {
+      "analyzingBackup": "Analizando el contenido de la copia de seguridad...",
+      "cannotBeUndone": "Esta acción no se puede deshacer.",
+      "cleanupItems": {
+        "oldBackups": "Copias de seguridad antiguas",
+        "orphanedFiles": "Archivos huérfanos",
+        "trashFiles": "Archivos de la papelera"
+      },
+      "cleanupWarning": "Esto eliminará permanentemente:",
+      "completeCleanup": "Limpieza completa del sistema",
+      "deleteBackup": "Eliminar copia de seguridad",
+      "deleteConfirm": "¿Está seguro de que desea eliminar la copia de seguridad \"{{filename}}\"?",
+      "discardChanges": "Descartar cambios",
+      "executeCleanup": "Ejecutar limpieza",
+      "proceedWithRestore": "Proceder con la restauración",
+      "restoreFromBackup": "Restaurar desde copia de seguridad",
+      "restoreNow": "Restaurar ahora",
+      "restorePreview": "Vista previa de restauración",
+      "restoreSafetyNote": "Se creará automáticamente una copia de seguridad de protección antes de iniciar el proceso de restauración.",
+      "restoreWarning": "¡Esto restaurará desde la copia de seguridad y REEMPLAZARÁ los datos actuales!",
+      "stayOnSettings": "Permanecer en configuración",
+      "typeCleanupToConfirm": "Escriba <strong>CLEANUP</strong> para confirmar",
+      "unsavedChanges": "Cambios sin guardar",
+      "unsavedWarning": "Tiene cambios sin guardar en la configuración de retención. Salir de esta pestaña descartará sus cambios."
+    },
+    "operations": {
+      "advancedOptions": "Opciones avanzadas",
+      "advancedOptionsDesc": "Operaciones adicionales de copia de seguridad y limpieza",
+      "chooseFile": "Elegir archivo de copia de seguridad",
+      "cleanupOld": "Limpiar copias antiguas",
+      "completeCleanup": "Limpieza completa",
+      "createFullBackup": "Crear copia de seguridad completa",
+      "creating": "Creando...",
+      "databaseOnly": "Solo base de datos",
+      "filesOnly": "Solo archivos",
+      "fullBackup": "Copia de seguridad completa del sistema",
+      "fullBackupDesc": "Copia de seguridad completa (base de datos + archivos)",
+      "invalidFileType": "Tipo de archivo no válido",
+      "invalidFileTypeDesc": "Por favor seleccione un archivo de respaldo .sql o .zip.",
+      "moreOptions": "Más opciones",
+      "title": "Operaciones de copia de seguridad",
+      "uploadBackup": "Subir copia de seguridad",
+      "uploadBackupDesc": "Subir un archivo de copia de seguridad externo (.sql o .zip)"
+    },
+    "preview": {
+      "affectedData": "Datos afectados",
+      "analysisNotAvailable": "El análisis de la copia de seguridad no está disponible",
+      "backupContent": "Contenido de la copia de seguridad",
+      "backupDetails": "Detalles de la copia de seguridad",
+      "backupFiles": "Archivos de copia de seguridad",
+      "components": "Componentes",
+      "createdAt": "Creado: {{date}}",
+      "currentDatabase": "Base de datos actual",
+      "currentFiles": "Archivos actuales",
+      "manifest": "Manifiesto",
+      "noAffectedData": "No hay información de datos afectados disponible",
+      "noStatistics": "No hay estadísticas disponibles",
+      "restoreMethod": "Método de restauración",
+      "unknownType": "Tipo de copia de seguridad desconocido"
+    },
+    "retention": {
+      "backupsUnit": "copias de seguridad",
+      "currentStatus_one": "<strong>Estado actual:</strong> {{count}} copia de seguridad almacenada (máximo: {{max}})",
+      "currentStatus_other": "<strong>Estado actual:</strong> {{count}} copias de seguridad almacenadas (máximo: {{max}})",
+      "daysUnit": "días",
+      "maximumCount": "Conteo máximo de copias de seguridad",
+      "maximumCountDesc": "Alertar cuando el número de copias de seguridad supere este límite (opcional)",
+      "minimumCount": "Conteo mínimo de copias de seguridad",
+      "minimumCountDesc": "Siempre conservar al menos esta cantidad de copias de seguridad (independientemente de la antigüedad)",
+      "priority": "<strong>Prioridad:</strong> El conteo mínimo siempre tiene precedencia sobre los límites de tiempo",
+      "retentionDays": "Retención de copias de seguridad (días)",
+      "retentionDaysDesc": "Eliminar copias de seguridad con más días de antigüedad que este valor (más allá del conteo mínimo)",
+      "retentionLogic": "Lógica de retención",
+      "saveRetention": "Guardar configuración de retención",
+      "timeBasedCleanup": "<strong>Limpieza por tiempo:</strong> Eliminar copias de seguridad con más de {{days}} días de antigüedad (más allá del conteo mínimo)",
+      "title": "Configuración de retención de copias de seguridad"
+    },
+    "schedule": {
+      "completedWithCopyWarning": "Backup verified, but the configured copy failed: {{error}}",
+      "pipelineSummary": "Backup #{{id}} · integrity {{integrity}} · cleanup removed {{count}} item(s) · copy {{replica}}",
+      "timezone": "Schedule timezone",
+      "completedSuccessfully": "Completada con éxito",
+      "dayOfWeek": "Día de la semana",
+      "dayOfWeekDesc": "¿Qué día debe ejecutarse la copia de seguridad semanal?",
+      "days": {
+        "fri": "Viernes",
+        "mon": "Lunes",
+        "sat": "Sábado",
+        "sun": "Domingo",
+        "thu": "Jueves",
+        "tue": "Martes",
+        "wed": "Miércoles"
+      },
+      "failed": "Error: {{error}}",
+      "frequency": "Frecuencia de copia de seguridad",
+      "frequencyDesc": "Programar copias de seguridad completas automáticas (base de datos + archivos)",
+      "lastBackup": "Última copia de seguridad:",
+      "nextScheduledRun": "Próxima ejecución programada",
+      "presets": {
+        "daily": "Diaria",
+        "every12Hours": "Cada 12 horas",
+        "every6Hours": "Cada 6 horas"
+      },
+      "saveSchedule": "Guardar programación",
+      "timeOfDay": "Hora del día",
+      "timeOfDayDesc": "¿A qué hora debe ejecutarse la copia de seguridad? (formato 24 horas)",
+      "title": "Programación de copias de seguridad automáticas",
+      "unknownError": "Error desconocido"
+    },
+    "subtitle": "Crear y gestionar copias de seguridad del sistema",
+    "tabs": {
+      "backups": "Copias de seguridad"
+    },
+    "unsavedBadge": "Sin guardar"
+  },
+  "createUser": {
+    "autoFeatures": {
+      "editAccess": "El propietario original conservará acceso de edición a los pacientes vinculados",
+      "immediateLogin": "El usuario podrá iniciar sesión inmediatamente después de la creación",
+      "linkExisting": "Utilice \"Vincular a paciente existente\" para transferir un registro de paciente al nuevo usuario",
+      "patientRecord": "Se creará automáticamente un registro de paciente (o se vinculará a uno existente)",
+      "timestamps": "Las marcas de tiempo de la cuenta se establecerán automáticamente"
+    },
+    "autoFeaturesTitle": "Funciones autogeneradas",
+    "cardSubtitle": "Complete el formulario a continuación para crear una nueva cuenta de usuario",
+    "cardTitle": "Detalles de la cuenta de usuario",
+    "emailPlaceholder": "Introduzca la dirección de correo electrónico",
+    "errors": {
+      "accountCreateFailed": "Error al crear la cuenta",
+      "createFailed": "Error al crear usuario",
+      "createRetry": "Error al crear usuario. Inténtelo de nuevo."
+    },
+    "firstNamePlaceholder": "Introduzca el nombre",
+    "lastNamePlaceholder": "Introduzca el apellido",
+    "linkPatient": {
+      "checkbox": "Vincular a un registro de paciente existente",
+      "currentOwner": "Titular actual",
+      "dob": "Fecha de nacimiento",
+      "hint": "En lugar de crear un nuevo registro de paciente, vincule al nuevo usuario a un paciente existente (por ejemplo, un hijo que ahora necesita su propio inicio de sesión).",
+      "loading": "Cargando pacientes...",
+      "owner": "Titular",
+      "patientId": "ID",
+      "selectPlaceholder": "Seleccione un paciente...",
+      "selfRecordBadge": "Registro propio",
+      "selfRecordWarning": "Este es el registro propio del titular actual. Se creará un nuevo registro propio para el titular original con sus datos demográficos copiados. El titular original recibirá acceso de edición a este paciente."
+    },
+    "noteText": "Se creará automáticamente un registro de paciente para este usuario con el rol predeterminado \"usuario\".",
+    "pageSubtitle": "Crear una nueva cuenta de usuario con perfil de paciente",
+    "pageTitle": "Crear nuevo usuario",
+    "passwordPlaceholder": "Introduzca una contraseña (mín. 6 caracteres, incluya letra y número)",
+    "passwordReqs": {
+      "hasLetter": "Contiene al menos una letra",
+      "hasNumber": "Contiene al menos un número",
+      "minLength": "Al menos 6 caracteres"
+    },
+    "submitButton": "Crear cuenta",
+    "successRedirect": "¡Usuario \"{{username}}\" creado con éxito!",
+    "usernamePlaceholder": "Introduzca el nombre de usuario",
+    "validation": {
+      "firstNameRequired": "Introduzca el nombre",
+      "lastNameRequired": "Introduzca el apellido",
+      "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
+      "passwordRequirements": "La contraseña debe contener al menos una letra y un número",
+      "usernameMinLength": "El nombre de usuario debe tener al menos 3 caracteres"
+    }
+  },
+  "dashboard": {
+    "loading": "Cargando panel de control completo...",
+    "quickActions": {
+      "auditLogDesc": "Ver registro de actividad del sistema",
+      "backups": "Copias de seguridad",
+      "backupsDesc": "Gestión de copias de seguridad",
+      "createUser": "Crear nuevo usuario",
+      "createUserDesc": "Crear cuenta de usuario con perfil de paciente",
+      "dataModelsDesc": "Ver y gestionar tablas de la base de datos",
+      "manageUsers": "Gestionar usuarios",
+      "manageUsersDesc": "Ver y gestionar cuentas de usuario",
+      "settingsDesc": "Configuración del sistema",
+      "subtitle": "Tareas administrativas frecuentes",
+      "systemHealthDesc": "Monitorear el estado del sistema",
+      "title": "Acciones rápidas",
+      "trash": "Papelera",
+      "trashDesc": "Recuperar archivos eliminados"
+    },
+    "recentActivity": {
+      "errorLoading": "Error al cargar la actividad",
+      "noActivity": "No hay actividad reciente para mostrar",
+      "subtitle": "Últimos eventos del sistema",
+      "title": "Actividad reciente",
+      "viewAll": "Ver toda la actividad"
+    },
+    "refreshAll": "Actualizar todo",
+    "stats": {
+      "activePatients": "Pacientes activos",
+      "totalUsers": "Total de usuarios"
+    },
+    "subtitle": "Vista general y gestión completa del sistema",
+    "systemHealth": {
+      "databaseStatus": "Estado de la base de datos",
+      "errorLoading": "Error al cargar el estado del sistema",
+      "lastBackup": "Última copia de seguridad",
+      "noBackup": "Sin copia de seguridad",
+      "subtitle": "Estado actual del sistema",
+      "uptime": "Tiempo de actividad"
+    }
+  },
+  "dataModels": {
+    "categories": {
+      "coreMedical": "Datos médicos principales",
+      "fileManagement": "Gestión de archivos",
+      "healthcareDirectory": "Directorio de salud",
+      "patientSupport": "Soporte al paciente",
+      "sharingAccess": "Compartir y acceso",
+      "system": "Sistema"
+    },
+    "clearFilter": "Limpiar filtro",
+    "descriptions": {
+      "allergy": "Alergias y reacciones del paciente",
+      "condition": "Condiciones médicas y diagnósticos",
+      "emergency_contact": "Información de contacto de emergencia de pacientes",
+      "encounter": "Visitas y citas del paciente",
+      "entity_file": "Archivos adjuntos para todos los tipos de entidades",
+      "family_condition": "Condiciones médicas de familiares",
+      "family_history_share": "Relaciones de intercambio de historial médico familiar",
+      "family_member": "Registros de familiares para historial médico",
+      "immunization": "Registros de vacunación y calendarios",
+      "injury": "Lesiones físicas, esguinces, fracturas y quemaduras",
+      "injury_type": "Definiciones reutilizables de tipos de lesiones para menús desplegables",
+      "insurance": "Información de cobertura de seguro del paciente",
+      "invitation": "Invitaciones del sistema para compartir y colaborar",
+      "lab_result": "Resultados de pruebas de laboratorio y valores",
+      "lab_result_file": "Documentos y archivos adjuntos de resultados de laboratorio",
+      "medical_equipment": "Dispositivos y equipos médicos prescritos a pacientes",
+      "medical_specialty": "Medical specialties (e.g. Cardiology) assigned to practitioners",
+      "medication": "Medicamentos recetados y dosificaciones",
+      "patient": "Información demográfica y de contacto del paciente",
+      "patient_share": "Relaciones de intercambio de datos de pacientes entre usuarios",
+      "pharmacy": "Ubicaciones y datos de contacto de farmacias",
+      "practice": "Medical practices — contact details and multiple locations",
+      "practitioner": "Proveedores de atención médica y especialistas",
+      "procedure": "Procedimientos médicos y operaciones",
+      "symptom": "Definiciones y seguimiento de síntomas",
+      "symptom_occurrence": "Registros de episodios individuales de síntomas",
+      "treatment": "Planes de tratamiento y terapias",
+      "user": "Usuarios y administradores del sistema",
+      "vitals": "Presión arterial, frecuencia cardíaca, temperatura"
+    },
+    "displayNames": {
+      "medical_specialty": "Medical Specialties",
+      "practice": "Practices"
+    },
+    "fallbackWarning": "No se pudieron cargar los modelos del servidor. Mostrando la lista de modelos integrada.",
+    "filterAriaLabel": "Filtrar modelos de datos",
+    "filterPlaceholder": "Filtrar modelos...",
+    "noMatchFilter": "Ningún modelo coincide con \"{{query}}\"",
+    "subtitle": "Gestionar y ver todas las tablas y registros de la base de datos"
+  },
+  "directoryCard": {
+    "files": "archivos",
+    "mb": "MB",
+    "ok": "OK"
+  },
+  "fieldRenderer": {
+    "autoGenerated": "Autogenerado",
+    "autoPopulated": "Completado automáticamente desde el usuario actual",
+    "computedField": "Computed from related record (read-only)",
+    "enterField": "Introduzca {{field}}...",
+    "enterPassword": "Introduzca la contraseña para el nuevo usuario...",
+    "notApplicable": "No aplicable",
+    "passwordHash": "Hash de contraseña (solo lectura por seguridad)",
+    "passwordNote": "Introduzca una contraseña en texto plano (mínimo {{minLength}} caracteres con letra y número) - será cifrada de forma segura",
+    "passwordNotSupported": "Los campos de contraseña no son compatibles con este modelo",
+    "patientIdAutoPopulated": "ID del paciente (completado automáticamente)",
+    "patientIdLocked": "ID del paciente (bloqueado al usuario actual)",
+    "primaryKeyAutoGenerated": "Clave primaria (autogenerada)",
+    "primaryKeyReadOnly": "Clave primaria (solo lectura)",
+    "selectDefault": "-- Seleccionar --",
+    "selectField": "-- Seleccionar {{field}} --",
+    "systemTimestamp": "Marca de tiempo del sistema (autogenerada)"
+  },
+  "header": {
+    "administrator": "Administrador",
+    "logout": "Cerrar sesión",
+    "returnToDashboard": "Volver al panel de control",
+    "searchAriaLabel": "Buscar modelos de datos",
+    "searchPlaceholder": "Buscar registros, usuarios o datos...",
+    "switchToMode": "Cambiar al modo {{mode}}",
+    "title": "HealthBox · Administración de registros médicos"
+  },
+  "health": {
+    "applicationUptime": "Tiempo de actividad de la aplicación",
+    "database": {
+      "activeUsers": "Usuarios activos",
+      "connectionStatus": "Estado de la conexión",
+      "connectionTest": "Prueba de conexión",
+      "databaseSize": "Tamaño de la base de datos",
+      "failed": "Fallida",
+      "passed": "Aprobada",
+      "patientRecords": "Registros de pacientes",
+      "title": "Estado de la base de datos"
+    },
+    "lastBackup": "Última copia de seguridad",
+    "lastRunFailed": "La última ejecución falló",
+    "lastUpdated": "Última actualización: {{time}}",
+    "loading": "Cargando estado del sistema...",
+    "next": "Siguiente: {{time}}",
+    "noneYet": "Ninguna aún",
+    "noScheduleConfigured": "No hay programación configurada",
+    "overallStatus": "Estado general del sistema",
+    "performance": {
+      "appMemory": "Memoria de la aplicación (RSS)",
+      "cpuDetails": "Aplicación: {{appPercent}}% de {{cores}} núcleos (sistema: {{systemPercent}}%)",
+      "cpuUsage": "Uso de CPU",
+      "memoryUsage": "Uso de memoria",
+      "memoryUsed": "{{used}} MB utilizados (sistema: {{percent}}% de {{total}} MB)",
+      "responseTime": "Tiempo de respuesta",
+      "systemLoad": "Carga del sistema",
+      "title": "Rendimiento de la aplicación"
+    },
+    "scheduled": "Programada: {{schedule}}",
+    "schedulePresets": {
+      "daily": "Diaria",
+      "every_12_hours": "Cada 12 horas",
+      "every_6_hours": "Cada 6 horas"
+    },
+    "services": {
+      "adminInterface": "Interfaz de administración",
+      "apiStatus": "Estado de la API",
+      "authService": "Servicio de autenticación",
+      "frontendLogging": "Registro del frontend",
+      "title": "Servicios de la aplicación"
+    },
+    "sso": {
+      "allowed": "Permitido",
+      "blocked": "Bloqueado",
+      "passwordOnlyInfo": "Los usuarios solo pueden iniciar sesión con nombre de usuario y contraseña",
+      "providerType": "Tipo de proveedor",
+      "registrationViaSso": "Registro a través de SSO",
+      "ssoStatus": "Estado de SSO",
+      "title": "Inicio de sesión único (SSO)"
+    },
+    "storage": {
+      "appStorage": "Almacenamiento de la aplicación",
+      "diskUsage": "Uso de disco",
+      "freeOf": "{{free}} GB libres de {{total}} GB",
+      "title": "Estado del almacenamiento"
+    },
+    "subtitle": "Estado del sistema en tiempo real y métricas de rendimiento",
+    "title": "Monitor de estado del sistema"
+  },
+  "medicalSpecialty": {
+    "description": "Description",
+    "name": "Name"
+  },
+  "models": {
+    "backToDataModels": "Volver a modelos de datos",
+    "backToModel": "Volver a {{modelName}}",
+    "bulkDeleteAssociated": "Todos los datos asociados (incluyendo {{types}}) también serán eliminados.",
+    "bulkDeleteFailed": "Error en la eliminación masiva",
+    "bulkDeleteWarning": "Está a punto de eliminar permanentemente {{count}} registros de {{modelName}}.",
+    "bulkDeleteWarning_one": "Está a punto de eliminar permanentemente {{count}} registro de {{modelName}}.",
+    "bulkDeleteWarning_other": "Está a punto de eliminar permanentemente {{count}} registros de {{modelName}}.",
+    "changeRole": "Cambiar rol",
+    "changesSaved": "Cambios guardados",
+    "changeUsername": "Cambiar nombre de usuario",
+    "clearSearch": "Limpiar búsqueda",
+    "columnVisibility": "Visibilidad de columnas",
+    "confirmBulkDeletion": "Confirmar eliminación masiva",
+    "confirmDeletion": "Confirmar eliminación",
+    "createNew": "Crear nuevo {{modelName}}",
+    "createRecord": "Crear registro",
+    "deleteFailed": "Error al eliminar",
+    "deleteRecords": "Eliminar {{count}} registros",
+    "deleteRecords_one": "Eliminar {{count}} registro",
+    "deleteRecords_other": "Eliminar {{count}} registros",
+    "deleteSelected": "Eliminar seleccionados",
+    "deleteWarning": "Esto eliminará permanentemente este registro de {{modelName}} y todos los datos asociados:",
+    "editRecord": "Editar {{modelName}}",
+    "exportFailed": "Error en la exportación",
+    "exportToCSV": "Exportar a CSV",
+    "failedToBulkDelete": "No se pudieron eliminar los registros",
+    "failedToDelete": "No se pudo eliminar el registro",
+    "failedToExport": "No se pudieron exportar los datos",
+    "failedToGetPatient": "No se pudo obtener la información del paciente. Asegúrese de tener un registro de paciente.",
+    "failedToSave": "No se pudo guardar el registro",
+    "fieldMaxLength": "Longitud máxima: {{length}}",
+    "fieldReferences": "Referencias: {{reference}}",
+    "fieldRequired": "Obligatorio",
+    "fieldType": "Tipo: {{type}}",
+    "fillForm": "Complete el formulario a continuación para crear un nuevo registro",
+    "loadingForm": "Cargando formulario de creación del modelo...",
+    "noRecordsFound": "No se encontraron registros",
+    "perPage": "{{count}} por página",
+    "perPage_one": "{{count}} por página",
+    "perPage_other": "{{count}} por página",
+    "rawDataJson": "Datos sin procesar (JSON)",
+    "recordDeleted": "Registro eliminado",
+    "recordDeletedMessage": "Se eliminó correctamente el registro #{{id}} de {{modelName}}",
+    "recordId": "ID del registro: {{id}}",
+    "recordsDeleted": "Registros eliminados",
+    "recordsDeletedMessage": "Se eliminaron correctamente {{count}} registros",
+    "recordsDeletedMessage_one": "{{count}} registro eliminado correctamente",
+    "recordsDeletedMessage_other": "{{count}} registros eliminados correctamente",
+    "recordUpdated": "Registro actualizado correctamente",
+    "resetToDefault": "Restablecer valores predeterminados",
+    "roleChangeLastAdmin": "Si este es el último usuario administrador del sistema, podría perder el acceso de administrador.",
+    "roleChangeText": "Está a punto de eliminar los privilegios de administrador de este usuario.",
+    "roleChangeWarning": "Advertencia de cambio de rol",
+    "saveFailed": "Error al guardar",
+    "searchPlaceholder": "Buscar {{modelName}}...",
+    "searchRecords": "Buscar registros",
+    "searchResult": "{{count}} resultados para \"{{query}}\"",
+    "searchResult_one": "{{count}} resultado para \"{{query}}\"",
+    "searchResult_other": "{{count}} resultados para \"{{query}}\"",
+    "selected": "{{count}} seleccionados",
+    "selected_one": "{{count}} seleccionado",
+    "selected_other": "{{count}} seleccionados",
+    "toggleColumnVisibility": "Alternar visibilidad de columnas",
+    "typeDeleteToConfirm": "Escriba <strong>DELETE</strong> para confirmar",
+    "usernameChangeLogout": "Esto cerrará su sesión inmediatamente y deberá volver a iniciar sesión con el nuevo nombre de usuario.",
+    "usernameChangeText": "Está a punto de cambiar su propio nombre de usuario de <strong>\"{{oldUsername}}\"</strong> a <strong>\"{{newUsername}}\"</strong>.",
+    "usernameChangeWarning": "Advertencia de cambio de nombre de usuario",
+    "usernameUpdated": "Nombre de usuario actualizado",
+    "usernameUpdatedMessage": "Su nombre de usuario ha sido cambiado. Inicie sesión con su nuevo nombre de usuario: \"{{username}}\"",
+    "viewRecord": "Ver {{modelName}}",
+    "visibleColumns": "Columnas visibles"
+  },
+  "practices": {
+    "locations": {
+      "add": "Add location",
+      "empty": "No locations yet.",
+      "labelField": "Label",
+      "labelPlaceholder": "Main office",
+      "locationNumber": "Location {{num}}",
+      "moveDown": "Move down",
+      "moveUp": "Move up",
+      "title": "Locations"
+    },
+    "subtitle": "Manage medical practices — contact details, locations, and more.",
+    "title": "Practices"
+  },
+  "practitioner": {
+    "quickAddSpecialty": "Add new specialty",
+    "specialtyPlaceholder": "Select a specialty",
+    "specialtySaved": "Specialty ready to use"
+  },
+  "settings": {
+    "dataRetention": {
+      "title": "Retención de datos",
+      "trashRetention": "Retención de la papelera",
+      "trashRetentionDesc": "Número de días para conservar los archivos eliminados en la papelera antes de la eliminación permanente"
+    },
+    "loading": "Cargando configuración...",
+    "resetAll": "Restablecer todo",
+    "saveAllChanges": "Guardar todos los cambios",
+    "sso": {
+      "ssoDisabledInfo": "SSO está actualmente deshabilitado. Para habilitar SSO, configure las siguientes variables de entorno y reinicie la aplicación:",
+      "ssoRegistration": "Registro por SSO",
+      "testConnection": "Probar conexión",
+      "testConnectionDesc": "Probar la conexión y configuración del proveedor de SSO",
+      "testSsoConnection": "Probar conexión SSO",
+      "title": "Inicio de sesión único (SSO)"
+    },
+    "subtitle": "Configurar ajustes y políticas de retención a nivel del sistema",
+    "title": "Configuración de administración",
+    "userManagement": {
+      "allowRegistration": "Permitir registro de nuevos usuarios",
+      "allowRegistrationDesc": "Habilitar o deshabilitar la posibilidad de que nuevos usuarios creen cuentas desde la página de inicio de sesión"
+    }
+  },
+  "shared": {
+    "dark": "oscuro",
+    "healthy": "saludable",
+    "info": "Información",
+    "light": "claro"
+  },
+  "sidebar": {
+    "adminNavigation": "Navegación de administrador",
+    "comingSoon": "{{label}} (Próximamente)",
+    "items": {
+      "analytics": "Analíticas",
+      "maintenance": "Mantenimiento",
+      "trash": "Papelera"
+    },
+    "sections": {
+      "dataManagement": "Gestión de datos",
+      "monitoring": "Monitoreo",
+      "tools": "Herramientas"
+    },
+    "toggleSidebar": "Alternar barra lateral"
+  },
+  "tools": {
+    "subtitle": "Herramientas administrativas para el mantenimiento del sistema y la gestión de datos",
+    "testLibrary": {
+      "categories": "Categorías",
+      "forceSyncAll": "Forzar sincronización completa",
+      "forceSyncAllDesc": "<strong>Forzar sincronización completa:</strong> Vuelve a emparejar todos los componentes (categorías y nombres canónicos)",
+      "libraryReloaded": "Biblioteca recargada",
+      "libraryVersion": "Versión de la biblioteca",
+      "operational": "Operativo",
+      "reloadDesc": "<strong>Recargar biblioteca:</strong> Actualiza la biblioteca de pruebas desde disco (usar después de actualizar test_library.json)",
+      "reloadLibrary": "Recargar biblioteca",
+      "syncComplete": "Sincronización completa",
+      "syncUnmatched": "Sincronizar sin coincidencia",
+      "syncUnmatchedDesc": "<strong>Sincronizar sin coincidencia:</strong> Actualiza los componentes que aún no tienen un nombre canónico",
+      "title": "Mantenimiento de la biblioteca de pruebas",
+      "totalTests": "Total de pruebas"
+    },
+    "title": "Herramientas y mantenimiento"
+  },
+  "trash": {
+    "clearFilters": "Limpiar filtros",
+    "deleteConfirm": "¿Está seguro de que desea eliminar permanentemente <strong>{{filename}}</strong>?",
+    "deletedDateRange": "Rango de fechas de eliminación",
+    "deleteFailed": "Error al eliminar",
+    "deletePermanently": "Eliminar permanentemente",
+    "deleteWarning": "Esta acción no se puede deshacer. El archivo será eliminado permanentemente del sistema.",
+    "errorLoading": "Error al cargar la papelera",
+    "fileCount_one": "{{count}} archivo",
+    "fileCount_other": "{{count}} archivos",
+    "fileDeleted": "Archivo eliminado",
+    "fileDeletedMessage": "{{filename}} eliminado permanentemente",
+    "fileRestored": "Archivo restaurado",
+    "fileRestoredMessage": "{{filename}} restaurado a su ubicación original",
+    "fileType": "Tipo de archivo",
+    "filterByDeletedDate": "Filtrar por rango de fechas de eliminación",
+    "filterByFileType": "Filtrar por tipo de archivo",
+    "filtered": "(filtrado)",
+    "loading": "Cargando contenido de la papelera...",
+    "manualDeletion": "Eliminación manual",
+    "noFilesInTrash": "No hay archivos en la papelera",
+    "noFilesMatch": "Ningún archivo coincide con sus filtros",
+    "permanentlyDelete": "Eliminar permanentemente",
+    "permanentlyDeleteFile": "Eliminar archivo permanentemente",
+    "purgedDirectories_one": "en {{count}} directorio",
+    "purgedDirectories_other": "en {{count}} directorios",
+    "purgeDescription_one": "Se eliminarán los archivos que hayan superado el período de retención. Actualmente hay <strong>{{count}} {{files}}</strong> en la papelera con un total de <strong>{{size}}</strong>.",
+    "purgeDescription_other": "Se eliminarán los archivos que hayan superado el período de retención. Actualmente hay <strong>{{count}} {{files}}</strong> en la papelera con un total de <strong>{{size}}</strong>.",
+    "purgedMessage_one": "{{count}} archivo expirado eliminado permanentemente",
+    "purgedMessage_other": "{{count}} archivos expirados eliminados permanentemente",
+    "purgeExpired": "Purgar expirados",
+    "purgeExpiredButton": "Purgar expirados",
+    "purgeExpiredFiles": "Purgar archivos expirados",
+    "purgeFailed": "Error al purgar",
+    "purgeWarning": "Esto eliminará permanentemente todos los archivos expirados de la papelera. Esta acción no se puede deshacer.",
+    "restoreConfirm": "¿Está seguro de que desea restaurar <strong>{{filename}}</strong>",
+    "restoreFailed": "Error al restaurar",
+    "restoreFile": "Restaurar archivo",
+    "restoreTo": "a",
+    "restoreToOriginal": "Restaurar a la ubicación original",
+    "searchAriaLabel": "Buscar archivos en la papelera",
+    "searchPlaceholder": "Buscar por nombre de archivo o ruta...",
+    "showingFiltered": "Mostrando {{shown}} de {{total}} {{files}}",
+    "subtitle": "Gestionar archivos eliminados. Restaurar archivos a su ubicación original o eliminarlos permanentemente para liberar espacio de almacenamiento.",
+    "tableHeaders": {
+      "actions": "Acciones",
+      "deleted": "Eliminado",
+      "filename": "Nombre del archivo",
+      "originalLocation": "Ubicación original",
+      "reason": "Motivo",
+      "size": "Tamaño"
+    },
+    "title": "Gestión de la papelera",
+    "totalSize": "{{size}} en total",
+    "trashPurged": "Papelera purgada"
+  },
+  "users": {
+    "actionsFor": "Acciones para {{username}}",
+    "activate": "Activar",
+    "authFilter": {
+      "all": "Todos los métodos de autenticación",
+      "hybrid": "Híbrido",
+      "local": "Local",
+      "sso": "SSO"
+    },
+    "changeRole": "Cambiar rol",
+    "clear": "Limpiar",
+    "deactivate": "Desactivar",
+    "deleteModal": {
+      "cannotDeleteLastAdmin": "No se puede eliminar al último administrador.",
+      "cannotDeleteSelf": "No puede eliminar su propia cuenta.",
+      "title": "Eliminar usuario",
+      "typeUsername": "Escriba \"{{username}}\" para confirmar",
+      "warning": "Esta acción no se puede deshacer. Todos los datos asociados con este usuario serán eliminados permanentemente."
+    },
+    "deleteUser": "Eliminar usuario",
+    "justNow": "Ahora mismo",
+    "loginHistory": "Historial de inicio de sesión",
+    "loginHistoryModal": {
+      "dateTime": "Fecha y hora",
+      "ipAddress": "Dirección IP",
+      "noHistory": "No se encontró historial de inicio de sesión",
+      "notAvailable": "N/D",
+      "title": "Historial de inicio de sesión: {{username}}"
+    },
+    "never": "Nunca",
+    "noUsersFound": "No se encontraron usuarios",
+    "noUsersInSystem": "No hay usuarios en el sistema.",
+    "noUsersMatchFilters": "Ningún usuario coincide con sus filtros. Intente ajustar o limpiar los filtros.",
+    "passwordModal": {
+      "bothFieldsRequired": "Ambos campos de contraseña son obligatorios",
+      "confirmPlaceholder": "Confirmar nueva contraseña",
+      "enterNewPassword": "Introduzca la nueva contraseña",
+      "forceChange": "Forzar cambio de contraseña en el próximo inicio de sesión",
+      "immediateReset": "Esto restablecerá inmediatamente la contraseña del usuario. Deberá utilizar la nueva contraseña para iniciar sesión.",
+      "newPassword": "Nueva contraseña",
+      "passwordDescription": "Mínimo 6 caracteres, al menos 1 letra y 1 número",
+      "passwordsDoNotMatch": "Las contraseñas no coinciden",
+      "resetFailed": "Error al restablecer la contraseña. Inténtelo de nuevo.",
+      "resetSuccess": "¡Contraseña restablecida correctamente para {{username}}!",
+      "resettingFor": "Restablecer contraseña para <strong>{{username}}</strong>",
+      "ssoWarning": "Este usuario se autentica a través de SSO ({{provider}}). Establecer una contraseña local permitirá la autenticación híbrida.",
+      "title": "Restablecer contraseña para {{username}}",
+      "userInfo": "Usuario: {{username}} (ID: {{userId}})"
+    },
+    "roleFilter": {
+      "all": "Todos los roles"
+    },
+    "roleModal": {
+      "cannotRemoveLastAdmin": "No se puede eliminar el último rol de administrador.",
+      "changingRole": "Cambiando rol para <strong>{{username}}</strong>",
+      "grantAdmin": "Esto otorgará privilegios completos de administrador.",
+      "revokeAdmin": "Esto revocará los privilegios de administrador.",
+      "title": "Cambiar rol de usuario"
+    },
+    "searchPlaceholder": "Buscar usuarios...",
+    "statusFilter": {
+      "all": "Todos los estados"
+    },
+    "tableHeaders": {
+      "auth": "Autenticación",
+      "lastLogin": "Último inicio de sesión"
+    },
+    "toggleActiveModal": {
+      "activateConfirm": "¿Activar \"{{username}}\"? Podrá iniciar sesión nuevamente.",
+      "activateTitle": "Activar usuario",
+      "cannotDeactivateLastAdmin": "No se puede desactivar al último administrador.",
+      "cannotDeactivateSelf": "No puede desactivar su propia cuenta.",
+      "deactivateConfirm": "¿Desactivar \"{{username}}\"? No podrá iniciar sesión hasta que sea reactivado.",
+      "deactivateTitle": "Desactivar usuario"
+    },
+    "userCount": "{{count}} usuarios",
+    "userCount_one": "{{count}} usuario",
+    "userCount_other": "{{count}} usuarios"
+  }
+}

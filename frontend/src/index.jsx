@@ -1,0 +1,31 @@
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+import logger from './services/logger';
+import { isProduction } from './config/env';
+
+// Initialize i18n
+import './i18n';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+
+// PWA service worker
+if (isProduction()) {
+  import('./serviceWorkerRegistration').then(({ register }) => {
+    register({
+      onSuccess: () => {
+        logger.info('app_offline_ready', 'App ready for offline use', {
+          component: 'index',
+          action: 'service_worker_success',
+        });
+      },
+    });
+  });
+}

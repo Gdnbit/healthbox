@@ -1,0 +1,106 @@
+{
+  "contract_version": "1.0.0",
+  "task_id": "MVP-REPORT-PROCESSING-STATUS-01",
+  "case_id": "CASE-MVP-REPORT-PROCESSING-STATUS",
+  "scope": "owner_only_loaded_report_snapshot",
+  "precedence": [
+    {
+      "order": 1,
+      "rule": "withdrawn_source_is_terminal",
+      "result": "withdrawn"
+    },
+    {
+      "order": 2,
+      "rule": "latest_successful_task_uses_its_linked_batch_when_that_workflow_is_current",
+      "result": "batch_state"
+    },
+    {
+      "order": 3,
+      "rule": "newer_unlinked_task_overrides_an_older_batch",
+      "result": "task_state"
+    },
+    {
+      "order": 4,
+      "rule": "otherwise_use_the_latest_batch_then_latest_task",
+      "result": "latest_available_state"
+    },
+    {
+      "order": 5,
+      "rule": "no_task_or_batch",
+      "result": "saved"
+    }
+  ],
+  "states": [
+    {
+      "key": "saved",
+      "label_zh_cn": "原件已保存",
+      "action": "start_parse",
+      "action_label_zh_cn": "本地解析",
+      "formal_write_allowed_by_status_resolution": false
+    },
+    {
+      "key": "processing",
+      "label_zh_cn": "解析中",
+      "action": "view_task",
+      "action_label_zh_cn": "查看进度",
+      "formal_write_allowed_by_status_resolution": false
+    },
+    {
+      "key": "review_required",
+      "label_zh_cn": "待复核",
+      "action": "review_batch",
+      "action_label_zh_cn": "继续复核",
+      "formal_write_allowed_by_status_resolution": false
+    },
+    {
+      "key": "ready_to_commit",
+      "label_zh_cn": "待确认入库",
+      "action": "review_batch",
+      "action_label_zh_cn": "确认入库",
+      "formal_write_allowed_by_status_resolution": false
+    },
+    {
+      "key": "committed",
+      "label_zh_cn": "已入库",
+      "action": "view_metrics",
+      "action_label_zh_cn": "查看指标",
+      "formal_write_allowed_by_status_resolution": false
+    },
+    {
+      "key": "attention",
+      "labels_zh_cn": [
+        "解析失败",
+        "解析已暂停",
+        "结果待处理"
+      ],
+      "action": "view_task",
+      "formal_write_allowed_by_status_resolution": false
+    },
+    {
+      "key": "rolled_back",
+      "label_zh_cn": "已回滚",
+      "action": "view_history",
+      "action_label_zh_cn": "查看记录",
+      "formal_write_allowed_by_status_resolution": false
+    },
+    {
+      "key": "withdrawn",
+      "label_zh_cn": "已撤回",
+      "action": "none",
+      "action_label_zh_cn": null,
+      "formal_write_allowed_by_status_resolution": false
+    }
+  ],
+  "privacy": {
+    "shared_dashboard_requests_sources": false,
+    "shared_dashboard_requests_parse_tasks": false,
+    "shared_dashboard_requests_import_batches": false,
+    "ui_exposes_internal_task_or_batch_ids": false
+  },
+  "medical_boundary": {
+    "is_report_abnormality": false,
+    "is_screening_due_state": false,
+    "is_disease_risk": false,
+    "is_diagnosis": false
+  }
+}

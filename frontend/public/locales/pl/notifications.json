@@ -1,0 +1,445 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "categories": {
+    "medical": "Medyczne"
+  },
+  "channels": {
+    "add": "Dodaj kanał",
+    "configTitle": "Konfiguracja {{type}}",
+    "confirmDelete": "Czy na pewno chcesz usunąć ten kanał?",
+    "createError": "Nie udało się utworzyć kanału",
+    "createFailed": "Nie udało się utworzyć kanału",
+    "createSuccess": "Kanał utworzony pomyślnie",
+    "delete": "Usuń kanał",
+    "deleteConfirm": "Czy na pewno chcesz usunąć ten kanał?",
+    "deleteError": "Nie udało się usunąć kanału",
+    "deleteFailed": "Nie udało się usunąć kanału",
+    "deleteSuccess": "Kanał usunięty pomyślnie",
+    "description": "Dodawaj i zarządzaj kanałami dostarczania powiadomień",
+    "discord": {
+      "avatarUrl": {
+        "description": "Niestandardowy awatar dla bota powiadomień",
+        "label": "URL awatara (opcjonalnie)",
+        "placeholder": "https://example.com/avatar.png"
+      },
+      "username": {
+        "description": "Niestandardowa nazwa bota powiadomień",
+        "label": "Nazwa użytkownika bota (opcjonalnie)",
+        "placeholder": "HealthBox"
+      },
+      "webhookUrl": {
+        "description": "Utwórz webhook w ustawieniach serwera Discord",
+        "label": "URL webhooka",
+        "placeholder": "https://discord.com/api/webhooks/..."
+      }
+    },
+    "edit": "Edytuj kanał",
+    "email": {
+      "fromEmail": {
+        "description": "Adres e-mail nadawcy",
+        "label": "Z adresu e-mail",
+        "placeholder": "notifications@example.com"
+      },
+      "smtpHost": {
+        "description": "Serwer SMTP Twojego dostawcy poczty e-mail",
+        "label": "Serwer SMTP",
+        "placeholder": "smtp.gmail.com"
+      },
+      "smtpPassword": {
+        "description": "W przypadku Gmaila użyj hasła aplikacji",
+        "label": "Hasło SMTP",
+        "placeholder": "Hasło aplikacji lub hasło e-mail"
+      },
+      "smtpPort": {
+        "description": "Zazwyczaj 587 (TLS) lub 465 (SSL)",
+        "label": "Port SMTP",
+        "placeholder": "587"
+      },
+      "smtpUser": {
+        "description": "Twój adres e-mail lub nazwa użytkownika",
+        "label": "Nazwa użytkownika SMTP",
+        "placeholder": "twoj-email@gmail.com"
+      },
+      "toEmail": {
+        "description": "Adres, na który będą wysyłane powiadomienia",
+        "label": "Na adres e-mail",
+        "placeholder": "twoj-email@example.com"
+      },
+      "useTls": {
+        "description": "Włącz szyfrowanie TLS (zalecane)",
+        "label": "Użyj TLS"
+      }
+    },
+    "empty": "Nie skonfigurowano żadnych kanałów powiadomień.",
+    "emptyHint": "Dodaj kanał, aby rozpocząć otrzymywanie powiadomień przez Discord, e-mail, Gotify, ntfy lub webhook.",
+    "errors": {
+      "fieldRequired": "Pole {{field}} jest wymagane",
+      "nameRequired": "Nazwa kanału jest wymagana"
+    },
+    "fields": {
+      "enabled": "Włącz ten kanał",
+      "name": "Nazwa kanału",
+      "namePlaceholder": "Mój serwer Discord",
+      "type": "Typ kanału"
+    },
+    "form": {
+      "configSection": "Konfiguracja kanału",
+      "enabled": {
+        "description": "Otrzymuj powiadomienia przez ten kanał",
+        "label": "Włącz kanał"
+      },
+      "name": {
+        "description": "Przyjazna nazwa umożliwiająca identyfikację tego kanału",
+        "label": "Nazwa kanału",
+        "placeholder": "np. Mój serwer Discord"
+      },
+      "title": "Szczegóły kanału",
+      "type": {
+        "description": "Usługa, przez którą wysyłane są powiadomienia",
+        "label": "Typ kanału",
+        "placeholder": "Wybierz typ kanału"
+      }
+    },
+    "gotify": {
+      "appToken": {
+        "description": "Utwórz aplikację w Gotify, aby uzyskać token",
+        "label": "Token aplikacji",
+        "placeholder": "Token aplikacji z Gotify"
+      },
+      "priority": {
+        "description": "Priorytet wiadomości (1–10, domyślnie 5)",
+        "placeholder": "5"
+      },
+      "serverUrl": {
+        "description": "Adres URL Twojego serwera Gotify",
+        "label": "Adres URL serwera",
+        "placeholder": "https://gotify.example.com"
+      }
+    },
+    "lastUsed": "Ostatnio używany",
+    "loadError": "Nie udało się załadować szczegółów kanału",
+    "noChannels": "Brak skonfigurowanych kanałów powiadomień",
+    "noChannelsHint": "Dodaj kanał, aby rozpocząć otrzymywanie powiadomień",
+    "notificationsSent": "Wysłano {{count}} powiadomień",
+    "ntfy": {
+      "authToken": {
+        "description": "Token Bearer dla chronionych tematów (pozostaw puste dla tematów publicznych)",
+        "label": "Token uwierzytelniania (opcjonalnie)",
+        "placeholder": "tk_..."
+      },
+      "priority": {
+        "description": "Priorytet wiadomości (1=min, 3=domyślnie, 5=maks)",
+        "label": "Priorytet",
+        "placeholder": "3"
+      },
+      "serverUrl": {
+        "description": "Adres URL serwera ntfy (domyślnie: https://ntfy.sh)",
+        "label": "Adres URL serwera",
+        "placeholder": "https://ntfy.sh"
+      },
+      "topic": {
+        "description": "Unikalna nazwa tematu. Subskrybuj ten sam temat na ntfy.sh lub w aplikacji ntfy.",
+        "label": "Temat",
+        "placeholder": "my-alerts"
+      }
+    },
+    "sentCount_one": "Wysłano {{count}}",
+    "sentCount_other": "Wysłano {{count}}",
+    "test": "Test",
+    "testError": "Nie udało się wysłać powiadomienia testowego",
+    "testFailed": "Powiadomienie testowe nie powiodło się",
+    "testing": "Testowanie...",
+    "testSuccess": "Powiadomienie testowe wysłane pomyślnie!",
+    "title": "Kanały powiadomień",
+    "types": {
+      "discord": "Discord",
+      "gotify": "Gotify",
+      "ntfy": "ntfy",
+      "webhook": "Webhook"
+    },
+    "updateError": "Nie udało się zaktualizować kanału",
+    "updateFailed": "Nie udało się zaktualizować kanału",
+    "updateSuccess": "Kanał zaktualizowany pomyślnie",
+    "verified": "Zweryfikowany",
+    "webhook": {
+      "authToken": {
+        "description": "Token autoryzacji dla webhooka",
+        "label": "Token uwierzytelniania (opcjonalnie)",
+        "placeholder": "Token Bearer lub klucz API"
+      },
+      "headers": {
+        "description": "Obiekt JSON z niestandardowymi nagłówkami",
+        "label": "Niestandardowe nagłówki (opcjonalnie)",
+        "placeholder": "{\"Authorization\": \"Bearer token\"}"
+      },
+      "method": {
+        "description": "Metoda HTTP dla żądania webhooka",
+        "label": "Metoda HTTP"
+      },
+      "url": {
+        "description": "Adres URL do odbierania danych powiadomień",
+        "label": "Adres URL webhooka",
+        "placeholder": "https://api.example.com/webhook"
+      }
+    }
+  },
+  "description": "Skonfiguruj sposób otrzymywania powiadomień o ważnych zdarzeniach",
+  "error": "Nie udało się załadować ustawień powiadomień",
+  "events": {
+    "backup_completed": {
+      "description": "Gdy kopia zapasowa zakończy się pomyślnie",
+      "name": "Kopia zapasowa ukończona"
+    },
+    "backup_failed": {
+      "description": "Gdy kopia zapasowa się nie powiedzie",
+      "name": "Kopia zapasowa nieudana"
+    },
+    "immunization_due": {
+      "description": "Gdy zbliża się termin szczepienia",
+      "name": "Zbliżający się termin szczepienia"
+    },
+    "immunization_overdue": {
+      "description": "Gdy termin szczepienia minął",
+      "name": "Szczepienie przeterminowane"
+    },
+    "invitation_accepted": {
+      "description": "Gdy Twoje zaproszenie do udostępniania zostanie zaakceptowane",
+      "name": "Zaproszenie zaakceptowane"
+    },
+    "invitation_received": {
+      "description": "Gdy ktoś udostępni Ci rekordy",
+      "name": "Otrzymano zaproszenie"
+    },
+    "lab_result_abnormal": {
+      "description": "Gdy wyniki badań laboratoryjnych są poza zakresem normy",
+      "name": "Nieprawidłowe wyniki badań laboratoryjnych"
+    },
+    "lab_result_available": {
+      "description": "Gdy zostaną dodane nowe wyniki badań laboratoryjnych",
+      "name": "Wyniki badań laboratoryjnych dostępne"
+    },
+    "login_from_new_device": {
+      "description": "Gdy Twoje konto zostanie użyte z nowego urządzenia",
+      "name": "Logowanie z nowego urządzenia"
+    },
+    "medication_reminder_due": {
+      "description": "Gdy nadejdzie czas przyjęcia zaplanowanego leku",
+      "name": "Przypomnienie o leku"
+    },
+    "password_changed": {
+      "description": "Gdy Twoje hasło zostanie zmienione",
+      "name": "Hasło zmienione"
+    },
+    "share_revoked": {
+      "description": "Gdy dostęp do udostępnionych rekordów zostanie odwołany",
+      "name": "Dostęp do udostępniania odwołany"
+    },
+    "test_notification": {
+      "description": "Ręczne powiadomienie testowe",
+      "name": "Powiadomienie testowe"
+    }
+  },
+  "history": {
+    "description": "Ostatnie powiadomienia wysłane przez Twoje kanały",
+    "fields": {
+      "channel": "Kanał"
+    },
+    "loading": "Ładowanie historii...",
+    "noHistory": "Nie wysłano jeszcze żadnych powiadomień",
+    "noHistoryHint": "Powiadomienia pojawią się tutaj po wysłaniu",
+    "page": "Strona {{current}} z {{total}}",
+    "showLess": "Pokaż mniej",
+    "showMore": "Pokaż więcej",
+    "status": {
+      "failed": "Nieudane",
+      "sent": "Wysłane"
+    },
+    "title": "Historia powiadomień"
+  },
+  "loading": "Ładowanie ustawień powiadomień...",
+  "preferences": {
+    "categories": {
+      "collaboration": "Udostępnianie i współpraca",
+      "medical": "Zdarzenia medyczne",
+      "other": "Inne zdarzenia",
+      "security": "Alerty bezpieczeństwa",
+      "sharing": "Udostępnianie i zaproszenia",
+      "system": "Zdarzenia systemowe"
+    },
+    "comingSoon": "Już wkrótce",
+    "description": "Wybierz, które zdarzenia wyzwalają powiadomienia na każdym kanale",
+    "loading": "Ładowanie preferencji...",
+    "noChannels": "Najpierw dodaj kanał powiadomień, aby skonfigurować preferencje zdarzeń",
+    "saveFailed": "Nie udało się zapisać preferencji",
+    "saveSuccess": "Preferencja zapisana",
+    "title": "Powiadomienia o zdarzeniach",
+    "updateError": "Nie udało się zaktualizować preferencji"
+  },
+  "title": "Ustawienia powiadomień",
+  "toasts": {
+    "auth": {
+      "accessDeniedAdmin": "Odmowa dostępu: wymagane uprawnienia administratora",
+      "accessDeniedRole": "Odmowa dostępu: wymagana rola {{role}}",
+      "accessDeniedRoles": "Odmowa dostępu: wymagana jedna z następujących ról: {{roles}}",
+      "accountCreatedSuccess": "Konto utworzone pomyślnie! Logowanie...",
+      "loginFailed": "Logowanie nie powiodło się",
+      "loginRequired": "Zaloguj się, aby uzyskać dostęp do tej strony",
+      "loginSuccess": "Logowanie pomyślne!",
+      "logoutSuccess": "Wylogowanie pomyślne",
+      "sessionExpired": "Sesja wygasła z powodu braku aktywności",
+      "sessionExpiredLogin": "Sesja wygasła. Zaloguj się ponownie.",
+      "ssoFailed": "Nie udało się rozpocząć logowania SSO",
+      "userCreatedSuccess": "Konto użytkownika utworzone pomyślnie!",
+      "userCreatedWithLinkSuccess": "Użytkownik utworzony i powiązany z istniejącym pacjentem pomyślnie!"
+    },
+    "documents": {
+      "linkFailed": "Nie udało się powiązać dokumentu",
+      "linkSuccess": "Dokument powiązany pomyślnie",
+      "unlinkFailed": "Nie udało się odłączyć dokumentu",
+      "unlinkSuccess": "Dokument odłączony pomyślnie"
+    },
+    "familySharing": {
+      "accessRevoked": "Dostęp odwołany",
+      "invitationFailed": "Nie udało się wysłać zaproszenia",
+      "invitationSent": "Zaproszenie wysłane pomyślnie!",
+      "loadFailed": "Nie udało się załadować informacji o udostępnianiu",
+      "revokeFailed": "Nie udało się odwołać dostępu"
+    },
+    "files": {
+      "downloadFailed": "Pobieranie pliku nie powiodło się"
+    },
+    "generic": {
+      "allOperationsFailed": "Wszystkie operacje {{operation}} się nie powiodły. Spróbuj ponownie.",
+      "allOperationsSuccess": "Wszystkie {{total}} operacje {{operation}} ukończone pomyślnie!",
+      "downloadFailed": "Pobieranie nie powiodło się",
+      "operationFailed": "Operacja nie powiodła się",
+      "operationFailedTitle": "{{operation}} nie powiodło się",
+      "operationPartial": "{{success}}/{{total}} operacje {{operation}} ukończone pomyślnie. {{failed}} nieudanych.",
+      "operationPartialTitle": "{{operation}} ukończone z błędami",
+      "operationSuccess": "{{operation}} ukończone pomyślnie!",
+      "saveFailed": "Zapisanie nie powiodło się",
+      "success": "Sukces!",
+      "warning": "Ostrzeżenie"
+    },
+    "invitations": {
+      "accessRevoked": "Dostęp odwołany",
+      "accessRevokedMessage": "Dostęp został odwołany.",
+      "alreadyRevoked": "Już odwołane",
+      "alreadyRevokedMessage": "To zaproszenie zostało już odwołane.",
+      "cancelFailed": "Nie udało się anulować zaproszenia",
+      "cancelled": "Zaproszenie anulowane",
+      "cancelledMessage": "Zaproszenie zostało anulowane.",
+      "respondFailed": "Nie udało się odpowiedzieć na zaproszenie",
+      "revokeFailed": "Nie udało się odwołać dostępu"
+    },
+    "labResults": {
+      "addedMessage": "Dodano {{count}} składników badania do wyniku laboratoryjnego.",
+      "addedSuccess": "Sukces!",
+      "addFailed": "Nie udało się dodać składników badania",
+      "deletedMessage": "{{name}} został usunięty",
+      "deletedSuccess": "Składnik usunięty",
+      "noTextMessage": "Wklej tekst wyników badań w polu wprowadzania.",
+      "noTextToParse": "Brak tekstu do analizy",
+      "parsedCount": "Znaleziono {{count}} składników badania. Przejrzyj je w zakładce Podgląd.",
+      "parseWarning": "Niektórych wierszy nie udało się przeanalizować",
+      "templateApplied": "Szablon zastosowany",
+      "templateAppliedMessage": "Dodano {{count}} składników z szablonu \"{{name}}\".",
+      "textParsed": "Tekst przeanalizowany",
+      "trendExportFailed": "Nie udało się wyeksportować wykresu",
+      "trendExportSuccess": "Wykres wyeksportowany pomyślnie",
+      "updateFailed": "Nie udało się zaktualizować składnika"
+    },
+    "patient": {
+      "createdSuccess": "Pomyślnie utworzono pacjenta {{name}}",
+      "deletedNoOthers": "Pomyślnie usunięto pacjenta {{name}}. Brak innych dostępnych pacjentów.",
+      "deletedSuccess": "Pomyślnie usunięto pacjenta {{name}}",
+      "deletedSwitched": "Pomyślnie usunięto pacjenta {{name}}. Przełączono na {{fallbackName}}.",
+      "deleteFailed": "Usuwanie nie powiodło się: {{message}}",
+      "deleteOwnOnly": "Możesz usuwać tylko pacjentów, których jesteś właścicielem",
+      "nowViewing": "Teraz przeglądasz: {{name}}",
+      "removeAccessFailed": "Usuwanie dostępu nie powiodło się: {{message}}",
+      "removedAccess": "Usunięto dostęp do {{name}}",
+      "removeOwnOnly": "Nie możesz usuwać dostępu do pacjentów, których jesteś właścicielem",
+      "switchFailed": "Przełączenie nie powiodło się: {{message}}",
+      "updatedSuccess": "Pomyślnie zaktualizowano pacjenta {{name}}"
+    },
+    "photo": {
+      "photoBeingUploaded": "Zdjęcie jest obecnie przesyłane. Poczekaj na ukończenie operacji.",
+      "pleaseWait": "Proszę czekać",
+      "uploadSuccess": "Zdjęcie przesłane pomyślnie"
+    },
+    "reports": {
+      "noRecordsMessage": "Wybierz co najmniej jeden rekord z poniższych kategorii, aby wygenerować raport.",
+      "noRecordsSelected": "Nie wybrano rekordów",
+      "templateDeleted": "Szablon usunięty pomyślnie",
+      "templateDeleteFailed": "Nie udało się usunąć szablonu",
+      "templateLoaded": "Szablon \"{{name}}\" załadowany",
+      "templateNameRequired": "Nazwa szablonu jest wymagana",
+      "templateSaved": "Szablon zapisany pomyślnie",
+      "templateSaveFailed": "Nie udało się zapisać szablonu",
+      "validationError": "Błąd walidacji"
+    },
+    "settings": {
+      "cleanupComplete": "Czyszczenie ukończone: wyczyszczono {{cleaned}} plików, usunięto {{deleted}} plików",
+      "cleanupFailed": "Nie udało się wyczyścić plików. Spróbuj ponownie później.",
+      "noOutOfSync": "Nie znaleziono niezsynchronizowanych plików do wyczyszczenia",
+      "sessionTimeoutUpdated": "Limit czasu sesji zaktualizowany do {{minutes}} minut. Twoja sesja została odświeżona."
+    },
+    "sharing": {
+      "accessRevoked": "Odwołano dostęp dla użytkownika {{userId}}",
+      "cancelFailed": "Nie udało się anulować zaproszenia: {{message}}",
+      "invalidJson": "Nieprawidłowy format JSON w polu {{fieldName}}. Sprawdź składnię.",
+      "invitationCancelled": "Zaproszenie anulowane pomyślnie",
+      "invitationFailed": "Wysłanie zaproszenia nie powiodło się: {{message}}",
+      "invitationSent": "Zaproszenie wysłane pomyślnie do {{recipient}}",
+      "revokeFailed": "Odwoływanie nie powiodło się: {{message}}",
+      "shareUpdated": "Udostępnianie danych pacjenta zaktualizowane pomyślnie",
+      "updateFailed": "Aktualizacja nie powiodła się: {{message}}"
+    },
+    "tagSearch": {
+      "loadFailed": "Nie udało się załadować popularnych tagów",
+      "noTagsSelected": "Wybierz co najmniej jeden tag do wyszukania",
+      "noTagsSelectedTitle": "Nie wybrano tagów",
+      "searchFailed": "Nie udało się przeszukać rekordów według tagów"
+    },
+    "upload": {
+      "backgroundProcessing": "Plik \"{{fileName}}\" jest przetwarzany w tle. Zostaniesz powiadomiony po ukończeniu.",
+      "completedWithErrors": "Przesyłanie ukończone z błędami",
+      "documentAdded": "Dokument dodany do Paperless",
+      "duplicateDocument": "Zduplikowany dokument",
+      "fileUploadedSuccess": "Plik \"{{fileName}}\" przesłany do Paperless pomyślnie!",
+      "fileUploadFailed": "Przesyłanie pliku nie powiodło się",
+      "paperlessUploadFailed": "Przesyłanie do Paperless nie powiodło się",
+      "partialSuccess": "{{completed}}/{{total}} plików przesłano pomyślnie. {{failed}} nieudanych."
+    },
+    "vitals": {
+      "deleteFailed": "Nie udało się usunąć rekordu parametrów życiowych",
+      "deleteSuccess": "Rekord parametrów życiowych usunięty pomyślnie",
+      "formErrors": "Popraw błędy w formularzu",
+      "savedSuccess": "Parametry życiowe {{action}} pomyślnie!",
+      "saveFailed": "Nie udało się {{action}} parametrów życiowych"
+    }
+  },
+  "validation": {
+    "appTokenRequired": "Token aplikacji jest wymagany",
+    "fromEmailInvalid": "Nieprawidłowy format adresu e-mail",
+    "fromEmailRequired": "Adres e-mail nadawcy jest wymagany",
+    "headersInvalid": "Nagłówki muszą być prawidłowym obiektem JSON",
+    "nameRequired": "Nazwa kanału jest wymagana",
+    "nameTooLong": "Nazwa nie może przekraczać 100 znaków",
+    "serverUrlInvalid": "Nieprawidłowy format adresu URL",
+    "serverUrlRequired": "Adres URL serwera jest wymagany",
+    "smtpHostRequired": "Serwer SMTP jest wymagany",
+    "smtpPasswordRequired": "Hasło SMTP jest wymagane",
+    "smtpPortInvalid": "Port musi być wartością z zakresu od 1 do 65535",
+    "smtpPortRequired": "Port SMTP jest wymagany",
+    "smtpUserRequired": "Nazwa użytkownika SMTP jest wymagana",
+    "toEmailInvalid": "Nieprawidłowy format adresu e-mail",
+    "toEmailRequired": "Adres e-mail odbiorcy jest wymagany",
+    "typeRequired": "Typ kanału jest wymagany",
+    "urlInvalid": "Nieprawidłowy format adresu URL",
+    "urlRequired": "Adres URL webhooka jest wymagany",
+    "webhookUrlInvalid": "Nieprawidłowy format adresu URL webhooka",
+    "webhookUrlRequired": "Adres URL webhooka jest wymagany"
+  }
+}

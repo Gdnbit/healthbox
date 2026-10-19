@@ -1,0 +1,140 @@
+{
+  "contract_id": "household-ai-request-guard@1.0.0",
+  "scope": "self_owned_recent_changes_question",
+  "idempotency": {
+    "active_answer_template_version": "household-ai-answer@1.1.0",
+    "transport": "Idempotency-Key header",
+    "required": true,
+    "format": "8-64 ASCII characters matching [A-Za-z0-9._:-]+",
+    "stored_value": "sha256_only",
+    "uniqueness_scope": [
+      "requested_by_user_id"
+    ],
+    "request_binding": [
+      "requested_by_user_id",
+      "patient_id",
+      "operation",
+      "canonical_question_id",
+      "canonical_question_text",
+      "range",
+      "sorted_record_ids",
+      "template_version"
+    ],
+    "succeeded_replay": {
+      "http_status": 200,
+      "same_answer_id": true,
+      "same_request_id": true,
+      "provider_calls_added": 0,
+      "answer_rows_added": 0,
+      "budget_added": 0,
+      "response_header": "Idempotency-Replayed: true"
+    },
+    "in_progress_replay": {
+      "http_status": 409,
+      "error_code": "health_ai_request_in_progress",
+      "retry_after_required": true
+    },
+    "different_request_reuse": {
+      "http_status": 409,
+      "error_code": "health_ai_idempotency_conflict"
+    },
+    "terminal_failure_replay": "same_safe_http_status_and_error_code_without_provider_call",
+    "deleted_result_replay": {
+      "http_status": 410,
+      "error_code": "health_ai_idempotent_result_deleted",
+      "regenerates": false
+    },
+    "client_key_lifecycle": {
+      "survives_refresh_and_multiple_tabs": true,
+      "survives_subject_navigation_until_terminal_result": true,
+      "unknown_outcomes_reuse_key": [
+        "network_error_without_http_status",
+        "gateway_502_503_504_without_application_error_code",
+        "health_ai_request_in_progress",
+        "health_ai_request_already_completed"
+      ],
+      "known_terminal_outcomes_start_next_operation_with_new_key": [
+        "health_ai_request_abandoned"
+      ],
+      "stored_client_metadata": [
+        "canonical_request_sha256",
+        "derived_uuid_v4",
+        "generation",
+        "timestamps"
+      ],
+      "stores_question_record_ids_or_health_values_in_web_storage": false
+    }
+  },
+  "admission": {
+    "identity": "requested_by_user_id",
+    "ip_based": false,
+    "durable_database_enforced": true,
+    "process_local_limiter_is_sufficient": false,
+    "window_seconds_default": 600,
+    "new_requests_per_window_default": 6,
+    "maximum_in_progress_per_user": 1,
+    "preflight_before_budget": [
+      "authentication",
+      "self_owned_subject",
+      "canonical_question",
+      "verified_runtime",
+      "formal_record_resolution",
+      "range_non_empty"
+    ],
+    "does_not_consume_budget": [
+      "successful_replay",
+      "preflight_4xx",
+      "idempotency_conflict",
+      "in_progress_replay",
+      "concurrency_rejection",
+      "rate_limit_rejection"
+    ],
+    "does_consume_after_admission": [
+      "provider_success",
+      "provider_timeout_or_error",
+      "provider_contract_or_citation_rejection",
+      "final_answer_or_audit_persistence_failure"
+    ],
+    "concurrency_rejection": {
+      "http_status": 429,
+      "error_code": "health_ai_concurrency_limit_exceeded",
+      "retry_after_required": true
+    },
+    "rate_rejection": {
+      "http_status": 429,
+      "error_code": "health_ai_rate_limit_exceeded",
+      "headers": [
+        "Retry-After",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset"
+      ]
+    }
+  },
+  "persistence": {
+    "provider_wait_holds_database_transaction": false,
+    "success_answer_and_guard_terminal_state_atomic": true,
+    "provider_raw_error_or_output_stored": false,
+    "answer_delete_keeps_idempotency_tombstone": true,
+    "running_request_auto_requeued_after_crash": false,
+    "lease_seconds": "min(150, provider_timeout_seconds + 30)",
+    "expired_running_result": {
+      "http_status": 503,
+      "error_code": "health_ai_request_abandoned",
+      "late_worker_can_persist": false
+    },
+    "ledger_retention": "long_term_for_family_scale_until_separate_governed_cleanup"
+  },
+  "privacy": {
+    "stores_raw_idempotency_key": false,
+    "stores_question_text_or_record_ids": false,
+    "stores_health_values_labels_or_answer": false,
+    "stores_model_endpoint_or_secret": false,
+    "stores_provider_raw_error": false
+  },
+  "verification": {
+    "sqlite": "sequential_contract_only",
+    "postgresql": "two_independent_sessions_required_for_cross_worker_claim_and_rate_limit",
+    "real_health_data_allowed": false
+  }
+}

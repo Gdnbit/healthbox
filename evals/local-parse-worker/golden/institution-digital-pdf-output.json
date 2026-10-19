@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "cases": {
+    "fictional-community-lab": {
+      "candidate_count": 4,
+      "low_confidence_count": 0,
+      "unparsed_count": 0,
+      "formal_write_count": 0,
+      "candidates": [
+        {
+          "test_code": "GLU",
+          "observed_date": "2026-01-15",
+          "numeric_value": 5.2,
+          "unit": "mmol/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "LDL-C",
+          "observed_date": "2026-01-15",
+          "numeric_value": 3.8,
+          "unit": "mmol/L",
+          "result_status": "high"
+        },
+        {
+          "test_code": "UA",
+          "observed_date": "2026-01-15",
+          "numeric_value": 428.0,
+          "unit": "umol/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "CREA",
+          "observed_date": "2026-01-15",
+          "numeric_value": 81.0,
+          "unit": "umol/L",
+          "result_status": "normal"
+        }
+      ]
+    },
+    "fictional-wellness-center": {
+      "candidate_count": 5,
+      "low_confidence_count": 0,
+      "unparsed_count": 0,
+      "formal_write_count": 0,
+      "candidates": [
+        {
+          "test_code": "ALT",
+          "observed_date": "2025-11-02",
+          "numeric_value": 46.0,
+          "unit": "U/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "AST",
+          "observed_date": "2025-11-02",
+          "numeric_value": 32.0,
+          "unit": "U/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "WBC",
+          "observed_date": "2025-11-02",
+          "numeric_value": 6.4,
+          "unit": "10^9/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "PLT",
+          "observed_date": "2025-11-02",
+          "numeric_value": 212.0,
+          "unit": "10^9/L",
+          "result_status": "normal"
+        },
+        {
+          "test_code": "HGB",
+          "observed_date": "2025-11-02",
+          "numeric_value": 151.0,
+          "unit": "g/L",
+          "result_status": "normal"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "alert": {
+    "errorCount": "{{count}} Fel",
+    "errorCount_one": "{{count}} Fel",
+    "errorCount_other": "{{count}} Fel",
+    "formError": "Formulärfel",
+    "highPriority": "{{count}} hög prioritet",
+    "highPriority_one": "{{count}} hög prioritet",
+    "highPriority_other": "{{count}} hög prioritet",
+    "suggestions": "Förslag:"
+  },
+  "boundary": {
+    "componentLabel": "Komponent:",
+    "errorDetails": "Feldetaljer",
+    "errorIdLabel": "Fel-ID:",
+    "errorLogged": "Felet har loggats automatiskt för utredning.",
+    "reloadPage": "Ladda om sidan",
+    "somethingWentWrong": "Något gick fel",
+    "tryAgain": "Försök igen",
+    "unexpectedError": "Vi ber om ursäkt, men något oväntat inträffade i journalsystemet."
+  },
+  "file": {
+    "deleteFailed": "Det gick inte att ta bort filen. Försök igen.",
+    "downloadFailed": "Det gick inte att ladda ner filen. Försök igen.",
+    "notFound": "Filen hittades inte.",
+    "viewFailed": "Det gick inte att öppna filen för visning. Försök igen."
+  },
+  "form": {
+    "conditionNotSelected": "Välj ett tillstånd",
+    "entityNotFound": "Det begärda objektet kunde inte hittas.",
+    "equipmentFieldsRequired": "Utrustningsnamn och typ krävs",
+    "equipmentNotSelected": "Välj minst en utrustning",
+    "invalidDate": "Ange ett giltigt datum.",
+    "invalidEmail": "Ange en giltig e-postadress.",
+    "invalidPhone": "Ange ett giltigt telefonnummer.",
+    "invalidPhoneDigits": "Ange ett giltigt telefonnummer",
+    "invalidWebsiteUrl": "Ange en giltig webbadress",
+    "labResultNotSelected": "Please select at least one lab result",
+    "medicationNotSelected": "Välj ett läkemedel",
+    "mustBeValidNumber": "Måste vara ett giltigt nummer",
+    "patientNotSelected": "Välj en patient.",
+    "requiredFieldMissing": "Fyll i alla obligatoriska fält.",
+    "submissionFailed": "Det gick inte att spara formuläret. Kontrollera dina uppgifter och försök igen."
+  },
+  "general": {
+    "maintenanceMode": "Systemet är för närvarande under underhåll. Försök igen senare.",
+    "permissionDenied": "Du har inte behörighet att utföra den här åtgärden.",
+    "rateLimitExceeded": "För många förfrågningar. Vänta en stund och försök igen.",
+    "sessionExpired": "Din session har gått ut. Logga in igen.",
+    "storageFull": "Lagringsgränsen är nådd. Frigör utrymme och försök igen.",
+    "unknownError": "Ett oväntat fel uppstod. Försök igen.",
+    "validationError": "Kontrollera dina uppgifter och försök igen."
+  },
+  "network": {
+    "connectionError": "Anslutningsfel. Kontrollera din nätverksanslutning och försök igen.",
+    "serverError": "Ett serverfel uppstod. Försök igen senare.",
+    "timeout": "Förfrågan tog för lång tid. Försök igen.",
+    "unavailable": "Nätverket är inte tillgängligt. Kontrollera din anslutning."
+  },
+  "paperless": {
+    "authFailed": "Autentiseringen misslyckades med Paperless-tjänsten. Kontrollera inloggningsuppgifterna.",
+    "configIncomplete": "Paperless-konfigurationen är ofullständig. Kontrollera dina inställningar.",
+    "connectionFailed": "Det gick inte att ansluta till Paperless-tjänsten. Kontrollera konfigurationen.",
+    "duplicateDocument": "Det här dokumentet finns redan i Paperless. Identiska dokument kan inte laddas upp två gånger.",
+    "notEnabled": "Paperless-integrationen är inte aktiverad. Aktivera den i Inställningar.",
+    "taskFailed": "Dokumentuppladdning till Paperless misslyckades. Försök igen eller kontakta support.",
+    "taskTimeout": "Dokumentbearbetningen tog för lång tid. Dokumentet kan fortfarande bearbetas i Paperless.",
+    "unavailable": "Dokumenthanteringstjänsten är för närvarande inte tillgänglig.",
+    "uploadFailed": "Det gick inte att ladda upp till Paperless dokumenthanteringssystem."
+  },
+  "patientForm": {
+    "birthDateFuture": "Födelsedatum kan inte vara i framtiden",
+    "birthDateRequired": "Födelsedatum krävs",
+    "createFailed": "Skapandet misslyckades: {{message}}",
+    "firstNameRequired": "Förnamn krävs",
+    "lastNameRequired": "Efternamn krävs",
+    "updateFailed": "Uppdateringen misslyckades: {{message}}"
+  },
+  "patientNotAvailable": "Patientinformation är inte tillgänglig",
+  "relationships": {
+    "addConditionFailed": "Det gick inte att lägga till tillståndsrelationen",
+    "addFailed": "Det gick inte att lägga till relationen",
+    "addMedicationFailed": "Det gick inte att lägga till läkemedelsrelationen",
+    "deleteFailed": "Det gick inte att ta bort relationen",
+    "fetchFailed": "Det gick inte att ladda relationer",
+    "updateFailed": "Det gick inte att uppdatera relationen"
+  },
+  "success": {
+    "batchUploadSuccess": "Alla filer har laddats upp framgångsrikt!",
+    "fileDeleted": "Filen har tagits bort framgångsrikt.",
+    "formSaved": "Formuläret har sparats framgångsrikt!",
+    "paperlessSyncSuccess": "Synkronisering med Paperless dokumenthantering lyckades.",
+    "uploadMultipleSuccess": "Alla filer har laddats upp framgångsrikt!",
+    "uploadSuccess": "Filen har laddats upp framgångsrikt!"
+  },
+  "upload": {
+    "allUploadsFailed": "Alla filuppladdningar misslyckades. Kontrollera din anslutning och försök igen.",
+    "batchUploadFailed": "Vissa filer kunde inte laddas upp. Kontrollera enskilda filfel.",
+    "connectionError": "Anslutningsfel. Kontrollera din nätverksanslutning och försök igen.",
+    "duplicateFile": "Den här filen har redan laddats upp.",
+    "failed": "Det gick inte att ladda upp filen. Försök igen.",
+    "fileProcessingFailed": "Det gick inte att bearbeta filen. Försök med en annan fil.",
+    "fileTooLarge": "Filstorleken överskrider den maximala gränsen.",
+    "invalidFileType": "Filtypen stöds inte.",
+    "partialUploadSuccess": "Uppladdningen slutfördes med vissa fel. Granska misslyckade filer."
+  },
+  "warnings": {
+    "duplicateWarning": "Den här filen verkar vara en dubblett.",
+    "largeFileWarning": "Stor fil identifierad. Uppladdningen kan ta flera minuter.",
+    "partialSuccess": "Åtgärden slutfördes med vissa varningar.",
+    "slowConnection": "Uppladdningen tar längre tid än vanligt på grund av långsam anslutning."
+  }
+}

@@ -1,0 +1,294 @@
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { ActionIcon, Group, Text } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { IconEdit } from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
+import BaseMedicalForm from '../BaseMedicalForm';
+import PracticeEditModal from './PracticeEditModal';
+import { practitionerFormFields } from '../../../utils/medicalFormFields';
+import { isValidPhoneNumber } from '../../../utils/phoneUtils';
+import { apiService } from '../../../services/api';
+import logger from '../../../services/logger';
+
+const PractitionerFormWrapper = ({
+  isOpen,
+  onClose,
+  title,
+  formData,
+  onInputChange,
+  onSubmit,
+  editingItem,
+  isLoading,
+  statusMessage: _statusMessage,
+  zIndex,
+}) => {
+  const { t } = useTranslation(['medical', 'common', 'shared']);
+
+  // State for dynamic practices (specialties are loaded directly by SpecialtySelect)
+  const [practiceOptions, setPracticeOptions] = useState([]);
+  const [isLoadingPractices, setIsLoadingPractices] = useState(true);
+
+  useEffect(() => {
+    const loadPractices = async () => {
+      try {
+        setIsLoadingPractices(true);
+        const practices = await apiService.getPractices();
+        const safePractices = Array.isArray(practices) ? practices : [];
+        setPracticeOptions(
+          safePractices.map(p => ({
+            value: String(p.id),
+            label: p.name,
+          }))
+        );
+      } catch (error) {
+        logger.error('load_practices_failed', 'Failed to load practices', {
+          component: 'PractitionerFormWrapper',
+          error: error.message,
+        });
+      } finally {
+        setIsLoadingPractices(false);
+      }
+    };
+
+    if (isOpen) {
+      loadPractices();
+    }
+  }, [isOpen]);
+
+  // State for practice edit modal
+  const [practiceEditData, setPracticeEditData] = useState(null);
+  const [showPracticeEdit, setShowPracticeEdit] = useState(false);
+
+  const handleEditPractice = async () => {
+    const practiceId = formData.practice_id;
+    if (!practiceId) return;
+    try {
+      const data = await apiService.getPractice(practiceId);
+      setPracticeEditData(data);
+      setShowPracticeEdit(true);
+    } catch {
+      notifications.show({
+        title: t('shared:labels.error'),
+        message: t(
+          'common:practitioners.editPracticeError',
+          'Failed to load practice for editing'
+        ),
+        color: 'red',
+      });
+    }
+  };
+
+  const handlePracticeEditSaved = async () => {
+    // Reload practices to reflect updated name
+    try {
+      const practices = await apiService.getPractices();
+      const safePractices = Array.isArray(practices) ? practices : [];
+      setPracticeOptions(
+        safePractices.map(p => ({
+          value: String(p.id),
+          label: p.name,
+        }))
+      );
+    } catch {
+      // Silently fail - the form still works with stale options
+    }
+  };
+
+  const dynamicOptions = {
+    practices: practiceOptions,
+  };
+
+  // Field-level validation errors
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  // Clear field errors when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setFieldErrors({});
+    }
+  }, [isOpen]);
+
+  // Validate website URL
+  const isValidWebsite = url => {
+    if (!url) return true; // Optional field
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  // Input change handler with phone validation and inline practice creation
+  const handleInputChange = async e => {
+    const { name, value } = e.target;
+
+    // Clear any existing error for this field
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: null,
+      }));
+    }
+
+    // Handle phone number validation
+    if (
+      name === 'phone_number' &&
+      value.trim() !== '' &&
+      !isValidPhoneNumber(value)
+    ) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: t(
+          'medical:form.invalidPhoneDigits',
+          'Please enter a valid phone number'
+        ),
+      }));
+    }
+
+    // Handle inline practice creation when user types a new practice name in the combobox
+    if (
+      name === 'practice_id' &&
+      value &&
+      !practiceOptions.find(opt => opt.value === value)
+    ) {
+      // User typed a new practice name - create it inline
+      try {
+        const newPractice = await apiService.createPractice({ name: value });
+        if (newPractice && newPractice.id) {
+          const newOption = {
+            value: String(newPractice.id),
+            label: newPractice.name,
+          };
+          setPracticeOptions(prev => [...prev, newOption]);
+          // Set the practice_id to the new ID
+          onInputChange({
+            target: { name: 'practice_id', value: String(newPractice.id) },
+          });
+          return;
+        }
+      } catch (error) {
+        logger.error(
+          'create_practice_inline_failed',
+          'Failed to create practice inline',
+          {
+            component: 'PractitionerFormWrapper',
+            error: error.message,
+          }
+        );
+        // Revert practice_id to empty so it doesn't store a raw text string
+        onInputChange({ target: { name: 'practice_id', value: '' } });
+        notifications.show({
+          title: t('shared:labels.error'),
+          message: t(
+            'common:practitioners.createPracticeError',
+            'Failed to create practice. Please try again.'
+          ),
+          color: 'red',
+        });
+        return;
+      }
+    }
+
+    onInputChange(e);
+  };
+
+  const websiteError =
+    formData.website && !isValidWebsite(formData.website)
+      ? t('medical:form.invalidWebsiteUrl', 'Please enter a valid website URL')
+      : null;
+
+  // Custom validation for submit - prevent submission if website is invalid
+  const handleSubmit = e => {
+    if (websiteError) {
+      e.preventDefault();
+      return;
+    }
+    onSubmit(e);
+  };
+
+  // Custom content for website validation error
+  const customContent = websiteError ? (
+    <Text
+      size="sm"
+      c="red"
+      style={{ marginTop: '-16px', marginBottom: '16px' }}
+    >
+      {websiteError}
+    </Text>
+  ) : null;
+
+  if (!isOpen) return null;
+
+  const practiceFieldExtra = formData.practice_id ? (
+    <Group gap={4} mt={4}>
+      <ActionIcon
+        size="xs"
+        variant="subtle"
+        onClick={handleEditPractice}
+        title={t(
+          'common:practitioners.viewModal.editPractice',
+          'Edit Practice'
+        )}
+      >
+        <IconEdit size={14} />
+      </ActionIcon>
+      <Text
+        size="xs"
+        c="dimmed"
+        style={{ cursor: 'pointer' }}
+        onClick={handleEditPractice}
+      >
+        {t('common:practitioners.viewModal.editPractice', 'Edit Practice')}
+      </Text>
+    </Group>
+  ) : null;
+
+  return (
+    <>
+      <BaseMedicalForm
+        isOpen={isOpen}
+        onClose={onClose}
+        title={title}
+        formData={formData}
+        onInputChange={handleInputChange}
+        onSubmit={handleSubmit}
+        editingItem={editingItem}
+        fields={practitionerFormFields}
+        dynamicOptions={dynamicOptions}
+        fieldErrors={fieldErrors}
+        fieldExtras={{ practice_id: practiceFieldExtra }}
+        isLoading={isLoading || isLoadingPractices}
+        zIndex={zIndex}
+      >
+        {customContent}
+      </BaseMedicalForm>
+
+      <PracticeEditModal
+        isOpen={showPracticeEdit}
+        onClose={() => {
+          setShowPracticeEdit(false);
+          setPracticeEditData(null);
+        }}
+        practiceData={practiceEditData}
+        onSaved={handlePracticeEditSaved}
+      />
+    </>
+  );
+};
+
+PractitionerFormWrapper.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  title: PropTypes.string,
+  formData: PropTypes.object.isRequired,
+  onInputChange: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  editingItem: PropTypes.object,
+  isLoading: PropTypes.bool,
+  statusMessage: PropTypes.string,
+  zIndex: PropTypes.number,
+};
+
+export default PractitionerFormWrapper;

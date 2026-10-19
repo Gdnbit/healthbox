@@ -1,0 +1,219 @@
+/**
+ * Visit form field configuration
+ */
+
+import { tagsFieldConfig, getTodayEndOfDay } from './shared';
+
+export const visitFormFields = [
+  {
+    name: 'reason',
+    type: 'text',
+    labelKey: 'medical:visits.form.fields.reason.label',
+    placeholderKey: 'medical:visits.form.fields.reason.placeholder',
+    required: true,
+    descriptionKey: 'medical:visits.form.fields.reason.description',
+    gridColumn: 12,
+  },
+  {
+    name: 'date',
+    type: 'date',
+    labelKey: 'medical:visits.form.fields.visitDate.label',
+    placeholderKey: 'medical:visits.form.fields.visitDate.placeholder',
+    required: true,
+    descriptionKey: 'medical:visits.form.fields.visitDate.description',
+    gridColumn: 6,
+    maxDate: getTodayEndOfDay,
+  },
+  {
+    name: 'practitioner_id',
+    type: 'select',
+    labelKey: 'medical:visits.form.fields.attendingPractitioner.label',
+    placeholderKey:
+      'medical:visits.form.fields.attendingPractitioner.placeholder',
+    descriptionKey:
+      'medical:visits.form.fields.attendingPractitioner.description',
+    gridColumn: 6,
+    searchable: true,
+    clearable: true,
+    dynamicOptions: 'practitioners',
+  },
+  {
+    name: 'visit_type',
+    type: 'select',
+    labelKey: 'shared:labels.visitType',
+    placeholderKey: 'medical:visits.form.fields.visitType.placeholder',
+    descriptionKey: 'medical:visits.form.fields.visitType.description',
+    gridColumn: 6,
+    searchable: true,
+    clearable: true,
+    options: [
+      {
+        value: 'annual checkup',
+        labelKey: 'medical:visits.form.visitTypeOptions.annualCheckup',
+      },
+      {
+        value: 'follow-up',
+        labelKey: 'medical:visits.form.visitTypeOptions.followUp',
+      },
+      {
+        value: 'consultation',
+        labelKey: 'medical:visits.form.visitTypeOptions.consultation',
+      },
+      {
+        value: 'emergency',
+        labelKey: 'medical:visits.form.visitTypeOptions.emergency',
+      },
+      {
+        value: 'preventive care',
+        labelKey: 'medical:visits.form.visitTypeOptions.preventiveCare',
+      },
+      {
+        value: 'routine visit',
+        labelKey: 'medical:visits.form.visitTypeOptions.routineVisit',
+      },
+      {
+        value: 'specialist referral',
+        labelKey: 'medical:visits.form.visitTypeOptions.specialistReferral',
+      },
+    ],
+  },
+  {
+    name: 'priority',
+    type: 'select',
+    labelKey: 'shared:labels.priority',
+    placeholderKey: 'medical:visits.form.fields.priority.placeholder',
+    descriptionKey: 'medical:visits.form.fields.priority.description',
+    gridColumn: 6,
+    clearable: true,
+    options: [
+      {
+        value: 'routine',
+        labelKey: 'medical:visits.form.priorityOptions.routine',
+      },
+      {
+        value: 'urgent',
+        labelKey: 'medical:visits.form.priorityOptions.urgent',
+      },
+    ],
+  },
+  {
+    name: 'condition_id',
+    type: 'select',
+    labelKey: 'medical:visits.form.fields.relatedCondition.label',
+    placeholderKey: 'medical:visits.form.fields.relatedCondition.placeholder',
+    descriptionKey: 'medical:visits.form.fields.relatedCondition.description',
+    gridColumn: 12,
+    searchable: true,
+    clearable: true,
+    dynamicOptions: 'conditions',
+  },
+  {
+    name: 'chief_complaint',
+    type: 'text',
+    labelKey: 'shared:labels.chiefComplaint',
+    placeholderKey: 'medical:visits.form.fields.chiefComplaint.placeholder',
+    descriptionKey: 'medical:visits.form.fields.chiefComplaint.description',
+    gridColumn: 12,
+  },
+  {
+    name: 'duration_minutes',
+    type: 'number',
+    labelKey: 'shared:fields.durationMinutes',
+    placeholderKey: 'medical:visits.form.fields.durationMinutes.placeholder',
+    descriptionKey: 'medical:visits.form.fields.durationMinutes.description',
+    gridColumn: 6,
+    min: 1,
+    max: 600,
+  },
+  {
+    name: 'location',
+    type: 'select',
+    labelKey: 'shared:labels.location',
+    placeholderKey: 'medical:visits.form.fields.location.placeholder',
+    descriptionKey: 'medical:visits.form.fields.location.description',
+    gridColumn: 6,
+    searchable: true,
+    clearable: true,
+    options: [
+      {
+        value: 'office',
+        labelKey: 'medical:visits.form.locationOptions.doctorsOffice',
+      },
+      {
+        value: 'hospital',
+        labelKey: 'medical:visits.form.locationOptions.hospital',
+      },
+      {
+        value: 'clinic',
+        labelKey: 'medical:visits.form.locationOptions.clinic',
+      },
+      {
+        value: 'telehealth',
+        labelKey: 'medical:visits.form.locationOptions.telehealth',
+      },
+      {
+        value: 'urgent care',
+        labelKey: 'medical:visits.form.locationOptions.urgentCare',
+      },
+      {
+        value: 'emergency room',
+        labelKey: 'medical:visits.form.locationOptions.emergencyRoom',
+      },
+      {
+        value: 'home',
+        labelKey: 'medical:visits.form.locationOptions.homeVisit',
+      },
+    ],
+  },
+  {
+    name: '_divider_clinical',
+    type: 'divider',
+    labelKey: 'medical:visits.form.dividers.clinicalInformation',
+    gridColumn: 12,
+  },
+  {
+    name: 'diagnosis',
+    type: 'textarea',
+    labelKey: 'medical:visits.form.fields.diagnosisAssessment.label',
+    placeholderKey:
+      'medical:visits.form.fields.diagnosisAssessment.placeholder',
+    descriptionKey:
+      'medical:visits.form.fields.diagnosisAssessment.description',
+    gridColumn: 12,
+    minRows: 2,
+    maxRows: 4,
+  },
+  {
+    name: 'treatment_plan',
+    type: 'textarea',
+    labelKey: 'shared:labels.treatmentPlan',
+    placeholderKey: 'medical:visits.form.fields.treatmentPlan.placeholder',
+    descriptionKey: 'medical:visits.form.fields.treatmentPlan.description',
+    gridColumn: 12,
+    minRows: 3,
+    maxRows: 6,
+  },
+  {
+    name: 'follow_up_instructions',
+    type: 'textarea',
+    labelKey: 'medical:visits.viewModal.followUpInstructions',
+    placeholderKey:
+      'medical:visits.form.fields.followUpInstructions.placeholder',
+    descriptionKey:
+      'medical:visits.form.fields.followUpInstructions.description',
+    gridColumn: 12,
+    minRows: 2,
+    maxRows: 4,
+  },
+  {
+    name: 'notes',
+    type: 'textarea',
+    labelKey: 'shared:tabs.notes',
+    placeholderKey: 'medical:visits.form.fields.additionalNotes.placeholder',
+    descriptionKey: 'medical:visits.form.fields.additionalNotes.description',
+    gridColumn: 12,
+    minRows: 3,
+    maxRows: 6,
+  },
+  tagsFieldConfig,
+];

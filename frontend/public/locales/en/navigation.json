@@ -1,0 +1,123 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "activity": {
+    "actions": {
+      "added": "Added",
+      "deleted": "Deleted",
+      "modified": "Modified",
+      "removed": "Removed",
+      "scheduled": "Scheduled",
+      "updated": "Updated",
+      "viewed": "Viewed"
+    }
+  },
+  "dashboard": {
+    "activity": {
+      "lastUpdated": "Last updated",
+      "noActivity": "No recent activity",
+      "noActivityDescription": "Your medical record activities will appear here"
+    },
+    "hello": "Hello",
+    "loading": "Loading your medical dashboard...",
+    "modules": {
+      "exportRecords": "Export Records",
+      "visitHistory": "Visit History"
+    },
+    "search": {
+      "advancedSearch": "Advanced Search",
+      "placeholder": "Search medical records..."
+    },
+    "sections": {
+      "additionalResources": "Additional Resources",
+      "coreMedical": "Core Medical Information",
+      "healthMonitoring": "Health Monitoring",
+      "prevention": "Prevention & History",
+      "recentActivity": "Recent Activity",
+      "treatments": "Treatments and Procedures"
+    },
+    "stats": {
+      "activeMedications": "Active Medications"
+    },
+    "subtitle": "Manage your health information securely",
+    "title": "HealthBox Dashboard"
+  },
+  "invitations": {
+    "acceptButton": "Accept Invitation",
+    "confirmDescription": "By accepting, you will gain access to view the shared medical information.",
+    "confirmQuestion": "Are you sure you want to accept this invitation?",
+    "confirmTitle": "Confirm Invitation Acceptance",
+    "from": "From",
+    "lastUpdated": "Last updated",
+    "manageAll": "Manage All Invitations",
+    "noPending": "No pending invitations",
+    "noPendingDescription": "New sharing invitations will appear here",
+    "sharePatient": "Share Patient",
+    "title": "Invitations",
+    "types": {
+      "patientRecord": "Patient Record"
+    }
+  },
+  "menu": {
+    "account": "Account",
+    "backToDashboard": "Back to Dashboard",
+    "darkMode": "Dark Mode",
+    "help": "Help",
+    "lightMode": "Light Mode",
+    "logout": "Logout",
+    "patients": "Patients",
+    "profile": "Profile",
+    "reports": "Reports",
+    "userActions": "User Actions"
+  },
+  "pages": {
+    "help": "Help & Support",
+    "medicalHistory": "Medical History",
+    "patientDetails": "Patient Details",
+    "patientList": "Patient List",
+    "preferences": "Preferences",
+    "reports": "Reports",
+    "userProfile": "User Profile"
+  },
+  "sections": {
+    "personalInfo": "Personal Information",
+    "preferences": "Preferences"
+  },
+  "sidebarNav": {
+    "items": {
+      "adminDashboard": "Admin Dashboard",
+      "allergies": "Allergies",
+      "backupManagement": "Backup Management",
+      "conditions": "Conditions",
+      "customReports": "Custom Reports",
+      "dataModels": "Data Models",
+      "emergencyContacts": "Emergency Contacts",
+      "exportRecords": "Export Records",
+      "familyHistory": "Family History",
+      "immunizations": "Immunizations",
+      "injuries": "Injuries",
+      "insurance": "Insurance",
+      "labResults": "Lab Results",
+      "language": "Language",
+      "medicalEquipment": "Medical Equipment",
+      "medications": "Medications",
+      "patientInfo": "Patient Info",
+      "pharmacies": "Pharmacies",
+      "practitioners": "Practitioners",
+      "procedures": "Procedures",
+      "settings": "Settings",
+      "symptoms": "Symptoms",
+      "systemHealth": "System Health",
+      "tagManagement": "Tag Management",
+      "theme": "Theme",
+      "treatments": "Treatments",
+      "visitHistory": "Visit History",
+      "vitalSigns": "Vital Signs"
+    },
+    "sections": {
+      "administration": "Administration",
+      "careAndTreatment": "Care & Treatment",
+      "misc": "Misc.",
+      "tools": "Tools"
+    }
+  }
+}

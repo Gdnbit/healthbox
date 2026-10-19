@@ -1,0 +1,123 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "activity": {
+    "actions": {
+      "added": "Dodano",
+      "deleted": "Usunięto",
+      "modified": "Zmodyfikowano",
+      "removed": "Usunięto",
+      "scheduled": "Zaplanowano",
+      "updated": "Zaktualizowano",
+      "viewed": "Wyświetlono"
+    }
+  },
+  "dashboard": {
+    "activity": {
+      "lastUpdated": "Ostatnia aktualizacja",
+      "noActivity": "Brak niedawnej aktywności",
+      "noActivityDescription": "Działania związane z dokumentacją medyczną będą wyświetlane tutaj"
+    },
+    "hello": "Witaj",
+    "loading": "Ładowanie pulpitu medycznego...",
+    "modules": {
+      "exportRecords": "Eksportuj dokumentację",
+      "visitHistory": "Historia wizyt"
+    },
+    "search": {
+      "advancedSearch": "Wyszukiwanie zaawansowane",
+      "placeholder": "Przeszukaj dokumentację medyczną..."
+    },
+    "sections": {
+      "additionalResources": "Dodatkowe zasoby",
+      "coreMedical": "Podstawowe informacje medyczne",
+      "healthMonitoring": "Monitorowanie zdrowia",
+      "prevention": "Profilaktyka i historia",
+      "recentActivity": "Ostatnia aktywność",
+      "treatments": "Zabiegi i procedury"
+    },
+    "stats": {
+      "activeMedications": "Aktywne leki"
+    },
+    "subtitle": "Bezpiecznie zarządzaj informacjami o swoim zdrowiu",
+    "title": "Panel główny HealthBox"
+  },
+  "invitations": {
+    "acceptButton": "Zaakceptuj zaproszenie",
+    "confirmDescription": "Po zaakceptowaniu uzyskasz dostęp do udostępnionych informacji medycznych.",
+    "confirmQuestion": "Czy na pewno chcesz zaakceptować to zaproszenie?",
+    "confirmTitle": "Potwierdź zaakceptowanie zaproszenia",
+    "from": "Od",
+    "lastUpdated": "Ostatnia aktualizacja",
+    "manageAll": "Zarządzaj wszystkimi zaproszeniami",
+    "noPending": "Brak oczekujących zaproszeń",
+    "noPendingDescription": "Nowe zaproszenia do udostępniania będą wyświetlane tutaj",
+    "sharePatient": "Udostępnij pacjenta",
+    "title": "Zaproszenia",
+    "types": {
+      "patientRecord": "Dokumentacja pacjenta"
+    }
+  },
+  "menu": {
+    "account": "Konto",
+    "backToDashboard": "Powrót do pulpitu głównego",
+    "darkMode": "Tryb ciemny",
+    "help": "Pomoc",
+    "lightMode": "Tryb jasny",
+    "logout": "Wyloguj",
+    "patients": "Pacjenci",
+    "profile": "Profil",
+    "reports": "Raporty",
+    "userActions": "Akcje użytkownika"
+  },
+  "pages": {
+    "help": "Pomoc i wsparcie",
+    "medicalHistory": "Historia choroby",
+    "patientDetails": "Szczegóły pacjenta",
+    "patientList": "Lista pacjentów",
+    "preferences": "Preferencje",
+    "reports": "Raporty",
+    "userProfile": "Profil użytkownika"
+  },
+  "sections": {
+    "personalInfo": "Dane osobowe",
+    "preferences": "Preferencje"
+  },
+  "sidebarNav": {
+    "items": {
+      "adminDashboard": "Panel administratora",
+      "allergies": "Alergie",
+      "backupManagement": "Zarządzanie kopiami zapasowymi",
+      "conditions": "Schorzenia",
+      "customReports": "Raporty niestandardowe",
+      "dataModels": "Modele danych",
+      "emergencyContacts": "Kontakty alarmowe",
+      "exportRecords": "Eksportuj dokumentację",
+      "familyHistory": "Historia rodzinna",
+      "immunizations": "Szczepienia",
+      "injuries": "Urazy",
+      "insurance": "Ubezpieczenie",
+      "labResults": "Wyniki badań",
+      "language": "Język",
+      "medicalEquipment": "Sprzęt medyczny",
+      "medications": "Leki",
+      "patientInfo": "Informacje o pacjencie",
+      "pharmacies": "Apteki",
+      "practitioners": "Lekarze",
+      "procedures": "Procedury",
+      "settings": "Ustawienia",
+      "symptoms": "Objawy",
+      "systemHealth": "Stan systemu",
+      "tagManagement": "Zarządzanie tagami",
+      "theme": "Motyw",
+      "treatments": "Leczenie",
+      "visitHistory": "Historia wizyt",
+      "vitalSigns": "Podstawowe parametry życiowe"
+    },
+    "sections": {
+      "administration": "Administracja",
+      "careAndTreatment": "Opieka i leczenie",
+      "misc": "Różne",
+      "tools": "Narzędzia"
+    }
+  }
+}

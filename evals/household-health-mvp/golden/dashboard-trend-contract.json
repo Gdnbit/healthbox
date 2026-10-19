@@ -1,0 +1,57 @@
+{
+  "contract_version": "1.1.0",
+  "task_id": "MVP-DASHBOARD-RANGE-PINNING-01",
+  "case_ids": [
+    "CASE-MVP-DYNAMIC-TREND",
+    "CASE-MVP-LIGHTWEIGHT-DASHBOARD",
+    "CASE-MVP-SMOOTH-TREND",
+    "CASE-MVP-MOBILE-FIRST-DASHBOARD"
+  ],
+  "pinned_metrics": {
+    "minimum_when_eligible_data_exists": 1,
+    "maximum": 2,
+    "minimum_dated_observations_per_metric": 2,
+    "default_priority_zh_cn": [
+      "血压",
+      "体重/BMI/腰围",
+      "静息脉率/心率",
+      "血糖",
+      "血脂",
+      "其他已有趋势"
+    ],
+    "user_order_is_preserved": true,
+    "health_values_written_to_browser_storage": false,
+    "current_implementation_persistence": "server_viewer_by_subject"
+  },
+  "ranges": [
+    "auto",
+    "3m",
+    "6m",
+    "1y",
+    "2y",
+    "5y",
+    "all"
+  ],
+  "automatic_window": {
+    "anchor": "latest_real_observation",
+    "calendar_boundaries_are_inclusive": true,
+    "rule": "choose_the_shortest_supported_window_containing_every_dated_observation_else_all",
+    "always_show_actual_start_and_end": true,
+    "is_medical_screening_interval": false
+  },
+  "point_fidelity": {
+    "chart_and_equivalent_table_share_the_same_filtered_point_array": true,
+    "stable_point_ids_preserved": true,
+    "dates_and_values_preserved": true,
+    "interpolation_records_created": false,
+    "prediction_or_extrapolation_created": false,
+    "single_point_draws_line": false,
+    "undated_points_reported_as_excluded": true
+  },
+  "responsive": {
+    "desktop_maximum_visible_trends": 2,
+    "mobile_primary_trends_in_first_view": 1,
+    "second_user_selected_trend_may_follow_below": true,
+    "minimum_interactive_target_px": 44
+  }
+}

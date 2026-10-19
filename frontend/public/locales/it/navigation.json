@@ -1,0 +1,123 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "activity": {
+    "actions": {
+      "added": "Aggiunto",
+      "deleted": "Eliminato",
+      "modified": "Modificato",
+      "removed": "Rimosso",
+      "scheduled": "Programmato",
+      "updated": "Aggiornato",
+      "viewed": "Visualizzato"
+    }
+  },
+  "dashboard": {
+    "activity": {
+      "lastUpdated": "Ultimo aggiornamento",
+      "noActivity": "Nessuna attività recente",
+      "noActivityDescription": "Le attività della tua cartella clinica appariranno qui"
+    },
+    "hello": "Salve",
+    "loading": "Caricamento della dashboard medica...",
+    "modules": {
+      "exportRecords": "Esporta cartelle",
+      "visitHistory": "Storico visite"
+    },
+    "search": {
+      "advancedSearch": "Ricerca avanzata",
+      "placeholder": "Cerca nelle cartelle cliniche..."
+    },
+    "sections": {
+      "additionalResources": "Risorse aggiuntive",
+      "coreMedical": "Informazioni mediche principali",
+      "healthMonitoring": "Monitoraggio della salute",
+      "prevention": "Prevenzione e storico",
+      "recentActivity": "Attività recente",
+      "treatments": "Trattamenti e procedure"
+    },
+    "stats": {
+      "activeMedications": "Farmaci attivi"
+    },
+    "subtitle": "Gestisci in modo sicuro le tue informazioni sanitarie",
+    "title": "Dashboard HealthBox"
+  },
+  "invitations": {
+    "acceptButton": "Accetta invito",
+    "confirmDescription": "Accettando, otterrai l'accesso per visualizzare le informazioni mediche condivise.",
+    "confirmQuestion": "Sei sicuro di voler accettare questo invito?",
+    "confirmTitle": "Conferma accettazione invito",
+    "from": "Da",
+    "lastUpdated": "Ultimo aggiornamento",
+    "manageAll": "Gestisci tutti gli inviti",
+    "noPending": "Nessun invito in sospeso",
+    "noPendingDescription": "I nuovi inviti di condivisione appariranno qui",
+    "sharePatient": "Condividi paziente",
+    "title": "Inviti",
+    "types": {
+      "patientRecord": "Cartella del paziente"
+    }
+  },
+  "menu": {
+    "account": "Account",
+    "backToDashboard": "Torna alla Dashboard",
+    "darkMode": "Modalità scura",
+    "help": "Aiuto",
+    "lightMode": "Modalità chiara",
+    "logout": "Esci",
+    "patients": "Pazienti",
+    "profile": "Profilo",
+    "reports": "Report",
+    "userActions": "Azioni utente"
+  },
+  "pages": {
+    "help": "Aiuto e supporto",
+    "medicalHistory": "Storico medico",
+    "patientDetails": "Dettagli paziente",
+    "patientList": "Elenco pazienti",
+    "preferences": "Preferenze",
+    "reports": "Report",
+    "userProfile": "Profilo utente"
+  },
+  "sections": {
+    "personalInfo": "Informazioni personali",
+    "preferences": "Preferenze"
+  },
+  "sidebarNav": {
+    "items": {
+      "adminDashboard": "Dashboard amministratore",
+      "allergies": "Allergie",
+      "backupManagement": "Gestione backup",
+      "conditions": "Patologie",
+      "customReports": "Report personalizzati",
+      "dataModels": "Modelli dati",
+      "emergencyContacts": "Contatti di emergenza",
+      "exportRecords": "Esporta cartelle",
+      "familyHistory": "Anamnesi familiare",
+      "immunizations": "Vaccinazioni",
+      "injuries": "Lesioni",
+      "insurance": "Assicurazione",
+      "labResults": "Risultati di laboratorio",
+      "language": "Lingua",
+      "medicalEquipment": "Attrezzature mediche",
+      "medications": "Farmaci",
+      "patientInfo": "Informazioni paziente",
+      "pharmacies": "Farmacie",
+      "practitioners": "Medici",
+      "procedures": "Procedure",
+      "settings": "Impostazioni",
+      "symptoms": "Sintomi",
+      "systemHealth": "Stato del sistema",
+      "tagManagement": "Gestione tag",
+      "theme": "Tema",
+      "treatments": "Trattamenti",
+      "visitHistory": "Storico visite",
+      "vitalSigns": "Segni vitali"
+    },
+    "sections": {
+      "administration": "Amministrazione",
+      "careAndTreatment": "Cura e trattamento",
+      "misc": "Varie",
+      "tools": "Strumenti"
+    }
+  }
+}

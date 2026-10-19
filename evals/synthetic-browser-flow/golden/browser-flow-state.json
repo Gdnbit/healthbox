@@ -1,0 +1,82 @@
+{
+  "initial": {
+    "coverage_statements": 0,
+    "source_documents": 0,
+    "import_batches": 0,
+    "import_items": 0,
+    "lab_results": 0,
+    "lab_components": 0,
+    "vitals": 0,
+    "batch_status": null
+  },
+  "vital_seeded": {
+    "coverage_statements": 0,
+    "source_documents": 0,
+    "import_batches": 0,
+    "import_items": 0,
+    "lab_results": 0,
+    "lab_components": 0,
+    "vitals": 2,
+    "batch_status": null
+  },
+  "source_saved": {
+    "coverage_statements": 0,
+    "source_documents": 1,
+    "import_batches": 0,
+    "import_items": 0,
+    "lab_results": 0,
+    "lab_components": 0,
+    "vitals": 2,
+    "batch_status": null
+  },
+  "previewed": {
+    "coverage_statements": 0,
+    "source_documents": 1,
+    "import_batches": 0,
+    "import_items": 0,
+    "lab_results": 0,
+    "lab_components": 0,
+    "vitals": 2,
+    "batch_status": null
+  },
+  "pending_review": {
+    "coverage_statements": 0,
+    "source_documents": 1,
+    "import_batches": 1,
+    "import_items": 3,
+    "lab_results": 0,
+    "lab_components": 0,
+    "vitals": 2,
+    "batch_status": "pending_review"
+  },
+  "reviewed": {
+    "coverage_statements": 0,
+    "source_documents": 1,
+    "import_batches": 1,
+    "import_items": 3,
+    "lab_results": 0,
+    "lab_components": 0,
+    "vitals": 2,
+    "batch_status": "reviewed"
+  },
+  "committed": {
+    "coverage_statements": 0,
+    "source_documents": 1,
+    "import_batches": 1,
+    "import_items": 3,
+    "lab_results": 1,
+    "lab_components": 3,
+    "vitals": 2,
+    "batch_status": "committed"
+  },
+  "rolled_back": {
+    "coverage_statements": 0,
+    "source_documents": 1,
+    "import_batches": 1,
+    "import_items": 3,
+    "lab_results": 0,
+    "lab_components": 0,
+    "vitals": 2,
+    "batch_status": "rolled_back"
+  }
+}

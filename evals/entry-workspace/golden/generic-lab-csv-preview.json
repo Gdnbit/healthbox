@@ -1,0 +1,83 @@
+{
+  "total_rows": 3,
+  "valid_rows": 3,
+  "invalid_rows": 0,
+  "skipped_blank_rows": 0,
+  "encoding": "utf-8-sig",
+  "delimiter": ",",
+  "rows": [
+    {
+      "row_number": 2,
+      "candidate": {
+        "observed_date": "2026-01-15",
+        "test_name": "Synthetic marker alpha",
+        "canonical_test_name": "Synthetic Marker Alpha",
+        "test_code": "SYN-A",
+        "result_type": "quantitative",
+        "numeric_value": 12.5,
+        "qualitative_value": null,
+        "textual_value": null,
+        "unit": "unit/L",
+        "ref_range_min": 10.0,
+        "ref_range_max": 15.0,
+        "ref_range_text": null,
+        "result_status": "normal",
+        "category": "chemistry",
+        "source_page": 2,
+        "source_locator": "table-1-row-2",
+        "raw_text": null,
+        "confidence": null
+      },
+      "validation_issues": []
+    },
+    {
+      "row_number": 3,
+      "candidate": {
+        "observed_date": "2026-01-15",
+        "test_name": "Synthetic flag beta",
+        "canonical_test_name": "Synthetic Flag Beta",
+        "test_code": "SYN-B",
+        "result_type": "qualitative",
+        "numeric_value": null,
+        "qualitative_value": "negative",
+        "textual_value": null,
+        "unit": null,
+        "ref_range_min": null,
+        "ref_range_max": null,
+        "ref_range_text": "Negative",
+        "result_status": "normal",
+        "category": "immunology",
+        "source_page": 3,
+        "source_locator": "table-1-row-3",
+        "raw_text": null,
+        "confidence": null
+      },
+      "validation_issues": []
+    },
+    {
+      "row_number": 4,
+      "candidate": {
+        "observed_date": "2026-01-15",
+        "test_name": "Synthetic note gamma",
+        "canonical_test_name": null,
+        "test_code": null,
+        "result_type": "textual",
+        "numeric_value": null,
+        "qualitative_value": null,
+        "textual_value": "Example only",
+        "unit": null,
+        "ref_range_min": null,
+        "ref_range_max": null,
+        "ref_range_text": null,
+        "result_status": null,
+        "category": "other",
+        "source_page": 4,
+        "source_locator": "note-1",
+        "raw_text": null,
+        "confidence": null
+      },
+      "validation_issues": ["missing_reference", "uncanonicalized_name"]
+    }
+  ],
+  "errors": []
+}

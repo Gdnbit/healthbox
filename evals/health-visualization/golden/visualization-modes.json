@@ -1,0 +1,10 @@
+{
+  "cases": [
+    { "validQuantitativePoints": 0, "expected": "empty" },
+    { "validQuantitativePoints": 1, "expected": "snapshot" },
+    { "validQuantitativePoints": 2, "expected": "comparison" },
+    { "validQuantitativePoints": 7, "expected": "comparison" },
+    { "validQuantitativePoints": 8, "expected": "trend" }
+  ],
+  "fixturePolicy": "synthetic-only"
+}

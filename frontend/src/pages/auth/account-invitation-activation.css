@@ -1,0 +1,255 @@
+@import '../../styles/household-health-foundations.css';
+
+.account-activation-page {
+  min-height: 100vh;
+  padding: var(--hhp-space-8) var(--hhp-space-4) var(--hhp-space-12);
+  background: var(--hhp-bg);
+  color: var(--hhp-ink);
+  font-family:
+    Inter,
+    'PingFang SC',
+    'Microsoft YaHei',
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+.account-activation-card {
+  width: min(100%, 51rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+  border: 1px solid var(--hhp-border);
+  border-radius: var(--hhp-radius-shell);
+  background: var(--hhp-surface-raised);
+  box-shadow: var(--hhp-shadow-shell);
+}
+
+.account-activation-card--status {
+  min-height: 24rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hhp-space-4);
+  text-align: center;
+}
+
+.account-activation-card--status > p {
+  max-width: 34rem;
+}
+
+.account-activation-card__status-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--hhp-peach);
+  color: #8b4a35;
+}
+
+.account-activation-card__status-icon--success {
+  background: var(--hhp-teal-soft);
+  color: var(--hhp-teal-dark);
+}
+
+.account-activation-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--hhp-space-4);
+  align-items: flex-start;
+  padding-bottom: var(--hhp-space-6);
+  border-bottom: 1px solid var(--hhp-border);
+}
+
+.account-activation-header h1 {
+  margin: var(--hhp-space-1) 0 var(--hhp-space-2);
+  color: var(--hhp-ink);
+  font-size: clamp(1.65rem, 5vw, 2.25rem);
+  line-height: 1.18;
+  letter-spacing: -0.035em;
+}
+
+.account-activation-header p:last-child,
+.account-activation-notice__summary {
+  color: var(--hhp-muted);
+  line-height: var(--hhp-line-body);
+}
+
+.account-activation-header__eyebrow,
+.account-activation-notice__kicker {
+  color: var(--hhp-teal-dark);
+  font-size: var(--hhp-font-small);
+  font-weight: var(--hhp-weight-bold);
+  letter-spacing: 0.08em;
+}
+
+.account-activation-expiry {
+  display: flex;
+  align-items: center;
+  gap: var(--hhp-space-2);
+  margin: var(--hhp-space-5) 0;
+  padding: var(--hhp-space-3) var(--hhp-space-4);
+  border-radius: var(--hhp-radius-control);
+  background: var(--hhp-surface-soft);
+  color: var(--hhp-teal-dark);
+}
+
+.account-activation-notice h2,
+.account-activation-form h2 {
+  margin-top: var(--hhp-space-1);
+  color: var(--hhp-ink);
+  font-size: var(--hhp-font-title);
+}
+
+.account-activation-notice__summary {
+  margin-top: var(--hhp-space-2);
+}
+
+.account-activation-notice__sections {
+  display: grid;
+  gap: var(--hhp-space-3);
+  margin: var(--hhp-space-5) 0;
+}
+
+.account-activation-notice__section {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: var(--hhp-space-3);
+  padding: var(--hhp-space-4);
+  border: 1px solid var(--hhp-border);
+  border-radius: var(--hhp-radius-card);
+  background: var(--hhp-surface);
+}
+
+.account-activation-notice__section > span {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--hhp-teal-soft);
+  color: var(--hhp-teal-dark);
+  font-weight: var(--hhp-weight-bold);
+}
+
+.account-activation-notice__section h3 {
+  margin: 0 0 var(--hhp-space-1);
+  color: var(--hhp-ink);
+  font-size: var(--hhp-font-body);
+}
+
+.account-activation-notice__section p,
+.account-activation-external-boundary p {
+  color: var(--hhp-muted);
+  line-height: var(--hhp-line-body);
+}
+
+.account-activation-external-boundary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--hhp-space-3);
+  padding: var(--hhp-space-4);
+  border: 1px solid #dfc9bc;
+  border-radius: var(--hhp-radius-card);
+  background: #fbf4ef;
+  color: var(--hhp-ink);
+}
+
+.account-activation-form {
+  display: grid;
+  gap: var(--hhp-space-5);
+  margin-top: var(--hhp-space-8);
+  padding-top: var(--hhp-space-6);
+  border-top: 1px solid var(--hhp-border);
+}
+
+.account-activation-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--hhp-space-4);
+}
+
+.account-activation-confirmation {
+  min-height: 3.5rem;
+  padding: var(--hhp-space-3) var(--hhp-space-4);
+  border: 1px solid var(--hhp-border-strong);
+  border-radius: var(--hhp-radius-control);
+  background: var(--hhp-surface-soft);
+}
+
+.account-activation-form__footer {
+  display: grid;
+  gap: var(--hhp-space-3);
+}
+
+.account-activation-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--hhp-space-3);
+}
+
+.account-activation-page .mantine-Button-root {
+  min-height: var(--hhp-touch-target);
+  border-radius: var(--hhp-radius-control);
+  font-size: var(--hhp-font-label);
+}
+
+.account-activation-page
+  .mantine-Button-root:not([data-variant='default']):not(
+    [data-variant='light']
+  ):not([data-variant='subtle']):not(:disabled):not([data-disabled]) {
+  background: var(--hhp-teal);
+}
+
+.account-activation-page
+  .mantine-Button-root:not([data-variant='default']):not(
+    [data-variant='light']
+  ):not([data-variant='subtle']):not(:disabled):not([data-disabled]):hover {
+  background: var(--hhp-teal-dark);
+}
+
+.account-activation-page .mantine-Button-root:disabled,
+.account-activation-page .mantine-Button-root[data-disabled] {
+  background: #e5ebe9;
+  color: #73817d;
+  opacity: 1;
+}
+
+@media (max-width: 600px) {
+  .account-activation-page {
+    padding: 0;
+    background: var(--hhp-surface-raised);
+  }
+
+  .account-activation-card {
+    min-height: 100vh;
+    padding: var(--hhp-space-6) var(--hhp-space-4) var(--hhp-space-8);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .account-activation-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-activation-header img {
+    width: 2.625rem;
+    height: 2.625rem;
+  }
+
+  .account-activation-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-activation-form__actions {
+    flex-direction: column-reverse;
+  }
+
+  .account-activation-form__actions .mantine-Button-root,
+  .account-activation-card--status .mantine-Button-root {
+    width: 100%;
+    min-height: 3rem;
+  }
+}

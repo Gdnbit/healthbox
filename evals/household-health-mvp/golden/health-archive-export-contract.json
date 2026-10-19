@@ -1,0 +1,61 @@
+{
+  "contract": "household-health-complete-archive",
+  "version": "1.0",
+  "authorization": {
+    "subject_rule": "self_owned_patient_only",
+    "shared_dashboard_can_export": false,
+    "owner_global_read_can_export": false,
+    "administrator_role_bypass": false
+  },
+  "job": {
+    "durable": true,
+    "idempotency_bound_to": [
+      "requesting_user_id",
+      "patient_id",
+      "idempotency_key"
+    ],
+    "states": [
+      "queued",
+      "running",
+      "ready",
+      "failed",
+      "cancelled",
+      "expired"
+    ],
+    "interrupted_running_state": "queued",
+    "download_ttl_hours": 24
+  },
+  "archive": {
+    "format": "zip",
+    "schema_version": "household-health-archive/1.0",
+    "required_entries": [
+      "README-zh-CN.txt",
+      "manifest.json",
+      "data/health-records.json"
+    ],
+    "source_originals_prefix": "originals/",
+    "includes_withdrawn_sources": true,
+    "fail_closed_on_missing_original": true,
+    "fail_closed_on_source_path_outside_storage": true,
+    "fail_closed_on_source_size_mismatch": true,
+    "fail_closed_on_source_sha256_mismatch": true,
+    "requires_zip_crc_check": true,
+    "requires_archive_sha256": true
+  },
+  "forbidden_payload_fields": [
+    "absolute_server_path",
+    "password_hash",
+    "access_token",
+    "session",
+    "mfa_secret",
+    "recovery_code",
+    "activity_log",
+    "database_backup"
+  ],
+  "audit": {
+    "request": true,
+    "generated": true,
+    "download": true,
+    "stores_health_values": false
+  }
+}

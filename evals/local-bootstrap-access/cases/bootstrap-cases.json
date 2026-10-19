@@ -1,0 +1,62 @@
+[
+  {
+    "eval_id": "E-AUTH-001",
+    "case_id": "CASE-AUTH-001",
+    "rule_refs": ["R-AUTH-001", "R-AUTH-004"],
+    "input_fixture": "empty database with configured household bootstrap values",
+    "expected_output": "active admin, associated patient, forced password change",
+    "tolerance": "exact",
+    "auto_checkable": true,
+    "expected_red": true
+  },
+  {
+    "eval_id": "E-AUTH-002",
+    "case_id": "CASE-AUTH-001",
+    "rule_refs": ["R-AUTH-002"],
+    "input_fixture": "public UserCreate with weak password",
+    "expected_output": "validation error",
+    "tolerance": "exact",
+    "auto_checkable": true,
+    "expected_red": false
+  },
+  {
+    "eval_id": "E-AUTH-003",
+    "case_id": "CASE-AUTH-002",
+    "rule_refs": ["R-AUTH-003"],
+    "input_fixture": "initialized database",
+    "expected_output": "startup no-op",
+    "tolerance": "exact",
+    "auto_checkable": true,
+    "expected_red": false
+  },
+  {
+    "eval_id": "E-AUTH-004",
+    "case_id": "CASE-AUTH-001",
+    "rule_refs": ["R-AUTH-005"],
+    "input_fixture": "successful bootstrap",
+    "expected_output": "logs omit password and hash",
+    "tolerance": "zero secret occurrences",
+    "auto_checkable": true,
+    "expected_red": true
+  },
+  {
+    "eval_id": "E-AUTH-005",
+    "case_id": "CASE-ZH-005",
+    "rule_refs": ["R-AUTH-006"],
+    "input_fixture": "household Compose configuration",
+    "expected_output": "127.0.0.1-only binding",
+    "tolerance": "exact",
+    "auto_checkable": true,
+    "expected_red": false
+  },
+  {
+    "eval_id": "E-AUTH-006",
+    "case_id": "CASE-AUTH-002",
+    "rule_refs": ["R-AUTH-007"],
+    "input_fixture": "initialized database with absent then present target username",
+    "expected_output": "create once, then no-op without mutation",
+    "tolerance": "exact",
+    "auto_checkable": true,
+    "expected_red": true
+  }
+]

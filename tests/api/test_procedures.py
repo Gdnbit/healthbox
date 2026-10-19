@@ -1,0 +1,900 @@
+"""
+Tests for Procedures API endpoints.
+"""
+
+import pytest
+from datetime import date, datetime
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.crud.patient import patient as patient_crud
+from app.models.enums import get_all_procedure_outcomes
+from app.schemas.patient import PatientCreate
+from tests.utils.user import create_random_user, create_user_token_headers
+
+
+class TestProceduresAPI:
+    """Test Procedures API endpoints."""
+
+    @pytest.fixture
+    def user_with_patient(self, db_session: Session):
+        """Create a user with patient record for testing."""
+        user_data = create_random_user(db_session)
+        patient_data = PatientCreate(
+            first_name="John",
+            last_name="Doe",
+            birth_date=date(1990, 1, 1),
+            gender="M",
+            address="123 Main St",
+        )
+        patient = patient_crud.create_for_user(
+            db_session, user_id=user_data["user"].id, patient_data=patient_data
+        )
+        # Set as active patient for multi-patient system
+        user_data["user"].active_patient_id = patient.id
+        db_session.commit()
+        db_session.refresh(user_data["user"])
+        return {**user_data, "patient": patient}
+
+    @pytest.fixture
+    def authenticated_headers(self, user_with_patient):
+        """Create authentication headers."""
+        return create_user_token_headers(user_with_patient["user"].username)
+
+    def test_create_procedure_success(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test successful procedure creation."""
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Appendectomy",
+            "procedure_code": "44970",
+            "date": "2024-01-15",
+            "status": "completed",
+            "location": "Main Operating Room",
+            "procedure_duration": 120,
+            "notes": "Laparoscopic appendectomy performed successfully",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["procedure_name"] == "Appendectomy"
+        assert data["procedure_code"] == "44970"
+        assert data["status"] == "completed"
+        assert data["procedure_duration"] == 120
+        assert data["patient_id"] == user_with_patient["patient"].id
+
+    def test_create_procedure_minimal_data(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test procedure creation with minimal required data."""
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Blood Draw",
+            "date": "2024-01-15",
+            "status": "completed",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["procedure_name"] == "Blood Draw"
+        assert data["date"] == "2024-01-15"
+        assert data["status"] == "completed"
+
+    def test_create_scheduled_procedure(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test creating a scheduled procedure."""
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Colonoscopy",
+            "procedure_code": "45378",
+            "date": "2024-03-15",
+            "status": "scheduled",
+            "facility": "Endoscopy Suite",
+            "procedure_duration": 45,
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "scheduled"
+        assert data["procedure_name"] == "Colonoscopy"
+
+    def test_get_procedures_list(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test getting list of procedures."""
+        # Create multiple procedures
+        procedures = [
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": "X-Ray Chest",
+                "date": "2024-01-10",
+                "status": "completed",
+            },
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": "MRI Brain",
+                "date": "2024-01-20",
+                "status": "completed",
+            },
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": "CT Scan Abdomen",
+                "date": "2024-02-15",
+                "status": "scheduled",
+            },
+        ]
+
+        for proc_data in procedures:
+            client.post(
+                "/api/v1/procedures/", json=proc_data, headers=authenticated_headers
+            )
+
+        # Get procedures list
+        response = client.get("/api/v1/procedures/", headers=authenticated_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 3
+
+        # Should be ordered by date (most recent first)
+        procedure_names = [proc["procedure_name"] for proc in data]
+        assert "X-Ray Chest" in procedure_names
+        assert "MRI Brain" in procedure_names
+        assert "CT Scan Abdomen" in procedure_names
+
+    def test_get_procedure_by_id(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test getting a specific procedure by ID."""
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Cardiac Catheterization",
+            "procedure_code": "93458",
+            "date": "2024-01-15",
+            "status": "completed",
+            "procedure_duration": 90,
+        }
+
+        create_response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        procedure_id = create_response.json()["id"]
+
+        # Get procedure by ID
+        response = client.get(
+            f"/api/v1/procedures/{procedure_id}", headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == procedure_id
+        assert data["procedure_name"] == "Cardiac Catheterization"
+        assert data["procedure_code"] == "93458"
+
+    def test_update_procedure(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test updating a procedure."""
+        # Create procedure
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Knee Arthroscopy",
+            "date": "2024-01-15",
+            "status": "scheduled",
+        }
+
+        create_response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        procedure_id = create_response.json()["id"]
+
+        # Update procedure
+        update_data = {
+            "status": "completed",
+            "procedure_duration": 75,
+            "notes": "Arthroscopic meniscus repair completed successfully",
+        }
+
+        response = client.put(
+            f"/api/v1/procedures/{procedure_id}",
+            json=update_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "completed"
+        assert data["procedure_duration"] == 75
+        assert data["notes"] == "Arthroscopic meniscus repair completed successfully"
+        assert data["procedure_name"] == "Knee Arthroscopy"  # Unchanged
+
+    def test_delete_procedure(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test deleting a procedure."""
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Test Procedure to Delete",
+            "date": "2024-01-15",
+            "status": "scheduled",
+        }
+
+        create_response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        procedure_id = create_response.json()["id"]
+
+        # Delete procedure
+        response = client.delete(
+            f"/api/v1/procedures/{procedure_id}", headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+
+        # Verify deletion
+        get_response = client.get(
+            f"/api/v1/procedures/{procedure_id}", headers=authenticated_headers
+        )
+        assert get_response.status_code == 404
+
+    def test_procedure_search_and_filtering(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test procedure search and filtering."""
+        # Create procedures with different statuses and types
+        procedures = [
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": "Surgical Procedure A",
+                "date": "2024-01-15",
+                "status": "completed",
+            },
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": "Diagnostic Procedure B",
+                "date": "2024-01-20",
+                "status": "scheduled",
+            },
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": "Surgical Procedure C",
+                "date": "2024-02-01",
+                "status": "completed",
+            },
+        ]
+
+        for proc_data in procedures:
+            client.post(
+                "/api/v1/procedures/", json=proc_data, headers=authenticated_headers
+            )
+
+        # Test filtering by status
+        response = client.get(
+            "/api/v1/procedures/?status=completed", headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # All returned procedures must have completed status
+        assert all(proc["status"] == "completed" for proc in data)
+        # Both completed test procedures must appear in the results
+        completed_names = {proc["procedure_name"] for proc in data}
+        assert "Surgical Procedure A" in completed_names
+        assert "Surgical Procedure C" in completed_names
+
+    def test_procedure_date_range_filtering(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test filtering procedures by date range."""
+        # Create procedures across different dates
+        procedures = [
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": "January Procedure",
+                "date": "2024-01-15",
+                "status": "completed",
+            },
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": "February Procedure",
+                "date": "2024-02-15",
+                "status": "completed",
+            },
+            {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": "March Procedure",
+                "date": "2024-03-15",
+                "status": "scheduled",
+            },
+        ]
+
+        for proc_data in procedures:
+            client.post(
+                "/api/v1/procedures/", json=proc_data, headers=authenticated_headers
+            )
+
+        # Fetch all procedures then filter by date range (January to February) in the test,
+        # because the endpoint does not support start_date/end_date query params.
+        response = client.get("/api/v1/procedures/", headers=authenticated_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Filter to the three test procedures and then apply the date range
+        test_procs = [
+            proc
+            for proc in data
+            if proc["procedure_name"]
+            in ["January Procedure", "February Procedure", "March Procedure"]
+        ]
+        assert len(test_procs) == 3
+
+        in_range = [
+            proc for proc in test_procs if "2024-01-01" <= proc["date"] <= "2024-02-28"
+        ]
+        assert len(in_range) == 2
+
+        procedure_dates = [proc["date"] for proc in in_range]
+        assert "2024-01-15" in procedure_dates
+        assert "2024-02-15" in procedure_dates
+
+    def test_procedure_anesthesia_tracking(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test anesthesia-specific fields and tracking."""
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Major Surgery",
+            "date": "2024-01-15",
+            "status": "completed",
+            "anesthesia_type": "general",
+            "anesthesia_notes": "Smooth recovery, no complications",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["anesthesia_type"] == "general"
+        assert data["anesthesia_notes"] == "Smooth recovery, no complications"
+
+    def test_procedure_patient_isolation(self, client: TestClient, db_session: Session):
+        """Test that users can only access their own procedures."""
+        # Create two users with patients
+        user1_data = create_random_user(db_session)
+        patient1_data = PatientCreate(
+            first_name="User", last_name="One", birth_date=date(1990, 1, 1), gender="M"
+        )
+        patient1 = patient_crud.create_for_user(
+            db_session, user_id=user1_data["user"].id, patient_data=patient1_data
+        )
+        # Set active patient for multi-patient system
+        user1_data["user"].active_patient_id = patient1.id
+        db_session.commit()
+        db_session.refresh(user1_data["user"])
+        headers1 = create_user_token_headers(user1_data["user"].username)
+
+        user2_data = create_random_user(db_session)
+        patient2_data = PatientCreate(
+            first_name="User", last_name="Two", birth_date=date(1990, 1, 1), gender="F"
+        )
+        patient2 = patient_crud.create_for_user(
+            db_session, user_id=user2_data["user"].id, patient_data=patient2_data
+        )
+        # Set active patient for multi-patient system
+        user2_data["user"].active_patient_id = patient2.id
+        db_session.commit()
+        db_session.refresh(user2_data["user"])
+        headers2 = create_user_token_headers(user2_data["user"].username)
+
+        # User1 creates a procedure
+        procedure_data = {
+            "patient_id": patient1.id,
+            "procedure_name": "Private Surgery",
+            "date": "2024-01-15",
+            "status": "completed",
+        }
+
+        create_response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=headers1
+        )
+
+        procedure_id = create_response.json()["id"]
+
+        # User2 tries to access User1's procedure - should fail
+        response = client.get(f"/api/v1/procedures/{procedure_id}", headers=headers2)
+        assert response.status_code == 404
+
+    def test_procedure_validation_errors(
+        self, client: TestClient, authenticated_headers
+    ):
+        """Test various validation error scenarios."""
+        # Test missing required fields
+        invalid_data = {
+            "status": "completed"
+            # Missing procedure_name and date
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=invalid_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 422
+
+        # Test invalid status
+        invalid_status_data = {
+            "procedure_name": "Test",
+            "date": "2024-01-15",
+            "status": "invalid_status",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/",
+            json=invalid_status_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+
+        # Test invalid urgency
+        invalid_urgency_data = {
+            "procedure_name": "Test",
+            "date": "2024-01-15",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/",
+            json=invalid_urgency_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+
+        # Test invalid anesthesia type
+        invalid_anesthesia_data = {
+            "procedure_name": "Test",
+            "date": "2024-01-15",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/",
+            json=invalid_anesthesia_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+
+    def test_procedure_scheduled_vs_completed(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test workflow from scheduled to completed procedure."""
+        # Create scheduled procedure
+        scheduled_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Outpatient Surgery",
+            "date": "2024-03-15",
+            "status": "scheduled",
+        }
+
+        create_response = client.post(
+            "/api/v1/procedures/", json=scheduled_data, headers=authenticated_headers
+        )
+
+        procedure_id = create_response.json()["id"]
+
+        # Update to completed with additional details
+        completion_data = {
+            "status": "completed",
+            "procedure_duration": 45,
+            "notes": "Procedure completed successfully",
+            "procedure_complications": "None",
+        }
+
+        response = client.put(
+            f"/api/v1/procedures/{procedure_id}",
+            json=completion_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "completed"
+        assert data["procedure_duration"] == 45
+        assert data["notes"] == "Procedure completed successfully"
+        assert data["procedure_complications"] == "None"
+
+    def test_scheduled_procedure_future_date_allowed(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that scheduled procedures can have future dates."""
+        from datetime import timedelta
+
+        future_date = (date.today() + timedelta(days=30)).isoformat()
+
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Future Scheduled Surgery",
+            "date": future_date,
+            "status": "scheduled",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["date"] == future_date
+        assert data["status"] == "scheduled"
+
+    def test_scheduled_procedure_within_10_year_limit(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that scheduled procedures can be up to 10 years in the future."""
+        from datetime import timedelta
+
+        # Set date to 9 years in future (within limit)
+        future_date = (date.today() + timedelta(days=3285)).isoformat()  # ~9 years
+
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Long-term Scheduled Procedure",
+            "date": future_date,
+            "status": "scheduled",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["date"] == future_date
+
+    def test_scheduled_procedure_beyond_10_year_limit_rejected(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that scheduled procedures beyond 10 years are rejected."""
+        from datetime import timedelta
+
+        # Set date to 11 years in future (beyond limit)
+        future_date = (date.today() + timedelta(days=4015)).isoformat()  # ~11 years
+
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Too Far Future Procedure",
+            "date": future_date,
+            "status": "scheduled",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 422
+        # Just check for 422 status - validation errors can have different formats
+        # The important part is that the validation rejects the request
+
+    def test_postponed_procedure_future_date_allowed(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that postponed procedures can have future dates."""
+        from datetime import timedelta
+
+        future_date = (date.today() + timedelta(days=60)).isoformat()
+
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Postponed Surgery",
+            "date": future_date,
+            "status": "postponed",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["date"] == future_date
+        assert data["status"] == "postponed"
+
+    def test_completed_procedure_future_date_rejected(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that completed procedures cannot have future dates."""
+        from datetime import timedelta
+
+        future_date = (date.today() + timedelta(days=1)).isoformat()
+
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Completed Procedure",
+            "date": future_date,
+            "status": "completed",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 422
+        # Just check for 422 status - validation errors can have different formats
+        # The important part is that the validation rejects the request
+
+    def test_in_progress_procedure_future_date_rejected(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that in_progress procedures cannot have future dates."""
+        from datetime import timedelta
+
+        future_date = (date.today() + timedelta(days=1)).isoformat()
+
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "In Progress Procedure",
+            "date": future_date,
+            "status": "in_progress",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 422
+        # Just check for 422 status - validation errors can have different formats
+        # The important part is that the validation rejects the request
+
+    def test_cancelled_procedure_future_date_rejected(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that cancelled procedures cannot have future dates."""
+        from datetime import timedelta
+
+        future_date = (date.today() + timedelta(days=1)).isoformat()
+
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Cancelled Procedure",
+            "date": future_date,
+            "status": "cancelled",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 422
+        # Just check for 422 status - validation errors can have different formats
+        # The important part is that the validation rejects the request
+
+    def test_partial_update_date_without_status(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that date can be updated without re-specifying status (partial update)."""
+        from datetime import timedelta
+
+        # Create a scheduled procedure with future date
+        initial_date = (date.today() + timedelta(days=30)).isoformat()
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Scheduled Procedure",
+            "date": initial_date,
+            "status": "scheduled",
+        }
+
+        create_response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        procedure_id = create_response.json()["id"]
+
+        # Update only the date, without providing status
+        new_date = (date.today() + timedelta(days=60)).isoformat()
+        update_data = {
+            "date": new_date
+            # Status intentionally not provided
+        }
+
+        response = client.put(
+            f"/api/v1/procedures/{procedure_id}",
+            json=update_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["date"] == new_date
+        assert data["status"] == "scheduled"  # Status unchanged
+
+    def test_create_procedure_with_outcome(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test creating a procedure with an outcome value."""
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Appendectomy",
+            "date": "2024-01-15",
+            "status": "completed",
+            "outcome": "successful",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["outcome"] == "successful"
+
+    def test_create_procedure_without_outcome(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test creating a procedure without an outcome (null is valid)."""
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Scheduled MRI",
+            "date": "2024-03-15",
+            "status": "scheduled",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["outcome"] is None
+
+    def test_create_procedure_invalid_outcome_rejected(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that an invalid outcome value is rejected."""
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Test Procedure",
+            "date": "2024-01-15",
+            "status": "completed",
+            "outcome": "invalid_outcome",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 422
+
+    def test_create_procedure_all_outcome_values(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that all valid outcome values are accepted."""
+        valid_outcomes = get_all_procedure_outcomes()
+
+        for outcome in valid_outcomes:
+            procedure_data = {
+                "patient_id": user_with_patient["patient"].id,
+                "procedure_name": f"Procedure with {outcome}",
+                "date": "2024-01-15",
+                "status": "completed",
+                "outcome": outcome,
+            }
+
+            response = client.post(
+                "/api/v1/procedures/",
+                json=procedure_data,
+                headers=authenticated_headers,
+            )
+
+            assert response.status_code == 200, f"Failed for outcome: {outcome}"
+            data = response.json()
+            assert data["outcome"] == outcome
+
+    def test_update_procedure_outcome(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test updating a procedure's outcome."""
+        # Create procedure without outcome
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Knee Arthroscopy",
+            "date": "2024-01-15",
+            "status": "scheduled",
+        }
+
+        create_response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        procedure_id = create_response.json()["id"]
+        assert create_response.json()["outcome"] is None
+
+        # Update to add outcome
+        update_data = {
+            "status": "completed",
+            "outcome": "successful",
+        }
+
+        response = client.put(
+            f"/api/v1/procedures/{procedure_id}",
+            json=update_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["outcome"] == "successful"
+        assert data["status"] == "completed"
+
+    def test_update_procedure_invalid_outcome_rejected(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that updating with an invalid outcome is rejected."""
+        # Create procedure
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Test Procedure",
+            "date": "2024-01-15",
+            "status": "completed",
+        }
+
+        create_response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        procedure_id = create_response.json()["id"]
+
+        # Try to update with invalid outcome
+        update_data = {
+            "outcome": "not_a_valid_outcome",
+        }
+
+        response = client.put(
+            f"/api/v1/procedures/{procedure_id}",
+            json=update_data,
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+
+    def test_scheduled_procedure_past_date_allowed(
+        self, client: TestClient, user_with_patient, authenticated_headers
+    ):
+        """Test that scheduled procedures can have past dates (e.g., rescheduled from past)."""
+        from datetime import timedelta
+
+        past_date = (date.today() - timedelta(days=10)).isoformat()
+
+        procedure_data = {
+            "patient_id": user_with_patient["patient"].id,
+            "procedure_name": "Rescheduled from Past",
+            "date": past_date,
+            "status": "scheduled",
+        }
+
+        response = client.post(
+            "/api/v1/procedures/", json=procedure_data, headers=authenticated_headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["date"] == past_date
+        assert data["status"] == "scheduled"

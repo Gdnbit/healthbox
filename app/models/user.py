@@ -1,0 +1,340 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import relationship as orm_relationship
+
+from .base import Base, get_utc_now
+
+
+class User(Base):
+    """Represents an application user with authentication and patient access controls."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    full_name = Column(String, nullable=False)  # Role-based access control
+    role = Column(String, nullable=False)  # e.g., 'admin', 'user', 'guest'
+
+    # SSO fields
+    auth_method = Column(
+        String(20), nullable=False, default="local"
+    )  # 'local', 'sso', 'hybrid'
+    external_id = Column(
+        String(255), nullable=True, unique=True
+    )  # SSO provider user ID
+    sso_provider = Column(String(50), nullable=True)  # 'google', 'github', 'oidc', etc.
+    sso_metadata = Column(JSON, nullable=True)  # Additional SSO data
+    last_sso_login = Column(DateTime, nullable=True)  # Last SSO login timestamp
+    account_linked_at = Column(
+        DateTime, nullable=True
+    )  # When account was linked to SSO
+    sso_linking_preference = Column(
+        String(20), nullable=True
+    )  # 'auto_link', 'create_separate', 'always_ask'
+
+    # Force password change on next login (e.g. for default/emergency accounts)
+    must_change_password = Column(Boolean, default=False, nullable=False)
+    # Incremented after password/MFA changes so previously issued sessions can
+    # be rejected without storing every access token.
+    auth_version = Column(Integer, default=1, server_default="1", nullable=False)
+    # A server-generated ordinary-member recovery password is short-lived and
+    # can start at most one forced-password-change session.
+    password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
+    password_reset_consumed_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Account status
+    is_active = Column(Boolean, default=True, nullable=False)
+    last_login_at = Column(DateTime, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
+    updated_at = Column(
+        DateTime, default=get_utc_now, onupdate=get_utc_now, nullable=False
+    )
+
+    # V1: Current patient context - which patient they're managing
+    active_patient_id = Column(Integer, ForeignKey("patients.id"), nullable=True)
+
+    # Original relationship (specify foreign key to avoid ambiguity)
+    patient = orm_relationship(
+        "Patient", foreign_keys="Patient.user_id", back_populates="user", uselist=False
+    )
+
+    # V1: New relationships
+    owned_patients = orm_relationship(
+        "Patient", foreign_keys="Patient.owner_user_id", overlaps="owner"
+    )
+    current_patient_context = orm_relationship(
+        "Patient", foreign_keys=[active_patient_id]
+    )
+
+    # V1: Patient sharing relationships
+    shared_patients_by_me = orm_relationship(
+        "PatientShare",
+        foreign_keys="PatientShare.shared_by_user_id",
+        overlaps="shared_by",
+    )
+    shared_patients_with_me = orm_relationship(
+        "PatientShare",
+        foreign_keys="PatientShare.shared_with_user_id",
+        overlaps="shared_with",
+    )
+
+    # User preferences relationship with cascade delete
+    preferences = orm_relationship(
+        "UserPreferences",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+
+    # Notification channels relationship with cascade delete
+    notification_channels = orm_relationship(
+        "NotificationChannel", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    mfa_credential = orm_relationship(
+        "UserMfaCredential",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+    mfa_recovery_codes = orm_relationship(
+        "UserMfaRecoveryCode",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    mfa_challenges = orm_relationship(
+        "UserMfaChallenge",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    privacy_consents = orm_relationship(
+        "UserPrivacyConsent",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="UserPrivacyConsent.id",
+    )
+
+    # Indexes for performance
+    __table_args__ = (
+        Index("idx_users_email", "email"),
+        Index("idx_users_password_reset_expiry", "password_reset_expires_at"),
+    )
+
+
+class UserPrivacyConsent(Base):
+    """Append-only decision for a versioned household privacy notice."""
+
+    __tablename__ = "user_privacy_consents"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    notice_version = Column(String(80), nullable=False)
+    notice_locale = Column(String(10), nullable=False)
+    notice_sha256 = Column(String(64), nullable=False)
+    decision = Column(String(12), nullable=False)
+    scope_snapshot = Column(JSON, nullable=False)
+    decided_at = Column(DateTime(timezone=True), default=get_utc_now, nullable=False)
+
+    user = orm_relationship("User", back_populates="privacy_consents")
+
+    __table_args__ = (
+        CheckConstraint(
+            "decision IN ('accepted', 'declined')",
+            name="ck_user_privacy_consent_decision",
+        ),
+        Index(
+            "idx_user_privacy_consent_latest",
+            "user_id",
+            "notice_version",
+            "decided_at",
+        ),
+    )
+
+
+class UserMfaCredential(Base):
+    """Encrypted administrator TOTP credential.
+
+    This table is deliberately not exposed by the public user schema. Ordinary
+    members do not receive or configure MFA in the household product.
+    """
+
+    __tablename__ = "user_mfa_credentials"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    method = Column(String(20), default="totp", server_default="totp", nullable=False)
+    secret_encrypted = Column(Text, nullable=False)
+    is_enabled = Column(Boolean, default=False, server_default="false", nullable=False)
+    confirmed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
+    updated_at = Column(
+        DateTime, default=get_utc_now, onupdate=get_utc_now, nullable=False
+    )
+
+    user = orm_relationship("User", back_populates="mfa_credential")
+
+
+class UserMfaRecoveryCode(Base):
+    """Single-use recovery code verification material (never plaintext)."""
+
+    __tablename__ = "user_mfa_recovery_codes"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    code_hash = Column(String(255), nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
+
+    user = orm_relationship("User", back_populates="mfa_recovery_codes")
+
+    __table_args__ = (Index("idx_user_mfa_recovery_user_unused", "user_id", "used_at"),)
+
+
+class UserMfaChallenge(Base):
+    """Durable, one-time record backing a short-lived signed MFA challenge."""
+
+    __tablename__ = "user_mfa_challenges"
+
+    id = Column(Integer, primary_key=True)
+    challenge_id = Column(String(64), nullable=False, unique=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    purpose = Column(String(20), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    consumed_at = Column(DateTime, nullable=True)
+    attempt_count = Column(Integer, default=0, server_default="0", nullable=False)
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
+
+    user = orm_relationship("User", back_populates="mfa_challenges")
+
+    __table_args__ = (
+        Index("idx_user_mfa_challenge_user", "user_id"),
+        Index("idx_user_mfa_challenge_expires", "expires_at"),
+    )
+
+
+class UserPreferences(Base):
+    """Stores per-user settings including units, language, session timeout, and integrations."""
+
+    __tablename__ = "user_preferences"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+
+    # Unit system preference: 'imperial' or 'metric'
+    unit_system = Column(String, default="imperial", nullable=False)
+
+    # Session timeout in minutes (default 120 minutes)
+    session_timeout_minutes = Column(Integer, default=120, nullable=False)
+
+    # Language preference (ISO 639-1 code); this household fork defaults to Chinese.
+    language = Column(String(10), default="zh", server_default="zh", nullable=False)
+
+    # Date format preference: 'mdy' (US), 'dmy' (European), 'ymd' (ISO)
+    date_format = Column(String(10), default="mdy", nullable=False)
+
+    # Paperless-ngx integration fields
+    paperless_enabled = Column(Boolean, default=False, nullable=False)
+    paperless_url = Column(String(500), nullable=True)
+    paperless_api_token_encrypted = Column(Text, nullable=True)  # Encrypted API token
+    paperless_username_encrypted = Column(Text, nullable=True)  # Encrypted username
+    paperless_password_encrypted = Column(Text, nullable=True)  # Encrypted password
+    default_storage_backend = Column(
+        String(20), default="local", nullable=False
+    )  # 'local', 'paperless', or 'papra'
+    paperless_auto_sync = Column(Boolean, default=False, nullable=False)
+    paperless_sync_tags = Column(Boolean, default=True, nullable=False)
+    paperless_connection_verified = Column(Boolean, default=False, nullable=False)
+
+    # Papra integration fields
+    papra_enabled = Column(Boolean, default=False, nullable=False)
+    papra_url = Column(String(500), nullable=True)
+    papra_api_token_encrypted = Column(Text, nullable=True)  # Encrypted API token
+    papra_organization_id = Column(
+        String(255), nullable=True
+    )  # Default organization ID
+    papra_connection_verified = Column(Boolean, default=False, nullable=False)
+
+    # Audit fields
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
+    updated_at = Column(
+        DateTime, default=get_utc_now, onupdate=get_utc_now, nullable=False
+    )
+
+    # Relationships
+    user = orm_relationship("User", back_populates="preferences")
+
+
+class UserTag(Base):
+    """Model for user-created tags"""
+
+    __tablename__ = "user_tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    tag = Column(String(100), nullable=False)
+    color = Column(String(7), nullable=True)  # Hex color e.g. #228be6, NULL = default
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
+
+    # Relationships
+    user = orm_relationship("User")
+
+    # Indexes and constraints
+    __table_args__ = (
+        UniqueConstraint("user_id", "tag", name="uq_user_tag"),
+        Index("idx_user_tags_user_id", "user_id"),
+        Index("idx_user_tags_tag", "tag"),
+    )
+
+
+class SystemSetting(Base):
+    """
+    System-wide settings stored as key-value pairs.
+
+    Used for storing configuration values, feature flags, migration status,
+    library versions, and other system-level metadata.
+
+    Examples:
+    - test_library_version: "1.2.3"
+    - canonical_name_migration_complete: "true"
+    - last_sync_timestamp: "2026-01-31T12:00:00Z"
+    """
+
+    __tablename__ = "system_settings"
+
+    key = Column(String(100), primary_key=True)
+    value = Column(Text, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
+    updated_at = Column(
+        DateTime, default=get_utc_now, onupdate=get_utc_now, nullable=False
+    )

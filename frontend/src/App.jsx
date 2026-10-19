@@ -1,0 +1,980 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import React, { useEffect, Suspense } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Capture and remove account-invitation fragments before app logging starts.
+import './services/accountInvitationTokenVault';
+
+// Import i18n configuration (initialized in index.js)
+import './i18n';
+import { useTranslation } from 'react-i18next';
+
+// Mantine
+import { MantineProvider } from '@mantine/core';
+import { DatesProvider } from '@mantine/dates';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+dayjs.extend(customParseFormat);
+import { Notifications } from '@mantine/notifications';
+import '@mantine/core/styles.css';
+import '@mantine/dates/styles.css';
+import '@mantine/notifications/styles.css';
+
+// dayjs locale imports for Mantine date picker calendar month names
+import 'dayjs/locale/fr';
+import 'dayjs/locale/de';
+import 'dayjs/locale/es';
+import 'dayjs/locale/it';
+import 'dayjs/locale/pt';
+import 'dayjs/locale/ru';
+import 'dayjs/locale/sv';
+import 'dayjs/locale/nl';
+import 'dayjs/locale/pl';
+import 'dayjs/locale/th';
+import 'dayjs/locale/zh';
+
+import { theme, cssVariablesResolver } from './theme';
+
+// Responsive System
+import { ResponsiveProvider } from './providers/ResponsiveProvider';
+
+// Authentication
+import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { AppDataProvider } from './contexts/AppDataContext';
+import { UserPreferencesProvider } from './contexts/UserPreferencesContext';
+import ProtectedRoute, {
+  AdminRoute,
+  PublicRoute,
+} from './components/auth/ProtectedRoute';
+
+// Pages
+import Login from './pages/auth/Login';
+import SSOCallback from './components/auth/SSOCallback';
+import ForceChangePassword from './pages/auth/ForceChangePassword';
+import PrivacyConsent from './pages/auth/PrivacyConsent';
+import PrivacyAccessPage, {
+  SYNTHETIC_PRIVACY_ACCESS_PREVIEW,
+} from './pages/PrivacyAccessPage';
+import HealthInsights from './pages/HealthInsights';
+import ExportPage from './pages/ExportPage';
+import HealthArchiveExportPage from './pages/HealthArchiveExportPage';
+import PatientInfo from './pages/medical/Patient-Info';
+import Medication from './pages/medical/Medication';
+import LabResults from './pages/medical/LabResults';
+import Immunization from './pages/medical/Immunization';
+import Insurance from './pages/medical/Insurance';
+import Allergies from './pages/medical/Allergies';
+import Treatments from './pages/medical/Treatments';
+import Procedures from './pages/medical/Procedures';
+import Conditions from './pages/medical/Conditions';
+import Visits from './pages/medical/Visits';
+import Vitals from './pages/medical/Vitals';
+import Symptoms from './pages/medical/Symptoms';
+import Injuries from './pages/medical/Injuries';
+import MedicalEquipment from './pages/medical/MedicalEquipment';
+import Practitioners from './pages/medical/Practitioners';
+import Pharmacies from './pages/medical/Pharmacies';
+import EmergencyContacts from './pages/medical/EmergencyContacts';
+import PlaceholderPage from './pages/PlaceholderPage';
+import Settings from './pages/Settings';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import ModelManagement from './pages/admin/ModelManagement';
+import ModelView from './pages/admin/ModelView';
+import ModelEdit from './pages/admin/ModelEdit';
+import ModelCreate from './pages/admin/ModelCreate';
+import AdminUserCreate from './pages/admin/AdminUserCreate';
+import SystemHealth from './pages/admin/SystemHealth';
+import BackupManagement from './pages/admin/BackupManagement';
+import AdminSettings from './pages/admin/AdminSettings';
+import AuditLog from './pages/admin/AuditLog';
+import TrashManagement from './pages/admin/TrashManagement';
+import DataModels from './pages/admin/DataModels';
+import PracticesAdmin from './pages/admin/PracticesAdmin';
+import UserManagement from './pages/admin/UserManagement';
+import ToolsMaintenance from './pages/admin/ToolsMaintenance';
+import Analytics from './pages/admin/Analytics';
+import ReportBuilder from './pages/reports/ReportBuilder';
+import TagManagement from './pages/tools/TagManagement';
+import SearchResults from './pages/SearchResults';
+import TestMedicationForm from './pages/TestMedicationForm';
+import ResponsiveNavigationTest from './pages/test/ResponsiveNavigationTest';
+
+// Components
+import { ErrorBoundary } from './components';
+import Footer from './components/shared/Footer';
+
+import logger from './services/logger';
+import { timezoneService } from './services/timezoneService';
+import { ENTITY_TYPES } from './utils/entityRelationships';
+import {
+  useActivityTracker,
+  useNavigationActivityTracker,
+} from './hooks/useActivityTracker';
+import { apiClient } from './services/apiClient';
+
+import { useReleaseNotes } from './hooks/useReleaseNotes';
+import WhatsNewModal from './components/settings/WhatsNewModal';
+import './App.css';
+import {
+  PRODUCT_HOME_PATH,
+  RETIRED_MEMBER_ROUTE_PATHS,
+} from './config/productRoutes';
+
+const HouseholdHealthPrototype = React.lazy(
+  () => import('./pages/prototype/HouseholdHealthPrototype')
+);
+const HouseholdHealthHome = React.lazy(
+  () => import('./pages/HouseholdHealthHome')
+);
+const OwnerHealthArchive = React.lazy(
+  () => import('./pages/admin/OwnerHealthArchive')
+);
+const ArchiveCircleManagement = React.lazy(
+  () => import('./pages/admin/ArchiveCircleManagement')
+);
+const AdminAccountInvitations = React.lazy(
+  () => import('./pages/admin/AdminAccountInvitations')
+);
+const AccountInvitationActivation = React.lazy(
+  () => import('./pages/auth/AccountInvitationActivation')
+);
+const AdminDelegatedUpload = React.lazy(
+  () => import('./pages/admin/AdminDelegatedUpload')
+);
+const AdminMemberDataMaintenance = React.lazy(
+  () => import('./pages/admin/AdminMemberDataMaintenance')
+);
+const AdminHealthAiSettings = React.lazy(
+  () => import('./pages/admin/AdminHealthAiSettings')
+);
+const AdminDelegatedUploadPrototype = React.lazy(
+  () => import('./pages/prototype/AdminDelegatedUploadPrototype')
+);
+const AdminMemberDataMaintenancePrototype = React.lazy(
+  () => import('./pages/prototype/AdminMemberDataMaintenancePrototype')
+);
+
+// Entity to component mapping for dynamic route generation
+const ENTITY_COMPONENT_MAP = {
+  [ENTITY_TYPES.MEDICATION]: Medication,
+  [ENTITY_TYPES.LAB_RESULT]: LabResults,
+  [ENTITY_TYPES.IMMUNIZATION]: Immunization,
+  [ENTITY_TYPES.INSURANCE]: Insurance,
+  [ENTITY_TYPES.PROCEDURE]: Procedures,
+  [ENTITY_TYPES.ALLERGY]: Allergies,
+  [ENTITY_TYPES.CONDITION]: Conditions,
+  [ENTITY_TYPES.TREATMENT]: Treatments,
+  [ENTITY_TYPES.ENCOUNTER]: Visits,
+  [ENTITY_TYPES.VITALS]: Vitals,
+  [ENTITY_TYPES.INJURY]: Injuries,
+  [ENTITY_TYPES.PRACTITIONER]: Practitioners,
+  [ENTITY_TYPES.PHARMACY]: Pharmacies,
+  [ENTITY_TYPES.EMERGENCY_CONTACT]: EmergencyContacts,
+};
+
+// Entity to route path mapping
+const ENTITY_ROUTE_MAP = {
+  [ENTITY_TYPES.MEDICATION]: '/medications',
+  [ENTITY_TYPES.LAB_RESULT]: '/lab-results',
+  [ENTITY_TYPES.IMMUNIZATION]: '/immunizations',
+  [ENTITY_TYPES.INSURANCE]: '/insurance',
+  [ENTITY_TYPES.PROCEDURE]: '/procedures',
+  [ENTITY_TYPES.ALLERGY]: '/allergies',
+  [ENTITY_TYPES.CONDITION]: '/conditions',
+  [ENTITY_TYPES.TREATMENT]: '/treatments',
+  [ENTITY_TYPES.ENCOUNTER]: '/visits',
+  [ENTITY_TYPES.VITALS]: '/vitals',
+  [ENTITY_TYPES.INJURY]: '/injuries',
+  [ENTITY_TYPES.PRACTITIONER]: '/practitioners',
+  [ENTITY_TYPES.PHARMACY]: '/pharmacies',
+  [ENTITY_TYPES.EMERGENCY_CONTACT]: '/emergency-contacts',
+};
+
+// Helper function to generate entity routes
+const generateEntityRoutes = () => {
+  return Object.entries(ENTITY_COMPONENT_MAP).map(([entityType, Component]) => {
+    const routePath = ENTITY_ROUTE_MAP[entityType];
+    return (
+      <Route
+        key={entityType}
+        path={routePath}
+        element={
+          <ProtectedRoute>
+            <Component />
+          </ProtectedRoute>
+        }
+      />
+    );
+  });
+};
+
+// Component to track navigation
+function NavigationTracker() {
+  const location = useLocation();
+  const previousLocation = React.useRef(location.pathname);
+  const { trackNavigationActivity } = useNavigationActivityTracker();
+
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const previousPath = previousLocation.current;
+    if (currentPath !== previousPath) {
+      // Reset scroll position to top on route change
+      window.scrollTo(0, 0);
+
+      // Track navigation as user activity (for session timeout)
+      trackNavigationActivity({
+        fromPath: previousPath,
+        toPath: currentPath,
+        search: location.search,
+        hash: location.hash,
+      });
+
+      // Log navigation as a user interaction
+      logger.userAction('navigation', 'App', {
+        fromPath: previousPath,
+        toPath: currentPath,
+        search: location.search,
+        hash: location.hash,
+      });
+
+      // Log page load as an event
+      logger.info(`Page loaded: ${currentPath}`, {
+        category: 'navigation',
+        pathname: currentPath,
+        search: location.search,
+        hash: location.hash,
+        component: 'App',
+      });
+    }
+
+    previousLocation.current = currentPath;
+  }, [location, trackNavigationActivity]);
+
+  return null;
+}
+
+// Component to handle theme-aware toast notifications
+function ThemedToastContainer() {
+  const { theme } = useTheme();
+
+  return (
+    <ToastContainer
+      position="top-right"
+      autoClose={5000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme={theme}
+    />
+  );
+}
+
+// API calls (background polling, etc.) should NOT reset the inactivity timer.
+// Only real user interactions (mouse, keyboard, touch, scroll) count as activity.
+// Hoisted to module scope so its identity is stable across renders.
+const getApiStats = () => ({});
+
+// Component to initialize global activity tracking with enhanced error handling
+// eslint-disable-next-line unused-imports/no-unused-vars -- Reserved for future use, referenced in commented JSX
+function ActivityTracker() {
+  const { isTracking, getStats } = useActivityTracker({
+    trackMouseMove: false,
+    trackKeyboard: true,
+    trackClicks: true,
+    trackTouch: true,
+    enabled: true,
+  });
+
+  // Log activity tracking status changes
+  useEffect(() => {
+    if (isTracking) {
+      const stats = getStats();
+      logger.debug('Global activity tracking enabled', {
+        category: 'activity_tracking',
+        component: 'ActivityTracker',
+        timestamp: new Date().toISOString(),
+        stats,
+      });
+    }
+  }, [isTracking, getStats]);
+
+  // Clean up API activity tracker (no longer used for inactivity tracking)
+  useEffect(() => {
+    return () => {
+      try {
+        apiClient.setActivityTracker(null);
+      } catch (error) {
+        logger.error('Failed to cleanup API activity tracking', {
+          category: 'activity_tracking_error',
+          component: 'ActivityTracker',
+          error: error.message,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    };
+  }, []);
+
+  // Performance monitoring for activity tracking
+  useEffect(() => {
+    const performanceTimer = setInterval(
+      () => {
+        if (isTracking) {
+          const uiStats = getStats();
+          const apiStats = getApiStats();
+
+          logger.debug('Activity tracking performance', {
+            category: 'activity_tracking_performance',
+            component: 'ActivityTracker',
+            uiStats,
+            apiStats,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      },
+      5 * 60 * 1000
+    ); // Every 5 minutes
+
+    return () => clearInterval(performanceTimer);
+  }, [isTracking, getStats]);
+
+  return null;
+}
+
+// What's New trigger: shows release notes modal on first login after version change
+function WhatsNewTrigger() {
+  const { showModal, dismissModal, unseenReleases, currentVersion } =
+    useReleaseNotes();
+  return (
+    <WhatsNewModal
+      opened={showModal}
+      onClose={dismissModal}
+      releases={unseenReleases}
+      currentVersion={currentVersion}
+    />
+  );
+}
+
+// Bridge: reads theme from ThemeContext, passes forceColorScheme to MantineProvider
+// so both CSS variables and Mantine switch in the same render - no flash.
+export const documentLanguageForLocale = locale =>
+  (locale || 'en').toLowerCase().startsWith('zh') ? 'zh-CN' : locale || 'en';
+
+function ThemedMantineProvider({ children }) {
+  const { theme: colorScheme } = useTheme();
+  // useSuspense: false — we only read i18n.language here, not translated strings,
+  // so there's no reason to suspend this high-tree component during language changes.
+  const { i18n } = useTranslation(undefined, { useSuspense: false });
+  const activeLanguage = i18n.language || i18n.resolvedLanguage || 'en';
+  const documentLanguage = documentLanguageForLocale(activeLanguage);
+
+  useEffect(() => {
+    document.documentElement.lang = documentLanguage;
+  }, [documentLanguage]);
+
+  return (
+    <MantineProvider
+      theme={theme}
+      forceColorScheme={colorScheme}
+      cssVariablesResolver={cssVariablesResolver}
+    >
+      <Notifications />
+      <ResponsiveProvider>
+        <DatesProvider settings={{ locale: i18n.language }}>
+          {children}
+        </DatesProvider>
+      </ResponsiveProvider>
+    </MantineProvider>
+  );
+}
+
+function App() {
+  const { t } = useTranslation('ui');
+  const isHouseholdPrototype =
+    import.meta.env.DEV &&
+    window.location.pathname === '/prototype/household-health';
+  const isAdminDelegatedUploadPrototype =
+    import.meta.env.DEV &&
+    window.location.pathname === '/prototype/admin-delegated-upload';
+  const isAdminMemberDataMaintenancePrototype =
+    import.meta.env.DEV &&
+    window.location.pathname === '/prototype/admin-member-data-maintenance';
+  const isPrivacyAccessPrototype =
+    import.meta.env.DEV &&
+    window.location.pathname === '/prototype/privacy-access';
+  const isStandalonePrototype =
+    isHouseholdPrototype ||
+    isAdminDelegatedUploadPrototype ||
+    isAdminMemberDataMaintenancePrototype ||
+    isPrivacyAccessPrototype;
+
+  useEffect(() => {
+    if (isStandalonePrototype) {
+      return undefined;
+    }
+
+    // Initialize frontend logging
+    logger.info('Medical Records App initialized', {
+      category: 'app_lifecycle',
+      component: 'App',
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+    });
+
+    // Initialize timezone service
+    timezoneService.init().catch(error => {
+      logger.warn(
+        'timezone_service_init_failed',
+        'Timezone service initialization failed',
+        {
+          error: error.message,
+          component: 'App',
+        }
+      );
+    });
+
+    // Set up performance monitoring
+    const startTime = performance.now();
+
+    return () => {
+      const loadTime = performance.now() - startTime;
+      logger.debug('App performance metrics', {
+        category: 'performance',
+        component: 'App',
+        loadTime: loadTime,
+      });
+    };
+  }, [isStandalonePrototype]);
+
+  /* eslint-disable i18next/no-literal-string -- development-only Chinese prototype */
+  if (isStandalonePrototype) {
+    return (
+      <ErrorBoundary componentName="HouseholdHealthPrototype">
+        <Router>
+          <MantineProvider
+            theme={theme}
+            cssVariablesResolver={cssVariablesResolver}
+          >
+            <Notifications />
+            <Suspense
+              fallback={
+                <div
+                  style={{
+                    display: 'grid',
+                    placeItems: 'center',
+                    minHeight: '100vh',
+                  }}
+                >
+                  正在打开家庭健康原型…
+                </div>
+              }
+            >
+              {isAdminMemberDataMaintenancePrototype ? (
+                <AdminMemberDataMaintenancePrototype />
+              ) : isAdminDelegatedUploadPrototype ? (
+                <AdminDelegatedUploadPrototype />
+              ) : isPrivacyAccessPrototype ? (
+                <PrivacyAccessPage
+                  previewRecord={SYNTHETIC_PRIVACY_ACCESS_PREVIEW}
+                  onBack={() =>
+                    window.location.assign('/prototype/household-health')
+                  }
+                />
+              ) : (
+                <HouseholdHealthPrototype
+                  onOpenPrivacyAccess={() =>
+                    window.location.assign('/prototype/privacy-access')
+                  }
+                />
+              )}
+            </Suspense>
+          </MantineProvider>
+        </Router>
+      </ErrorBoundary>
+    );
+  }
+  /* eslint-enable i18next/no-literal-string */
+
+  return (
+    <ErrorBoundary componentName="App">
+      <Router>
+        <AuthProvider>
+          <UserPreferencesProvider>
+            <AppDataProvider>
+              <ThemeProvider>
+                <ThemedMantineProvider>
+                  {/* Suspense lives INSIDE the theme providers so Mantine and CSS
+                        variables remain applied to the fallback and stay mounted during
+                        language-change suspensions — otherwise the fallback renders
+                        un-themed and causes a dark/light flash on switch. */}
+                  <Suspense
+                    fallback={
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          height: '100vh',
+                        }}
+                      >
+                        Loading...
+                      </div>
+                    }
+                  >
+                    <NavigationTracker />
+                    <WhatsNewTrigger />
+                    {/* <ActivityTracker /> */}
+                    <div className="App">
+                      <div style={{ flex: 1 }}>
+                        <Routes>
+                          {/* Public Routes */}
+                          <Route
+                            path="/login"
+                            element={
+                              <PublicRoute>
+                                <Login />
+                              </PublicRoute>
+                            }
+                          />
+                          <Route
+                            path="/activate"
+                            element={
+                              <PublicRoute>
+                                <AccountInvitationActivation />
+                              </PublicRoute>
+                            }
+                          />
+                          <Route
+                            path="/user-creation"
+                            element={<Navigate to="/login" replace />}
+                          />
+                          <Route
+                            path="/auth/sso/callback"
+                            element={
+                              <PublicRoute>
+                                <SSOCallback />
+                              </PublicRoute>
+                            }
+                          />
+                          {/* Forced password change — requires authentication but not full access */}
+                          <Route
+                            path="/change-password"
+                            element={
+                              <ProtectedRoute>
+                                <ForceChangePassword />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/privacy-consent"
+                            element={
+                              <ProtectedRoute>
+                                <PrivacyConsent />
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Protected Routes */}
+                          <Route
+                            path="/dashboard"
+                            element={
+                              <Navigate to={PRODUCT_HOME_PATH} replace />
+                            }
+                          />
+                          {RETIRED_MEMBER_ROUTE_PATHS.map(path => (
+                            <Route
+                              key={path}
+                              path={`${path}/*`}
+                              element={
+                                <Navigate to={PRODUCT_HOME_PATH} replace />
+                              }
+                            />
+                          ))}
+                          <Route
+                            path="/family-health"
+                            element={
+                              <ProtectedRoute>
+                                <HouseholdHealthHome />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/privacy-access"
+                            element={
+                              <ProtectedRoute>
+                                <PrivacyAccessPage />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/health-archive-export"
+                            element={
+                              <ProtectedRoute>
+                                <HealthArchiveExportPage />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/health-insights"
+                            element={
+                              <ProtectedRoute>
+                                <HealthInsights />
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Medical Records Routes */}
+                          <Route
+                            path="/patients/me"
+                            element={
+                              <ProtectedRoute>
+                                <PatientInfo />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/patients/:section?"
+                            element={
+                              <ProtectedRoute>
+                                <PlaceholderPage />
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Generated entity routes */}
+                          {generateEntityRoutes()}
+                          {/* Symptom Diary Route */}
+                          <Route
+                            path="/symptoms"
+                            element={
+                              <ProtectedRoute>
+                                <Symptoms />
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Medical Equipment Route */}
+                          <Route
+                            path="/medical-equipment"
+                            element={
+                              <ProtectedRoute>
+                                <MedicalEquipment />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/reports/builder"
+                            element={
+                              <ProtectedRoute>
+                                <ReportBuilder />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/tools/tags"
+                            element={
+                              <ProtectedRoute>
+                                <TagManagement />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/tag-search"
+                            element={<Navigate to="/search" replace />}
+                          />
+                          <Route
+                            path="/search"
+                            element={
+                              <ProtectedRoute>
+                                <SearchResults />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/export"
+                            element={
+                              <ProtectedRoute>
+                                <ExportPage />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/settings"
+                            element={
+                              <ProtectedRoute>
+                                <Settings />
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Admin Routes - Require Admin Role */}
+                          <Route
+                            path="/admin"
+                            element={
+                              <AdminRoute>
+                                <AdminDashboard />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/analytics"
+                            element={
+                              <AdminRoute>
+                                <Analytics />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/data-models"
+                            element={
+                              <AdminRoute>
+                                <DataModels />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/create-user"
+                            element={
+                              <AdminRoute>
+                                <AdminUserCreate />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/backup"
+                            element={
+                              <AdminRoute>
+                                <BackupManagement />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/users"
+                            element={
+                              <AdminRoute>
+                                <UserManagement />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/owner-archive/:patientId"
+                            element={
+                              <AdminRoute>
+                                <OwnerHealthArchive />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/archive-circles"
+                            element={
+                              <AdminRoute>
+                                <ArchiveCircleManagement />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/account-invitations"
+                            element={
+                              <AdminRoute>
+                                <AdminAccountInvitations />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/delegated-upload"
+                            element={
+                              <AdminRoute>
+                                <AdminDelegatedUpload />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/member-data-maintenance"
+                            element={
+                              <AdminRoute>
+                                <AdminMemberDataMaintenance />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/ai-service"
+                            element={
+                              <AdminRoute>
+                                <AdminHealthAiSettings />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/practices"
+                            element={
+                              <AdminRoute>
+                                <PracticesAdmin />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/models/:modelName"
+                            element={
+                              <AdminRoute>
+                                <ModelManagement />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/models/:modelName/:recordId"
+                            element={
+                              <AdminRoute>
+                                <ModelView />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/models/:modelName/:recordId/edit"
+                            element={
+                              <AdminRoute>
+                                <ModelEdit />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/models/:modelName/create"
+                            element={
+                              <AdminRoute>
+                                <ModelCreate />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/system-health"
+                            element={
+                              <AdminRoute>
+                                <SystemHealth />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/settings"
+                            element={
+                              <AdminRoute>
+                                <AdminSettings />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/audit-log"
+                            element={
+                              <AdminRoute>
+                                <AuditLog />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/trash"
+                            element={
+                              <AdminRoute>
+                                <TrashManagement />
+                              </AdminRoute>
+                            }
+                          />
+                          <Route
+                            path="/admin/tools"
+                            element={
+                              <AdminRoute>
+                                <ToolsMaintenance />
+                              </AdminRoute>
+                            }
+                          />
+                          {/* Development/Testing Routes */}
+                          <Route
+                            path="/prototype/household-health"
+                            element={
+                              import.meta.env.DEV ? (
+                                <HouseholdHealthPrototype />
+                              ) : (
+                                <Navigate to={PRODUCT_HOME_PATH} replace />
+                              )
+                            }
+                          />
+                          <Route
+                            path="/test/medication-form"
+                            element={
+                              import.meta.env.DEV ? (
+                                <ProtectedRoute>
+                                  <TestMedicationForm />
+                                </ProtectedRoute>
+                              ) : (
+                                <Navigate to={PRODUCT_HOME_PATH} replace />
+                              )
+                            }
+                          />
+
+                          {/* Navigation Test Page */}
+                          <Route
+                            path="/test/navigation"
+                            element={
+                              import.meta.env.DEV ? (
+                                <ProtectedRoute>
+                                  <ResponsiveNavigationTest />
+                                </ProtectedRoute>
+                              ) : (
+                                <Navigate to={PRODUCT_HOME_PATH} replace />
+                              )
+                            }
+                          />
+                          {/* Emergency service worker cleanup route */}
+                          <Route
+                            path="/kill-sw"
+                            element={
+                              <div
+                                style={{ padding: '20px', textAlign: 'center' }}
+                              >
+                                <h1>{t('serviceWorkerCleanupTitle')}</h1>
+                                <p>{t('serviceWorkerCleanupComplete')}</p>
+                                <p>{t('serviceWorkerCleanupRestart')}</p>
+                                <button
+                                  onClick={() => (window.location.href = '/')}
+                                  style={{
+                                    padding: '10px 20px',
+                                    margin: '10px',
+                                  }}
+                                >
+                                  {t('serviceWorkerCleanupBack')}
+                                </button>
+                              </div>
+                            }
+                          />
+                          {/* Default redirect */}
+                          <Route
+                            path="/"
+                            element={
+                              <Navigate to={PRODUCT_HOME_PATH} replace />
+                            }
+                          />
+                        </Routes>
+                      </div>
+
+                      {/* Footer */}
+                      <Footer />
+                    </div>
+
+                    {/* Toast Notifications */}
+                    <ThemedToastContainer />
+                  </Suspense>
+                </ThemedMantineProvider>
+              </ThemeProvider>
+            </AppDataProvider>
+          </UserPreferencesProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
+  );
+}
+
+export default App;

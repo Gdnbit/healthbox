@@ -1,0 +1,780 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "admin": {
+    "createUser": {
+      "linkPatient": {
+        "hint": "Вместо создания новой записи пациента привяжите нового пользователя к существующему пациенту (например, ребёнку, которому теперь нужен собственный вход).",
+        "selfRecordBadge": "Собственная запись",
+        "selfRecordWarning": "Это собственная запись текущего владельца. Для первоначального владельца будет создана новая собственная запись с копированием его демографических данных. Первоначальный владелец получит права на редактирование этой записи пациента."
+      },
+      "passwordReqs": {
+        "hasLetter": "Содержит хотя бы одну букву",
+        "hasNumber": "Содержит хотя бы одну цифру",
+        "minLength": "Не менее 6 символов"
+      }
+    }
+  },
+  "analytics": {
+    "activityByRecordType": "Активность по типу записей",
+    "activityTrend": "Тенденция активности",
+    "analyticsDateRange": "Диапазон дат аналитики",
+    "axisLabels": {
+      "activities": "Действия"
+    },
+    "breakdownByType": "По типам",
+    "chartLabels": {
+      "patients": "Пациенты",
+      "userActivity": "Активность пользователей"
+    },
+    "customDateRange": "Пользовательский диапазон дат",
+    "dailyAverage": "Среднее за день",
+    "filterByDays": "Фильтр за последние {{days}} дней",
+    "loading": "Загрузка аналитики...",
+    "period": "Период",
+    "recordsDistribution": "Распределение записей",
+    "subtitle": "Тенденции активности, сравнения и распределение записей",
+    "title": "Аналитика",
+    "totalActivities": "Всего действий",
+    "userInteractions": "Взаимодействия пользователей",
+    "vsPreviousPeriod": "по сравнению с предыдущим периодом"
+  },
+  "auditLog": {
+    "actionFilter": "Действие",
+    "dateRange": "Диапазон дат",
+    "entityTypeFilter": "Тип сущности",
+    "errorLoading": "Ошибка загрузки журнала аудита",
+    "filterByAction": "Фильтр по действию",
+    "filterByDateRange": "Фильтр по диапазону дат",
+    "filterByEntityType": "Фильтр по типу сущности",
+    "filterByUser": "Фильтр по пользователю",
+    "loading": "Загрузка журнала аудита...",
+    "noLogs": "Записи журнала не найдены",
+    "pageInfo": "страница {{page}} из {{totalPages}}",
+    "searchAriaLabel": "Поиск в журнале активности",
+    "searchPlaceholder": "Поиск по описанию...",
+    "showingResults": "Показано {{shown}} из {{total}} результатов",
+    "subtitle": "Полный журнал действий для соответствия требованиям и аудита",
+    "system": "Система",
+    "tableHeaders": {
+      "action": "Действие",
+      "entityType": "Тип сущности",
+      "recordId": "ID записи",
+      "timestamp": "Время"
+    },
+    "viewRecord": "Просмотр записи {{type}}",
+    "viewRecordAriaLabel": "Просмотр {{type}} #{{id}}"
+  },
+  "backup": {
+    "existingBackups": {
+      "count_one": "{{count}} резервная копия",
+      "count_other": "{{count}} резервных копий",
+      "download": "Скачать",
+      "noBackups": "Резервные копии не найдены",
+      "previewRestore": "Предпросмотр восстановления",
+      "restore": "Восстановить",
+      "tableHeaders": {
+        "fileExists": "Файл существует",
+        "filename": "Имя файла",
+        "integrity": "Integrity",
+        "restoreDrill": "Restore Drill"
+      },
+      "title": "Существующие резервные копии",
+      "verify": "Проверить"
+    },
+    "healthOverview": {
+      "title": "Backup readiness",
+      "description": "Creation, integrity verification and restore testing are separate checks.",
+      "latestFull": "Latest full backup",
+      "integrity": "Archive integrity",
+      "restoreDrill": "Isolated restore drill",
+      "schedule": "Automatic schedule",
+      "replica": "Configured copy target",
+      "none": "None",
+      "noAge": "No backup age available",
+      "ageHours": "{{count}} hours old",
+      "neverChecked": "Not checked yet",
+      "neverTested": "Not tested yet",
+      "nextRun": "Next: {{date}}",
+      "noNextRun": "No next run scheduled",
+      "copiedAt": "Copied: {{date}}",
+      "noReplicaTarget": "No copy target configured",
+      "ready": "Ready",
+      "attention": "{{count}} items to review",
+      "warningTitle": "Readiness notes",
+      "scopeNote": "Integrity verification checks the archive; only an isolated restore drill checks whether its database can actually be restored. Neither proves that an off-device copy exists.",
+      "statuses": {
+        "verified": "Verified",
+        "passed": "Passed",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "copied": "Copied and verified",
+        "not_copied": "Not copied",
+        "not_configured": "Not configured",
+        "not_checked": "Not checked",
+        "not_tested": "Not tested",
+        "failed": "Failed",
+        "missing": "Missing",
+        "corrupted": "Corrupted",
+        "size_mismatch": "Size mismatch",
+        "checksum_failed": "Checksum failed"
+      },
+      "warnings": {
+        "noFullBackup": "No full backup is recorded",
+        "fileMissing": "The latest full backup file is missing",
+        "backupOld": "The latest full backup is more than seven days old",
+        "integrityPending": "The latest full backup has not passed its current integrity check",
+        "restorePending": "The latest full backup has not passed an isolated restore drill",
+        "restoreFailed": "The latest isolated restore drill failed",
+        "scheduleDisabled": "Automatic full backups are disabled",
+        "replicaNotConfigured": "No second copy target is configured",
+        "replicaPending": "The latest full backup has not been copied to the configured target",
+        "replicaFailed": "The latest copy or its checksum verification failed"
+      }
+    },
+    "loading": "Загрузка управления резервными копиями...",
+    "modals": {
+      "analyzingBackup": "Анализ содержимого резервной копии...",
+      "cannotBeUndone": "Это действие нельзя отменить.",
+      "cleanupItems": {
+        "oldBackups": "Старые файлы резервных копий",
+        "orphanedFiles": "Осиротевшие файлы",
+        "trashFiles": "Файлы в корзине"
+      },
+      "cleanupWarning": "Будут безвозвратно удалены:",
+      "completeCleanup": "Полная очистка системы",
+      "deleteBackup": "Удалить резервную копию",
+      "deleteConfirm": "Вы уверены, что хотите удалить резервную копию «{{filename}}»?",
+      "discardChanges": "Отменить изменения",
+      "executeCleanup": "Выполнить очистку",
+      "proceedWithRestore": "Продолжить восстановление",
+      "restoreFromBackup": "Восстановить из резервной копии",
+      "restoreNow": "Восстановить сейчас",
+      "restorePreview": "Предпросмотр восстановления",
+      "restoreSafetyNote": "Перед восстановлением автоматически будет создана резервная копия безопасности.",
+      "restoreWarning": "Это действие восстановит данные из резервной копии и ЗАМЕНИТ текущие данные!",
+      "stayOnSettings": "Остаться в настройках",
+      "typeCleanupToConfirm": "Введите <strong>CLEANUP</strong> для подтверждения",
+      "unsavedChanges": "Несохранённые изменения",
+      "unsavedWarning": "У вас есть несохранённые изменения в настройках хранения. При переходе на другую вкладку изменения будут потеряны."
+    },
+    "operations": {
+      "advancedOptions": "Дополнительные параметры",
+      "advancedOptionsDesc": "Дополнительные операции резервного копирования и очистки",
+      "chooseFile": "Выбрать файл резервной копии",
+      "cleanupOld": "Очистить старые копии",
+      "completeCleanup": "Полная очистка",
+      "createFullBackup": "Создать полную копию",
+      "creating": "Создание...",
+      "databaseOnly": "Только база данных",
+      "filesOnly": "Только файлы",
+      "fullBackup": "Полная резервная копия системы",
+      "fullBackupDesc": "Полная резервная копия (база данных + файлы)",
+      "invalidFileType": "Неверный тип файла",
+      "invalidFileTypeDesc": "Пожалуйста, выберите файл резервной копии .sql или .zip.",
+      "moreOptions": "Ещё параметры",
+      "title": "Операции резервного копирования",
+      "uploadBackup": "Загрузить резервную копию",
+      "uploadBackupDesc": "Загрузить внешний файл резервной копии (.sql или .zip)"
+    },
+    "preview": {
+      "affectedData": "Затронутые данные",
+      "analysisNotAvailable": "Анализ резервной копии недоступен",
+      "backupContent": "Содержимое резервной копии",
+      "backupDetails": "Подробности резервной копии",
+      "backupFiles": "Файлы резервной копии",
+      "components": "Компоненты",
+      "createdAt": "Создана: {{date}}",
+      "currentDatabase": "Текущая база данных",
+      "currentFiles": "Текущие файлы",
+      "manifest": "Манифест",
+      "noAffectedData": "Информация о затронутых данных недоступна",
+      "noStatistics": "Статистика недоступна",
+      "restoreMethod": "Метод восстановления",
+      "unknownType": "Неизвестный тип резервной копии"
+    },
+    "retention": {
+      "backupsUnit": "копий",
+      "currentStatus_one": "<strong>Текущее состояние:</strong> {{count}} резервная копия сохранена (макс: {{max}})",
+      "currentStatus_other": "<strong>Текущее состояние:</strong> {{count}} резервных копий сохранено (макс: {{max}})",
+      "daysUnit": "дней",
+      "maximumCount": "Максимальное количество копий",
+      "maximumCountDesc": "Оповещать при превышении этого количества копий (необязательно)",
+      "minimumCount": "Минимальное количество копий",
+      "minimumCountDesc": "Всегда хранить не менее указанного числа копий (независимо от возраста)",
+      "priority": "<strong>Приоритет:</strong> Минимальное количество всегда имеет приоритет над временными ограничениями",
+      "retentionDays": "Срок хранения (дни)",
+      "retentionDaysDesc": "Удалять копии старше указанного количества дней (за пределами минимального количества)",
+      "retentionLogic": "Логика хранения",
+      "saveRetention": "Сохранить настройки хранения",
+      "timeBasedCleanup": "<strong>Очистка по времени:</strong> Удалять копии старше {{days}} дней (за пределами минимального количества)",
+      "title": "Настройки хранения резервных копий"
+    },
+    "schedule": {
+      "completedWithCopyWarning": "Backup verified, but the configured copy failed: {{error}}",
+      "pipelineSummary": "Backup #{{id}} · integrity {{integrity}} · cleanup removed {{count}} item(s) · copy {{replica}}",
+      "timezone": "Schedule timezone",
+      "completedSuccessfully": "Завершено успешно",
+      "dayOfWeek": "День недели",
+      "dayOfWeekDesc": "В какой день выполнять еженедельное копирование?",
+      "days": {
+        "fri": "Пятница",
+        "mon": "Понедельник",
+        "sat": "Суббота",
+        "sun": "Воскресенье",
+        "thu": "Четверг",
+        "tue": "Вторник",
+        "wed": "Среда"
+      },
+      "failed": "Ошибка: {{error}}",
+      "frequency": "Частота резервного копирования",
+      "frequencyDesc": "Настройте автоматическое полное копирование (база данных + файлы)",
+      "lastBackup": "Последняя копия:",
+      "nextScheduledRun": "Следующий запуск по расписанию",
+      "presets": {
+        "daily": "Ежедневно",
+        "every12Hours": "Каждые 12 часов",
+        "every6Hours": "Каждые 6 часов"
+      },
+      "saveSchedule": "Сохранить расписание",
+      "timeOfDay": "Время суток",
+      "timeOfDayDesc": "Когда выполнять резервное копирование? (24-часовой формат)",
+      "title": "Расписание автоматического копирования",
+      "unknownError": "Неизвестная ошибка"
+    },
+    "subtitle": "Создание и управление системными резервными копиями",
+    "tabs": {
+      "backups": "Резервные копии"
+    },
+    "unsavedBadge": "Не сохранено"
+  },
+  "createUser": {
+    "autoFeatures": {
+      "editAccess": "Первоначальный владелец сохранит доступ для редактирования привязанных пациентов",
+      "immediateLogin": "Пользователь сможет войти в систему сразу после создания",
+      "linkExisting": "Используйте «Привязать к существующему пациенту» для переноса записи пациента к новому пользователю",
+      "patientRecord": "Запись пациента будет создана автоматически (или привязана к существующей)",
+      "timestamps": "Временные метки учётной записи будут установлены автоматически"
+    },
+    "autoFeaturesTitle": "Автоматические функции",
+    "cardSubtitle": "Заполните форму ниже для создания новой учётной записи",
+    "cardTitle": "Данные учётной записи",
+    "emailPlaceholder": "Введите адрес электронной почты",
+    "errors": {
+      "accountCreateFailed": "Не удалось создать учётную запись",
+      "createFailed": "Не удалось создать пользователя",
+      "createRetry": "Не удалось создать пользователя. Пожалуйста, попробуйте снова."
+    },
+    "firstNamePlaceholder": "Введите имя",
+    "lastNamePlaceholder": "Введите фамилию",
+    "linkPatient": {
+      "checkbox": "Привязать к существующей записи пациента",
+      "currentOwner": "Текущий владелец",
+      "dob": "Дата рождения",
+      "hint": "Вместо создания новой записи пациента привяжите нового пользователя к существующему пациенту (например, ребёнку, которому теперь нужен собственный вход).",
+      "loading": "Загрузка пациентов...",
+      "owner": "Владелец",
+      "patientId": "ID",
+      "selectPlaceholder": "Выберите пациента...",
+      "selfRecordBadge": "Собственная запись",
+      "selfRecordWarning": "Это собственная запись текущего владельца. Для первоначального владельца будет создана новая собственная запись с копированием его демографических данных. Первоначальный владелец получит доступ для редактирования этого пациента."
+    },
+    "noteText": "Запись пациента будет автоматически создана для этого пользователя с ролью по умолчанию «user».",
+    "pageSubtitle": "Создание новой учётной записи с профилем пациента",
+    "pageTitle": "Создать нового пользователя",
+    "passwordPlaceholder": "Введите пароль (мин. 6 символов, буква и цифра)",
+    "passwordReqs": {
+      "hasLetter": "Содержит хотя бы одну букву",
+      "hasNumber": "Содержит хотя бы одну цифру",
+      "minLength": "Не менее 6 символов"
+    },
+    "submitButton": "Создать учётную запись",
+    "successRedirect": "Пользователь «{{username}}» успешно создан!",
+    "usernamePlaceholder": "Введите имя пользователя",
+    "validation": {
+      "firstNameRequired": "Пожалуйста, введите имя",
+      "lastNameRequired": "Пожалуйста, введите фамилию",
+      "passwordMinLength": "Пароль должен содержать не менее 6 символов",
+      "passwordRequirements": "Пароль должен содержать хотя бы одну букву и одну цифру",
+      "usernameMinLength": "Имя пользователя должно содержать не менее 3 символов"
+    }
+  },
+  "dashboard": {
+    "loading": "Загрузка комплексной панели управления...",
+    "quickActions": {
+      "auditLogDesc": "Просмотр журнала активности системы",
+      "backups": "Резервные копии",
+      "backupsDesc": "Управление резервными копиями",
+      "createUser": "Создать пользователя",
+      "createUserDesc": "Создать учётную запись с профилем пациента",
+      "dataModelsDesc": "Просмотр и управление таблицами базы данных",
+      "manageUsers": "Управление пользователями",
+      "manageUsersDesc": "Просмотр и управление учётными записями",
+      "settingsDesc": "Конфигурация системы",
+      "subtitle": "Основные административные задачи",
+      "systemHealthDesc": "Мониторинг состояния системы",
+      "title": "Быстрые действия",
+      "trash": "Корзина",
+      "trashDesc": "Восстановление удалённых файлов"
+    },
+    "recentActivity": {
+      "errorLoading": "Ошибка загрузки активности",
+      "noActivity": "Нет последней активности для отображения",
+      "subtitle": "Последние системные события",
+      "title": "Последняя активность",
+      "viewAll": "Показать всю активность"
+    },
+    "refreshAll": "Обновить всё",
+    "stats": {
+      "activePatients": "Активные пациенты",
+      "totalUsers": "Всего пользователей"
+    },
+    "subtitle": "Комплексный обзор системы и управление",
+    "systemHealth": {
+      "databaseStatus": "Статус базы данных",
+      "errorLoading": "Ошибка загрузки состояния системы",
+      "lastBackup": "Последняя резервная копия",
+      "noBackup": "Нет резервных копий",
+      "subtitle": "Текущий статус системы",
+      "uptime": "Время работы"
+    }
+  },
+  "dataModels": {
+    "categories": {
+      "coreMedical": "Основные медицинские",
+      "fileManagement": "Управление файлами",
+      "healthcareDirectory": "Справочник медучреждений",
+      "patientSupport": "Поддержка пациентов",
+      "sharingAccess": "Совместный доступ",
+      "system": "Система"
+    },
+    "clearFilter": "Очистить фильтр",
+    "descriptions": {
+      "allergy": "Аллергии и реакции пациентов",
+      "condition": "Заболевания и диагнозы",
+      "emergency_contact": "Экстренные контакты пациентов",
+      "encounter": "Визиты пациентов и приёмы",
+      "entity_file": "Вложения файлов для всех типов сущностей",
+      "family_condition": "Заболевания членов семьи",
+      "family_history_share": "Связи совместного доступа к семейному анамнезу",
+      "family_member": "Записи о членах семьи для медицинского анамнеза",
+      "immunization": "Записи о прививках и графики вакцинации",
+      "injury": "Физические травмы, растяжения, переломы и ожоги",
+      "injury_type": "Переиспользуемые определения типов травм для выпадающих списков",
+      "insurance": "Информация о страховании пациентов",
+      "invitation": "Системные приглашения для совместного доступа и сотрудничества",
+      "lab_result": "Результаты лабораторных исследований и значения",
+      "lab_result_file": "Документы и вложения результатов анализов",
+      "medical_equipment": "Медицинское оборудование, назначенное пациентам",
+      "medical_specialty": "Medical specialties (e.g. Cardiology) assigned to practitioners",
+      "medication": "Назначенные лекарства и дозировки",
+      "patient": "Демографические и контактные данные пациентов",
+      "patient_share": "Связи совместного доступа к данным пациентов между пользователями",
+      "pharmacy": "Аптеки и контактная информация",
+      "practice": "Medical practices — contact details and multiple locations",
+      "practitioner": "Медицинские работники и специалисты",
+      "procedure": "Медицинские процедуры и операции",
+      "symptom": "Определения симптомов и отслеживание",
+      "symptom_occurrence": "Записи отдельных эпизодов симптомов",
+      "treatment": "Планы лечения и терапия",
+      "user": "Системные пользователи и администраторы",
+      "vitals": "Артериальное давление, частота пульса, температура"
+    },
+    "displayNames": {
+      "medical_specialty": "Medical Specialties",
+      "practice": "Practices"
+    },
+    "fallbackWarning": "Не удалось загрузить модели с сервера. Показан встроенный список моделей.",
+    "filterAriaLabel": "Фильтр моделей данных",
+    "filterPlaceholder": "Фильтр моделей...",
+    "noMatchFilter": "Нет моделей, соответствующих «{{query}}»",
+    "subtitle": "Управление и просмотр всех таблиц и записей базы данных"
+  },
+  "directoryCard": {
+    "files": "файлов",
+    "mb": "МБ",
+    "ok": "ОК"
+  },
+  "fieldRenderer": {
+    "autoGenerated": "Автогенерируемое",
+    "autoPopulated": "Заполняется автоматически из текущего пользователя",
+    "computedField": "Computed from related record (read-only)",
+    "enterField": "Введите {{field}}...",
+    "enterPassword": "Введите пароль для нового пользователя...",
+    "notApplicable": "Не применимо",
+    "passwordHash": "Хеш пароля (только чтение в целях безопасности)",
+    "passwordNote": "Введите пароль в текстовом виде (минимум {{minLength}} символов, с буквой и цифрой) — он будет надёжно зашифрован",
+    "passwordNotSupported": "Поля пароля не поддерживаются для этой модели",
+    "patientIdAutoPopulated": "ID пациента (заполняется автоматически)",
+    "patientIdLocked": "ID пациента (привязан к текущему пользователю)",
+    "primaryKeyAutoGenerated": "Первичный ключ (автогенерируемый)",
+    "primaryKeyReadOnly": "Первичный ключ (только чтение)",
+    "selectDefault": "-- Выбрать --",
+    "selectField": "-- Выбрать {{field}} --",
+    "systemTimestamp": "Системная метка времени (автогенерируемая)"
+  },
+  "header": {
+    "administrator": "Администратор",
+    "logout": "Выйти",
+    "returnToDashboard": "Вернуться на панель управления",
+    "searchAriaLabel": "Поиск моделей данных",
+    "searchPlaceholder": "Поиск записей, пользователей или данных...",
+    "switchToMode": "Переключить на режим {{mode}}",
+    "title": "HealthBox · Администрирование медицинских записей"
+  },
+  "health": {
+    "applicationUptime": "Время работы приложения",
+    "database": {
+      "activeUsers": "Активные пользователи",
+      "connectionStatus": "Статус подключения",
+      "connectionTest": "Тест подключения",
+      "databaseSize": "Размер базы данных",
+      "failed": "Ошибка",
+      "passed": "Пройден",
+      "patientRecords": "Записи пациентов",
+      "title": "Состояние базы данных"
+    },
+    "lastBackup": "Последняя резервная копия",
+    "lastRunFailed": "Последний запуск завершился с ошибкой",
+    "lastUpdated": "Последнее обновление: {{time}}",
+    "loading": "Загрузка состояния системы...",
+    "next": "Следующий: {{time}}",
+    "noneYet": "Ещё нет",
+    "noScheduleConfigured": "Расписание не настроено",
+    "overallStatus": "Общее состояние системы",
+    "performance": {
+      "appMemory": "Память приложения (RSS)",
+      "cpuDetails": "Приложение: {{appPercent}}% из {{cores}} ядер (система: {{systemPercent}}%)",
+      "cpuUsage": "Использование ЦП",
+      "memoryUsage": "Использование памяти",
+      "memoryUsed": "{{used}} МБ использовано (система: {{percent}}% из {{total}} МБ)",
+      "responseTime": "Время отклика",
+      "systemLoad": "Нагрузка системы",
+      "title": "Производительность приложения"
+    },
+    "scheduled": "По расписанию: {{schedule}}",
+    "schedulePresets": {
+      "daily": "Ежедневно",
+      "every_12_hours": "Каждые 12 часов",
+      "every_6_hours": "Каждые 6 часов"
+    },
+    "services": {
+      "adminInterface": "Интерфейс администратора",
+      "apiStatus": "Статус API",
+      "authService": "Сервис аутентификации",
+      "frontendLogging": "Логирование фронтенда",
+      "title": "Сервисы приложения"
+    },
+    "sso": {
+      "allowed": "Разрешена",
+      "blocked": "Заблокирована",
+      "passwordOnlyInfo": "Пользователи могут входить только с помощью имени пользователя и пароля",
+      "providerType": "Тип провайдера",
+      "registrationViaSso": "Регистрация через SSO",
+      "ssoStatus": "Статус SSO",
+      "title": "Единый вход (SSO)"
+    },
+    "storage": {
+      "appStorage": "Хранилище приложения",
+      "diskUsage": "Использование диска",
+      "freeOf": "{{free}} ГБ свободно из {{total}} ГБ",
+      "title": "Состояние хранилища"
+    },
+    "subtitle": "Состояние системы и метрики производительности в реальном времени",
+    "title": "Мониторинг состояния системы"
+  },
+  "medicalSpecialty": {
+    "description": "Description",
+    "name": "Name"
+  },
+  "models": {
+    "backToDataModels": "Назад к моделям данных",
+    "backToModel": "Назад к {{modelName}}",
+    "bulkDeleteAssociated": "Все связанные данные (включая {{types}}) также будут удалены.",
+    "bulkDeleteFailed": "Ошибка массового удаления",
+    "bulkDeleteWarning": "Вы собираетесь навсегда удалить {{count}} записей {{modelName}}.",
+    "bulkDeleteWarning_one": "Вы собираетесь навсегда удалить {{count}} запись {{modelName}}.",
+    "bulkDeleteWarning_other": "Вы собираетесь навсегда удалить {{count}} записей {{modelName}}.",
+    "changeRole": "Изменить роль",
+    "changesSaved": "Изменения сохранены",
+    "changeUsername": "Изменить имя пользователя",
+    "clearSearch": "Очистить поиск",
+    "columnVisibility": "Видимость столбцов",
+    "confirmBulkDeletion": "Подтвердите массовое удаление",
+    "confirmDeletion": "Подтвердите удаление",
+    "createNew": "Создать {{modelName}}",
+    "createRecord": "Создать запись",
+    "deleteFailed": "Ошибка удаления",
+    "deleteRecords": "Удалить {{count}} записей",
+    "deleteRecords_one": "Удалить {{count}} запись",
+    "deleteRecords_other": "Удалить {{count}} записей",
+    "deleteSelected": "Удалить выбранные",
+    "deleteWarning": "Это действие навсегда удалит запись {{modelName}} и все связанные данные:",
+    "editRecord": "Редактировать {{modelName}}",
+    "exportFailed": "Ошибка экспорта",
+    "exportToCSV": "Экспорт в CSV",
+    "failedToBulkDelete": "Не удалось удалить записи",
+    "failedToDelete": "Не удалось удалить запись",
+    "failedToExport": "Не удалось экспортировать данные",
+    "failedToGetPatient": "Не удалось получить информацию о пациенте. Убедитесь, что у вас есть запись пациента.",
+    "failedToSave": "Не удалось сохранить запись",
+    "fieldMaxLength": "Макс. длина: {{length}}",
+    "fieldReferences": "Ссылается на: {{reference}}",
+    "fieldRequired": "Обязательное",
+    "fieldType": "Тип: {{type}}",
+    "fillForm": "Заполните форму ниже для создания новой записи",
+    "loadingForm": "Загрузка формы создания модели...",
+    "noRecordsFound": "Записи не найдены",
+    "perPage": "{{count}} на страницу",
+    "perPage_one": "{{count}} на страницу",
+    "perPage_other": "{{count}} на страницу",
+    "rawDataJson": "Исходные данные (JSON)",
+    "recordDeleted": "Запись удалена",
+    "recordDeletedMessage": "Запись {{modelName}} #{{id}} успешно удалена",
+    "recordId": "ID записи: {{id}}",
+    "recordsDeleted": "Записи удалены",
+    "recordsDeletedMessage": "Успешно удалено {{count}} записей",
+    "recordsDeletedMessage_one": "{{count}} запись успешно удалена",
+    "recordsDeletedMessage_other": "{{count}} записей успешно удалено",
+    "recordUpdated": "Запись успешно обновлена",
+    "resetToDefault": "Сбросить по умолчанию",
+    "roleChangeLastAdmin": "Если это последний администратор в системе, вы можете потерять доступ к администрированию.",
+    "roleChangeText": "Вы собираетесь отозвать права администратора у этого пользователя.",
+    "roleChangeWarning": "Предупреждение об изменении роли",
+    "saveFailed": "Ошибка сохранения",
+    "searchPlaceholder": "Поиск {{modelName}}...",
+    "searchRecords": "Поиск записей",
+    "searchResult": "{{count}} результатов для \"{{query}}\"",
+    "searchResult_one": "{{count}} результат для \"{{query}}\"",
+    "searchResult_other": "{{count}} результатов для \"{{query}}\"",
+    "selected": "{{count}} выбрано",
+    "selected_one": "{{count}} выбрана",
+    "selected_other": "{{count}} выбрано",
+    "toggleColumnVisibility": "Переключить видимость столбцов",
+    "typeDeleteToConfirm": "Введите <strong>DELETE</strong> для подтверждения",
+    "usernameChangeLogout": "Это действие приведёт к немедленному выходу из системы, и вам нужно будет войти с новым именем пользователя.",
+    "usernameChangeText": "Вы собираетесь изменить имя пользователя с <strong>«{{oldUsername}}»</strong> на <strong>«{{newUsername}}»</strong>.",
+    "usernameChangeWarning": "Предупреждение об изменении имени пользователя",
+    "usernameUpdated": "Имя пользователя обновлено",
+    "usernameUpdatedMessage": "Ваше имя пользователя изменено. Пожалуйста, войдите с новым именем пользователя: «{{username}}»",
+    "viewRecord": "Просмотр {{modelName}}",
+    "visibleColumns": "Видимые столбцы"
+  },
+  "practices": {
+    "locations": {
+      "add": "Add location",
+      "empty": "No locations yet.",
+      "labelField": "Label",
+      "labelPlaceholder": "Main office",
+      "locationNumber": "Location {{num}}",
+      "moveDown": "Move down",
+      "moveUp": "Move up",
+      "title": "Locations"
+    },
+    "subtitle": "Manage medical practices — contact details, locations, and more.",
+    "title": "Practices"
+  },
+  "practitioner": {
+    "quickAddSpecialty": "Add new specialty",
+    "specialtyPlaceholder": "Select a specialty",
+    "specialtySaved": "Specialty ready to use"
+  },
+  "settings": {
+    "dataRetention": {
+      "title": "Хранение данных",
+      "trashRetention": "Хранение в корзине",
+      "trashRetentionDesc": "Количество дней хранения удалённых файлов в корзине до окончательного удаления"
+    },
+    "loading": "Загрузка настроек...",
+    "resetAll": "Сбросить все",
+    "saveAllChanges": "Сохранить все изменения",
+    "sso": {
+      "ssoDisabledInfo": "SSO в настоящее время отключён. Чтобы включить SSO, настройте следующие переменные окружения и перезапустите приложение:",
+      "ssoRegistration": "Регистрация через SSO",
+      "testConnection": "Проверить подключение",
+      "testConnectionDesc": "Проверить подключение и конфигурацию провайдера SSO",
+      "testSsoConnection": "Проверить подключение SSO",
+      "title": "Единый вход (SSO)"
+    },
+    "subtitle": "Настройка общесистемных параметров и политик хранения",
+    "title": "Настройки администратора",
+    "userManagement": {
+      "allowRegistration": "Разрешить регистрацию новых пользователей",
+      "allowRegistrationDesc": "Включить или отключить возможность регистрации новых пользователей на странице входа"
+    }
+  },
+  "shared": {
+    "dark": "тёмный",
+    "healthy": "исправна",
+    "info": "Информация",
+    "light": "светлый"
+  },
+  "sidebar": {
+    "adminNavigation": "Навигация администратора",
+    "comingSoon": "{{label}} (Скоро)",
+    "items": {
+      "analytics": "Аналитика",
+      "maintenance": "Обслуживание",
+      "trash": "Корзина"
+    },
+    "sections": {
+      "dataManagement": "Управление данными",
+      "monitoring": "Мониторинг",
+      "tools": "Инструменты"
+    },
+    "toggleSidebar": "Переключить боковую панель"
+  },
+  "tools": {
+    "subtitle": "Административные инструменты для обслуживания системы и управления данными",
+    "testLibrary": {
+      "categories": "Категории",
+      "forceSyncAll": "Принудительная синхронизация всех",
+      "forceSyncAllDesc": "<strong>Принудительная синхронизация:</strong> Повторно сопоставляет все компоненты (категории и канонические имена)",
+      "libraryReloaded": "Библиотека перезагружена",
+      "libraryVersion": "Версия библиотеки",
+      "operational": "Работает",
+      "reloadDesc": "<strong>Перезагрузить библиотеку:</strong> Обновляет библиотеку тестов с диска (используйте после обновления test_library.json)",
+      "reloadLibrary": "Перезагрузить библиотеку",
+      "syncComplete": "Синхронизация завершена",
+      "syncUnmatched": "Синхронизировать несовпавшие",
+      "syncUnmatchedDesc": "<strong>Синхронизировать несовпавшие:</strong> Обновляет компоненты, у которых ещё нет канонического имени",
+      "title": "Обслуживание библиотеки тестов",
+      "totalTests": "Всего тестов"
+    },
+    "title": "Инструменты и обслуживание"
+  },
+  "trash": {
+    "clearFilters": "Очистить фильтры",
+    "deleteConfirm": "Вы уверены, что хотите навсегда удалить <strong>{{filename}}</strong>?",
+    "deletedDateRange": "Диапазон дат удаления",
+    "deleteFailed": "Ошибка удаления",
+    "deletePermanently": "Удалить навсегда",
+    "deleteWarning": "Это действие нельзя отменить. Файл будет безвозвратно удалён из системы.",
+    "errorLoading": "Ошибка загрузки корзины",
+    "fileCount_one": "{{count}} файл",
+    "fileCount_other": "{{count}} файлов",
+    "fileDeleted": "Файл удалён",
+    "fileDeletedMessage": "{{filename}} окончательно удалён",
+    "fileRestored": "Файл восстановлен",
+    "fileRestoredMessage": "{{filename}} восстановлен в исходное расположение",
+    "fileType": "Тип файла",
+    "filterByDeletedDate": "Фильтр по дате удаления",
+    "filterByFileType": "Фильтр по типу файла",
+    "filtered": "(отфильтровано)",
+    "loading": "Загрузка содержимого корзины...",
+    "manualDeletion": "Удалено вручную",
+    "noFilesInTrash": "В корзине нет файлов",
+    "noFilesMatch": "Нет файлов, соответствующих вашим фильтрам",
+    "permanentlyDelete": "Удалить навсегда",
+    "permanentlyDeleteFile": "Удалить файл навсегда",
+    "purgedDirectories_one": "в {{count}} каталоге",
+    "purgedDirectories_other": "в {{count}} каталогах",
+    "purgeDescription_one": "Файлы, превысившие срок хранения, будут удалены. В настоящее время в корзине находится <strong>{{count}} {{files}}</strong> общим размером <strong>{{size}}</strong>.",
+    "purgeDescription_other": "Файлы, превысившие срок хранения, будут удалены. В настоящее время в корзине находятся <strong>{{count}} {{files}}</strong> общим размером <strong>{{size}}</strong>.",
+    "purgedMessage_one": "{{count}} файл с истёкшим сроком окончательно удалён",
+    "purgedMessage_other": "{{count}} файлов с истёкшим сроком окончательно удалено",
+    "purgeExpired": "Очистить истёкшие",
+    "purgeExpiredButton": "Очистить истёкшие",
+    "purgeExpiredFiles": "Очистить истёкшие файлы",
+    "purgeFailed": "Ошибка очистки",
+    "purgeWarning": "Все файлы с истёкшим сроком хранения будут безвозвратно удалены из корзины. Это действие нельзя отменить.",
+    "restoreConfirm": "Вы уверены, что хотите восстановить <strong>{{filename}}</strong>",
+    "restoreFailed": "Ошибка восстановления",
+    "restoreFile": "Восстановить файл",
+    "restoreTo": "в",
+    "restoreToOriginal": "Восстановить в исходное расположение",
+    "searchAriaLabel": "Поиск файлов в корзине",
+    "searchPlaceholder": "Поиск по имени файла или пути...",
+    "showingFiltered": "Показано {{shown}} из {{total}} {{files}}",
+    "subtitle": "Управление удалёнными файлами. Восстановите файлы в исходное расположение или окончательно удалите их для освобождения хранилища.",
+    "tableHeaders": {
+      "actions": "Действия",
+      "deleted": "Удалён",
+      "filename": "Имя файла",
+      "originalLocation": "Исходное расположение",
+      "reason": "Причина",
+      "size": "Размер"
+    },
+    "title": "Управление корзиной",
+    "totalSize": "{{size}} всего",
+    "trashPurged": "Корзина очищена"
+  },
+  "users": {
+    "actionsFor": "Действия для {{username}}",
+    "activate": "Активировать",
+    "authFilter": {
+      "all": "Все методы аутентификации",
+      "hybrid": "Гибридная",
+      "local": "Локальная",
+      "sso": "SSO"
+    },
+    "changeRole": "Изменить роль",
+    "clear": "Очистить",
+    "deactivate": "Деактивировать",
+    "deleteModal": {
+      "cannotDeleteLastAdmin": "Невозможно удалить последнего администратора.",
+      "cannotDeleteSelf": "Вы не можете удалить собственную учётную запись.",
+      "title": "Удалить пользователя",
+      "typeUsername": "Введите «{{username}}» для подтверждения",
+      "warning": "Это действие нельзя отменить. Все данные, связанные с этим пользователем, будут безвозвратно удалены."
+    },
+    "deleteUser": "Удалить пользователя",
+    "justNow": "Только что",
+    "loginHistory": "История входов",
+    "loginHistoryModal": {
+      "dateTime": "Дата и время",
+      "ipAddress": "IP-адрес",
+      "noHistory": "История входов не найдена",
+      "notAvailable": "Н/Д",
+      "title": "История входов: {{username}}"
+    },
+    "never": "Никогда",
+    "noUsersFound": "Пользователи не найдены",
+    "noUsersInSystem": "В системе нет пользователей.",
+    "noUsersMatchFilters": "Нет пользователей, соответствующих фильтрам. Попробуйте изменить или сбросить фильтры.",
+    "passwordModal": {
+      "bothFieldsRequired": "Требуется заполнить оба поля пароля",
+      "confirmPlaceholder": "Подтвердите новый пароль",
+      "enterNewPassword": "Введите новый пароль",
+      "forceChange": "Требовать смену пароля при следующем входе",
+      "immediateReset": "Это действие немедленно сбросит пароль пользователя. Для входа потребуется использовать новый пароль.",
+      "newPassword": "Новый пароль",
+      "passwordDescription": "Минимум 6 символов, хотя бы 1 буква и 1 цифра",
+      "passwordsDoNotMatch": "Пароли не совпадают",
+      "resetFailed": "Не удалось сбросить пароль. Пожалуйста, попробуйте снова.",
+      "resetSuccess": "Пароль для пользователя {{username}} успешно сброшен!",
+      "resettingFor": "Сброс пароля для <strong>{{username}}</strong>",
+      "ssoWarning": "Этот пользователь аутентифицируется через SSO ({{provider}}). Установка локального пароля позволит использовать гибридную аутентификацию.",
+      "title": "Сброс пароля для {{username}}",
+      "userInfo": "Пользователь: {{username}} (ID: {{userId}})"
+    },
+    "roleFilter": {
+      "all": "Все роли"
+    },
+    "roleModal": {
+      "cannotRemoveLastAdmin": "Невозможно удалить последнюю роль администратора.",
+      "changingRole": "Изменение роли для <strong>{{username}}</strong>",
+      "grantAdmin": "Это предоставит полные права администратора.",
+      "revokeAdmin": "Это отзовёт права администратора.",
+      "title": "Изменение роли пользователя"
+    },
+    "searchPlaceholder": "Поиск пользователей...",
+    "statusFilter": {
+      "all": "Все статусы"
+    },
+    "tableHeaders": {
+      "auth": "Аутентификация",
+      "lastLogin": "Последний вход"
+    },
+    "toggleActiveModal": {
+      "activateConfirm": "Активировать «{{username}}»? Пользователь сможет снова войти в систему.",
+      "activateTitle": "Активировать пользователя",
+      "cannotDeactivateLastAdmin": "Невозможно деактивировать последнего администратора.",
+      "cannotDeactivateSelf": "Вы не можете деактивировать собственную учётную запись.",
+      "deactivateConfirm": "Деактивировать «{{username}}»? Пользователь не сможет входить в систему до повторной активации.",
+      "deactivateTitle": "Деактивировать пользователя"
+    },
+    "userCount": "{{count}} пользователей",
+    "userCount_one": "{{count}} пользователь",
+    "userCount_other": "{{count}} пользователей"
+  }
+}

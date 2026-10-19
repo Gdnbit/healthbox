@@ -1,0 +1,1053 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+from datetime import date as date_type
+from typing import Any, Dict, List, Optional
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.api import deps
+from app.api.v1.endpoints.utils import (
+    handle_create_with_logging,
+    handle_delete_with_logging,
+    handle_not_found,
+    handle_update_with_logging,
+    validate_search_input,
+)
+from app.core.database.database import get_db
+from app.core.http.error_handling import (
+    BusinessLogicException,
+    DatabaseException,
+    handle_database_errors,
+)
+from app.core.logging.config import get_logger
+from app.core.logging.helpers import (
+    log_data_access,
+    log_endpoint_error,
+    log_validation_error,
+)
+from app.crud.lab_result import lab_result
+from app.crud.lab_test_component import lab_test_component
+from app.models.activity_log import EntityType
+from app.models.models import User
+from app.schemas.lab_test_component import (
+    ComponentCatalogResponse,
+    LabResultBasicForTrend,
+    LabTestComponentBulkCreate,
+    LabTestComponentBulkResponse,
+    LabTestComponentCreate,
+    LabTestComponentForStack,
+    LabTestComponentResponse,
+    LabTestComponentTrendDataPoint,
+    LabTestComponentTrendResponse,
+    LabTestComponentTrendStatistics,
+    LabTestComponentUpdate,
+    LabTestComponentWithLabResult,
+    TestComponentDefaults,
+)
+
+router = APIRouter()
+logger = get_logger(__name__, "app")
+
+
+# Lab Test Component Endpoints
+@router.get(
+    "/lab-result/{lab_result_id}/components",
+    response_model=List[LabTestComponentResponse],
+)
+def get_lab_test_components_by_lab_result(
+    *,
+    request: Request,
+    lab_result_id: int,
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """Get all test components for a specific lab result."""
+
+    with handle_database_errors(request=request):
+        # First verify the lab result exists and user has access
+        db_lab_result = lab_result.get(db, lab_result_id)
+        handle_not_found(db_lab_result, "Lab result", request)
+
+        # Verify patient access through the lab result
+        deps.verify_patient_access(db_lab_result.patient_id, db, current_user)
+
+        # Get components with optional filtering
+        if category or status:
+            components = lab_test_component.search_components(
+                db,
+                query_text="",
+                lab_result_id=lab_result_id,
+                category=category,
+                status=status,
+                skip=skip,
+                limit=limit,
+            )
+        else:
+            components = lab_test_component.get_by_lab_result(
+                db, lab_result_id=lab_result_id, skip=skip, limit=limit
+            )
+
+    return components
+
+
+@router.get("/components/{component_id}", response_model=LabTestComponentWithLabResult)
+def get_lab_test_component(
+    *,
+    request: Request,
+    component_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """Get a specific test component by ID with related lab result data."""
+
+    with handle_database_errors(request=request):
+        db_component = lab_test_component.get_with_relations(
+            db=db, record_id=component_id, relations=["lab_result"]
+        )
+        handle_not_found(db_component, "Lab test component", request)
+
+    assert db_component is not None
+
+    # Verify patient access through the lab result
+    deps.verify_patient_access(db_component.lab_result.patient_id, db, current_user)
+
+    # Convert to response format with lab result data
+    result_dict = {
+        "id": db_component.id,
+        "lab_result_id": db_component.lab_result_id,
+        "test_name": db_component.test_name,
+        "abbreviation": db_component.abbreviation,
+        "test_code": db_component.test_code,
+        "value": db_component.value,
+        "unit": db_component.unit,
+        "ref_range_min": db_component.ref_range_min,
+        "ref_range_max": db_component.ref_range_max,
+        "ref_range_text": db_component.ref_range_text,
+        "status": db_component.status,
+        "category": db_component.category,
+        "display_order": db_component.display_order,
+        "notes": db_component.notes,
+        "result_type": db_component.result_type,
+        "qualitative_value": db_component.qualitative_value,
+        "textual_value": db_component.textual_value,
+        "created_at": db_component.created_at,
+        "updated_at": db_component.updated_at,
+        "lab_result": (
+            {
+                "id": db_component.lab_result.id,
+                "test_name": db_component.lab_result.test_name,
+                "ordered_date": db_component.lab_result.ordered_date,
+                "completed_date": db_component.lab_result.completed_date,
+                "status": db_component.lab_result.status,
+            }
+            if db_component.lab_result
+            else None
+        ),
+    }
+
+    return result_dict
+
+
+@router.post(
+    "/lab-result/{lab_result_id}/components",
+    response_model=LabTestComponentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_lab_test_component(
+    *,
+    request: Request,
+    lab_result_id: int,
+    lab_test_component_in: LabTestComponentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """Create a new test component for a lab result."""
+
+    with handle_database_errors(request=request):
+        # Verify the lab result exists and user has access
+        db_lab_result = lab_result.get(db, lab_result_id)
+        handle_not_found(db_lab_result, "Lab result", request)
+
+        # Verify patient access
+        deps.verify_patient_access(
+            db_lab_result.patient_id,
+            db,
+            current_user,
+            required_permission="edit",
+        )
+
+        # Set the lab_result_id from the URL parameter
+        lab_test_component_in.lab_result_id = lab_result_id
+
+        # Create the component
+        db_component = handle_create_with_logging(
+            db=db,
+            crud_obj=lab_test_component,
+            obj_in=lab_test_component_in,
+            entity_type=EntityType.LAB_TEST_COMPONENT,
+            user_id=current_user.id,
+            entity_name=lab_test_component_in.test_name,
+            request=request,
+        )
+
+    return db_component
+
+
+@router.post(
+    "/lab-result/{lab_result_id}/components/bulk",
+    response_model=LabTestComponentBulkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_lab_test_components_bulk(
+    *,
+    request: Request,
+    lab_result_id: int,
+    bulk_data: LabTestComponentBulkCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """Create multiple test components for a lab result in bulk."""
+
+    with handle_database_errors(request=request):
+        # Verify the lab result exists and user has access
+        db_lab_result = lab_result.get(db, lab_result_id)
+        handle_not_found(db_lab_result, "Lab result", request)
+
+        # Verify patient access
+        deps.verify_patient_access(
+            db_lab_result.patient_id,
+            db,
+            current_user,
+            required_permission="edit",
+        )
+
+        # Set the lab_result_id from the URL parameter
+        bulk_data.lab_result_id = lab_result_id
+
+        try:
+            # Create components in bulk
+            created_components = lab_test_component.bulk_create(db, obj_in=bulk_data)
+
+            # Log the bulk creation
+            log_data_access(
+                logger,
+                request,
+                current_user.id,
+                "create",
+                "LabTestComponent",
+                count=len(created_components),
+                lab_result_id=lab_result_id,
+            )
+
+            return LabTestComponentBulkResponse(
+                created_count=len(created_components),
+                components=created_components,
+                errors=[],
+            )
+
+        except ValueError as e:
+            # Handle validation errors
+            log_validation_error(
+                logger,
+                request,
+                str(e),
+                user_id=current_user.id,
+                lab_result_id=lab_result_id,
+            )
+            raise BusinessLogicException(f"Validation error: {str(e)}")
+
+        except IntegrityError as e:
+            # Handle database constraint violations
+            log_endpoint_error(
+                logger,
+                request,
+                "Database constraint violation in bulk create",
+                e,
+                user_id=current_user.id,
+                lab_result_id=lab_result_id,
+            )
+            db.rollback()
+            raise BusinessLogicException(
+                "Data integrity error. Please check your input data."
+            )
+
+        except DatabaseException:
+            # Re-raise database exceptions as-is (already handled by handle_database_errors)
+            raise
+
+        except Exception as e:
+            # Handle unexpected errors
+            log_endpoint_error(
+                logger,
+                request,
+                "Unexpected error in bulk create",
+                e,
+                user_id=current_user.id,
+                lab_result_id=lab_result_id,
+                error_type=type(e).__name__,
+            )
+            db.rollback()
+            raise BusinessLogicException(
+                "An unexpected error occurred. Please try again later."
+            )
+
+
+@router.put("/components/{component_id}", response_model=LabTestComponentResponse)
+def update_lab_test_component(
+    *,
+    request: Request,
+    component_id: int,
+    lab_test_component_in: LabTestComponentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """Update an existing test component."""
+
+    with handle_database_errors(request=request):
+        # Get the existing component
+        db_component = lab_test_component.get(db, component_id)
+        handle_not_found(db_component, "Lab test component", request)
+
+        # Verify patient access through the lab result
+        db_lab_result = lab_result.get(db, db_component.lab_result_id)
+        deps.verify_patient_access(
+            db_lab_result.patient_id,
+            db,
+            current_user,
+            required_permission="edit",
+        )
+        if db_component.import_batch_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"code": "formal_metric_revision_required"},
+                headers={"X-Error-Code": "formal_metric_revision_required"},
+            )
+
+        # Update the component
+        db_component = handle_update_with_logging(
+            db=db,
+            crud_obj=lab_test_component,
+            entity_id=component_id,
+            obj_in=lab_test_component_in,
+            entity_type=EntityType.LAB_TEST_COMPONENT,
+            user_id=current_user.id,
+            entity_name=db_component.test_name,
+            request=request,
+        )
+
+    return db_component
+
+
+@router.delete("/components/{component_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_lab_test_component(
+    *,
+    request: Request,
+    component_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """Delete a test component."""
+
+    with handle_database_errors(request=request):
+        # Get the existing component
+        db_component = lab_test_component.get(db, component_id)
+        handle_not_found(db_component, "Lab test component", request)
+
+        # Verify patient access through the lab result
+        db_lab_result = lab_result.get(db, db_component.lab_result_id)
+        deps.verify_patient_access(
+            db_lab_result.patient_id,
+            db,
+            current_user,
+            required_permission="edit",
+        )
+        if db_component.import_batch_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"code": "formal_metric_void_required"},
+                headers={"X-Error-Code": "formal_metric_void_required"},
+            )
+
+        # Delete the component
+        handle_delete_with_logging(
+            db=db,
+            crud_obj=lab_test_component,
+            entity_id=component_id,
+            entity_type=EntityType.LAB_TEST_COMPONENT,
+            user_id=current_user.id,
+            entity_name=db_component.test_name,
+            request=request,
+        )
+
+
+# Search and Filter Endpoints
+@router.get("/components/search", response_model=List[LabTestComponentResponse])
+def search_lab_test_components(
+    *,
+    request: Request,
+    q: str = Query(
+        ..., description="Search query for test name, abbreviation, or test code"
+    ),
+    lab_result_id: Optional[int] = Query(None, description="Filter by lab result ID"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+    target_patient_id: int = Depends(deps.get_accessible_patient_id),
+):
+    """Search test components by name, abbreviation, or test code."""
+
+    # Validate and sanitize search input
+    validated_query = validate_search_input(q)
+
+    with handle_database_errors(request=request):
+        # If lab_result_id is specified, verify access to that specific lab result
+        if lab_result_id:
+            db_lab_result = lab_result.get(db, lab_result_id)
+            handle_not_found(db_lab_result, "Lab result", request)
+            deps.verify_patient_access(db_lab_result.patient_id, db, current_user)
+
+        # Search components with patient filter to avoid N+1 queries
+        components = lab_test_component.search_components(
+            db,
+            query_text=validated_query,
+            lab_result_id=lab_result_id,
+            patient_id=(
+                target_patient_id if not lab_result_id else None
+            ),  # Only filter by patient if not already filtered by specific lab result
+            category=category,
+            status=status,
+            skip=skip,
+            limit=limit,
+        )
+
+    return components
+
+
+@router.get("/components/abnormal", response_model=List[LabTestComponentResponse])
+def get_abnormal_lab_test_components(
+    *,
+    request: Request,
+    lab_result_id: Optional[int] = Query(None, description="Filter by lab result ID"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+    target_patient_id: int = Depends(deps.get_accessible_patient_id),
+):
+    """Get all abnormal test results (high, low, critical, abnormal)."""
+
+    with handle_database_errors(request=request):
+        # If lab_result_id is specified, verify access
+        if lab_result_id:
+            db_lab_result = lab_result.get(db, lab_result_id)
+            handle_not_found(db_lab_result, "Lab result", request)
+            deps.verify_patient_access(db_lab_result.patient_id, db, current_user)
+
+        # Get abnormal results with patient filter to avoid N+1 queries
+        components = lab_test_component.get_abnormal_results(
+            db,
+            lab_result_id=lab_result_id,
+            patient_id=(
+                target_patient_id if not lab_result_id else None
+            ),  # Only filter by patient if not already filtered by specific lab result
+            skip=skip,
+            limit=limit,
+        )
+
+    return components
+
+
+@router.get("/lab-result/{lab_result_id}/statistics", response_model=Dict[str, Any])
+def get_lab_test_component_statistics(
+    *,
+    request: Request,
+    lab_result_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """Get statistics for test components in a lab result."""
+
+    with handle_database_errors(request=request):
+        # Verify the lab result exists and user has access
+        db_lab_result = lab_result.get(db, lab_result_id)
+        handle_not_found(db_lab_result, "Lab result", request)
+
+        # Verify patient access
+        deps.verify_patient_access(db_lab_result.patient_id, db, current_user)
+
+        # Get statistics
+        stats = lab_test_component.get_statistics_by_lab_result(
+            db, lab_result_id=lab_result_id
+        )
+
+    return stats
+
+
+# Utility Endpoints
+@router.get("/suggestions/test-names", response_model=List[str])
+def get_test_name_suggestions(
+    *,
+    request: Request,
+    limit: int = Query(50, ge=1, le=100, description="Number of suggestions to return"),
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(deps.get_current_user_id),
+):
+    """Get unique test names for autocomplete suggestions."""
+
+    with handle_database_errors(request=request):
+        test_names = lab_test_component.get_unique_test_names(db, limit=limit)
+
+    return test_names
+
+
+@router.get("/suggestions/abbreviations", response_model=List[str])
+def get_abbreviation_suggestions(
+    *,
+    request: Request,
+    limit: int = Query(50, ge=1, le=100, description="Number of suggestions to return"),
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(deps.get_current_user_id),
+):
+    """Get unique abbreviations for autocomplete suggestions."""
+
+    with handle_database_errors(request=request):
+        abbreviations = lab_test_component.get_unique_abbreviations(db, limit=limit)
+
+    return abbreviations
+
+
+@router.get(
+    "/patient/{patient_id}/all",
+    response_model=List[LabTestComponentForStack],
+)
+def get_all_components_for_patient(
+    *,
+    request: Request,
+    patient_id: int,
+    limit: int = Query(2000, ge=1, le=5000, description="Maximum components to return"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """Get all test components for a patient with parent dates for stack view enrichment."""
+
+    results = []
+    with handle_database_errors(request=request):
+        deps.verify_patient_access(patient_id, db, current_user)
+
+        components = lab_test_component.get_all_for_patient(
+            db, patient_id=patient_id, limit=limit
+        )
+
+        log_data_access(
+            logger,
+            request,
+            current_user.id,
+            "read",
+            "LabTestComponent",
+            patient_id=patient_id,
+            count=len(components),
+        )
+
+        for comp in components:
+            parent = comp.lab_result
+            results.append(
+                LabTestComponentForStack(
+                    id=comp.id,
+                    lab_result_id=comp.lab_result_id,
+                    test_name=comp.test_name,
+                    abbreviation=comp.abbreviation,
+                    test_code=comp.test_code,
+                    value=comp.value,
+                    unit=comp.unit,
+                    ref_range_min=comp.ref_range_min,
+                    ref_range_max=comp.ref_range_max,
+                    ref_range_text=comp.ref_range_text,
+                    status=comp.status,
+                    category=comp.category,
+                    display_order=comp.display_order,
+                    canonical_test_name=comp.canonical_test_name,
+                    notes=comp.notes,
+                    result_type=comp.result_type,
+                    qualitative_value=comp.qualitative_value,
+                    textual_value=comp.textual_value,
+                    source_document_id=comp.source_document_id,
+                    source_page=comp.source_page,
+                    source_locator=comp.source_locator,
+                    import_batch_id=comp.import_batch_id,
+                    created_at=comp.created_at,
+                    updated_at=comp.updated_at,
+                    completed_date=parent.completed_date if parent else None,
+                    ordered_date=parent.ordered_date if parent else None,
+                    facility=parent.facility if parent else None,
+                )
+            )
+
+    return results
+
+
+# Component Catalog Endpoint
+@router.get(
+    "/patient/{patient_id}/component-catalog", response_model=ComponentCatalogResponse
+)
+def get_component_catalog(
+    *,
+    request: Request,
+    patient_id: int,
+    search: Optional[str] = Query(
+        None, description="Search by test name or abbreviation"
+    ),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    status: Optional[str] = Query(None, description="Filter by latest status"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(200, ge=1, le=500, description="Number of records to return"),
+    owner_access: Optional[str] = Query(None),
+    owner_access_reason: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """
+    Get an aggregated catalog of unique test components across all lab results for a patient.
+    Each entry represents a unique test name with its latest reading, trend, and count.
+    """
+
+    with handle_database_errors(request=request):
+        deps.verify_patient_read_access(
+            patient_id,
+            db,
+            current_user,
+            request=request,
+            requested_owner_access=owner_access,
+            owner_access_reason=owner_access_reason,
+            resource="lab_component_catalog",
+        )
+
+        # Sanitize search input if provided
+        validated_search = None
+        if search:
+            validated_search = validate_search_input(search)
+
+        result = lab_test_component.get_component_catalog(
+            db,
+            patient_id=patient_id,
+            search=validated_search,
+            category=category,
+            status=status,
+            skip=skip,
+            limit=limit,
+        )
+
+        log_data_access(
+            logger,
+            request,
+            current_user.id,
+            "read",
+            "ComponentCatalog",
+            patient_id=patient_id,
+            count=result["total"],
+        )
+
+        return result
+
+
+# Component Defaults Endpoint
+@router.get(
+    "/patient/{patient_id}/component-defaults",
+    response_model=TestComponentDefaults,
+)
+def get_component_defaults(
+    *,
+    request: Request,
+    patient_id: int,
+    test_name: Optional[str] = Query(
+        None, description="Test name to look up defaults for"
+    ),
+    test_code: Optional[str] = Query(
+        None, description="Test code to look up defaults for"
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """
+    Return unit and reference ranges from the most recent prior entry of a test
+    for a patient. Used to auto-populate fields when adding a new test to a panel.
+    Returns 404 if no prior entry exists.
+    """
+    from fastapi import HTTPException
+
+    if not test_name and not test_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one of test_name or test_code is required",
+        )
+
+    with handle_database_errors(request=request):
+        deps.verify_patient_access(patient_id, db, current_user)
+
+        component = None
+
+        if test_code:
+            from sqlalchemy import func as sqlfunc
+            from app.models.models import LabTestComponent as LTCModel
+            from app.models.labs import LabResult as LRModel
+
+            component = (
+                db.query(LTCModel)
+                .join(LTCModel.lab_result)
+                .filter(
+                    LRModel.patient_id == patient_id,
+                    sqlfunc.upper(sqlfunc.trim(LTCModel.test_code))
+                    == test_code.strip().upper(),
+                )
+                .order_by(
+                    sqlfunc.coalesce(
+                        LRModel.completed_date,
+                        sqlfunc.date(LTCModel.created_at),
+                    ).desc()
+                )
+                .first()
+            )
+
+        if component is None and test_name:
+            results = lab_test_component.get_by_patient_and_test_name(
+                db, patient_id=patient_id, test_name=test_name.strip(), limit=1
+            )
+            if results:
+                component = results[0]
+
+        if component is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No prior entry found for this test",
+            )
+
+        log_data_access(
+            logger,
+            request,
+            current_user.id,
+            "read",
+            "LabTestComponent",
+            patient_id=patient_id,
+            record_id=component.id,
+        )
+
+        return TestComponentDefaults(
+            unit=component.unit,
+            ref_range_min=component.ref_range_min,
+            ref_range_max=component.ref_range_max,
+            ref_range_text=component.ref_range_text,
+            category=component.category,
+            abbreviation=component.abbreviation,
+        )
+
+
+# Helper function for trend statistics
+def calculate_trend_statistics(
+    components: List[Any],
+) -> LabTestComponentTrendStatistics:
+    """Calculate statistics for trend data. Handles both quantitative and qualitative results."""
+    if not components:
+        return LabTestComponentTrendStatistics(
+            count=0, normal_count=0, abnormal_count=0, trend_direction="stable"
+        )
+
+    count = len(components)
+
+    # Determine result type from components - check if mixed
+    result_types = {
+        getattr(c, "result_type", None) or "quantitative" for c in components
+    }
+    if len(result_types) > 1:
+        # Mixed result types: default to quantitative stats, filtering to quantitative only
+        quant_components = [
+            c
+            for c in components
+            if (getattr(c, "result_type", None) or "quantitative") == "quantitative"
+        ]
+        if quant_components:
+            return _calculate_quantitative_statistics(quant_components, count)
+        return _calculate_qualitative_statistics(components, count)
+
+    result_type = result_types.pop()
+
+    if result_type in ("qualitative", "textual"):
+        return _calculate_qualitative_statistics(components, count)
+
+    return _calculate_quantitative_statistics(components, count)
+
+
+def _calculate_qualitative_statistics(
+    components: List[Any], count: int
+) -> LabTestComponentTrendStatistics:
+    """Calculate statistics for qualitative trend data."""
+    # Count occurrences of each qualitative value
+    qualitative_summary: dict = {}
+    for c in components:
+        qv = getattr(c, "qualitative_value", None) or "unknown"
+        qualitative_summary[qv] = qualitative_summary.get(qv, 0) + 1
+
+    normal_count = sum(1 for c in components if c.status == "normal")
+    abnormal_count = count - normal_count
+
+    # Trend direction for qualitative: based on recent positive/negative pattern
+    trend = "stable"
+    if count >= 4:
+        mid = count // 2
+        # Recent half (first items are most recent)
+        recent_abnormal = sum(1 for c in components[:mid] if c.status != "normal")
+        older_abnormal = sum(1 for c in components[mid:] if c.status != "normal")
+        recent_rate = recent_abnormal / mid
+        older_rate = older_abnormal / (count - mid)
+
+        if recent_rate > older_rate + 0.15:
+            trend = "worsening"
+        elif recent_rate < older_rate - 0.15:
+            trend = "improving"
+
+    return LabTestComponentTrendStatistics(
+        count=count,
+        latest=None,
+        average=None,
+        min=None,
+        max=None,
+        std_dev=None,
+        trend_direction=trend,
+        time_in_range_percent=(
+            round((normal_count / count * 100), 1) if count > 0 else None
+        ),
+        normal_count=normal_count,
+        abnormal_count=abnormal_count,
+        result_type="qualitative",
+        qualitative_summary=qualitative_summary,
+    )
+
+
+def _calculate_quantitative_statistics(
+    components: List[Any], count: int
+) -> LabTestComponentTrendStatistics:
+    """Calculate statistics for quantitative trend data."""
+    values = [c.value for c in components if c.value is not None]
+
+    if not values:
+        return LabTestComponentTrendStatistics(
+            count=count,
+            normal_count=0,
+            abnormal_count=count,
+            trend_direction="stable",
+            result_type="quantitative",
+        )
+
+    # Basic stats (values is guaranteed non-empty after the early return above)
+    latest = values[0]
+    average = sum(values) / len(values)
+    minimum = min(values)
+    maximum = max(values)
+
+    # Trend direction using linear regression slope
+    from app.utils.trend_statistics import compute_trend_direction
+
+    trend = compute_trend_direction(list(reversed(values)))
+
+    # Time in range
+    normal_count = sum(1 for c in components if c.status == "normal")
+    time_in_range_percent = (normal_count / count * 100) if count > 0 else None
+
+    # Standard deviation (population variance)
+    if len(values) > 1 and average is not None:
+        variance = sum((x - average) ** 2 for x in values) / len(values)
+        std_dev = variance**0.5
+    else:
+        std_dev = None
+
+    return LabTestComponentTrendStatistics(
+        count=count,
+        latest=round(latest, 2) if latest is not None else None,
+        average=round(average, 2) if average is not None else None,
+        min=round(minimum, 2) if minimum is not None else None,
+        max=round(maximum, 2) if maximum is not None else None,
+        std_dev=round(std_dev, 2) if std_dev is not None else None,
+        trend_direction=trend,
+        time_in_range_percent=(
+            round(time_in_range_percent, 1)
+            if time_in_range_percent is not None
+            else None
+        ),
+        normal_count=normal_count,
+        abnormal_count=count - normal_count,
+        result_type="quantitative",
+    )
+
+
+# Trend Tracking Endpoint
+@router.get(
+    "/patient/{patient_id}/trends", response_model=LabTestComponentTrendResponse
+)
+def get_lab_test_component_trends(
+    *,
+    request: Request,
+    patient_id: int,
+    test_name: str = Query(..., description="Test component name"),
+    date_from: Optional[date_type] = Query(None, description="Start date (YYYY-MM-DD)"),
+    date_to: Optional[date_type] = Query(None, description="End date (YYYY-MM-DD)"),
+    limit: int = Query(100, ge=1, le=500, description="Max results (max 500)"),
+    unit: Optional[str] = Query(
+        None,
+        description=(
+            "Filter by unit (case-insensitive). Omit for legacy merged-across-units behavior. "
+            "Empty string matches rows with no unit recorded."
+        ),
+    ),
+    owner_access: Optional[str] = Query(None),
+    owner_access_reason: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """
+    Get trend data for a specific test component across all lab results for a patient.
+    Returns historical values with statistics.
+
+    Decision: Uses exact test name matching (no fuzzy matching).
+    Decision: Uses lab_result.completed_date if available, otherwise created_at.
+    Decision: Optional `unit` filter keeps each trend scoped to a single unit so values
+    recorded in different units (e.g. mg/L vs mmol/L) are not merged into the same series.
+    """
+
+    with handle_database_errors(request=request):
+        deps.verify_patient_read_access(
+            patient_id,
+            db,
+            current_user,
+            request=request,
+            requested_owner_access=owner_access,
+            owner_access_reason=owner_access_reason,
+            resource="lab_component_trend",
+        )
+
+        # Validate and sanitize test_name
+        validated_test_name = validate_search_input(test_name)
+
+        # Get test components with database-level filtering for better performance
+        # Date and unit filtering and ordering are pushed into the database query
+        components = lab_test_component.get_by_patient_and_test_name(
+            db,
+            patient_id=patient_id,
+            test_name=validated_test_name,
+            date_from=date_from,
+            date_to=date_to,
+            limit=limit,
+            unit=unit,
+        )
+
+        # Detect unit mismatches (only for quantitative tests)
+        if components:
+            primary_unit = components[0].unit
+            units_found = set(c.unit for c in components if c.unit)
+            if len(units_found) > 1:
+                log_validation_error(
+                    logger,
+                    request,
+                    f"Unit mismatch detected in trend data for {test_name}",
+                    user_id=current_user.id,
+                    patient_id=patient_id,
+                    test_name=test_name,
+                    primary_unit=primary_unit,
+                    all_units=list(units_found),
+                )
+
+        # Log the request
+        log_data_access(
+            logger,
+            request,
+            current_user.id,
+            "read",
+            "LabTestComponentTrends",
+            patient_id=patient_id,
+            count=len(components),
+            test_name=test_name,
+            date_from=str(date_from) if date_from else None,
+            date_to=str(date_to) if date_to else None,
+        )
+
+        # Return empty response if no components found
+        if not components:
+            return LabTestComponentTrendResponse(
+                test_name=test_name,
+                unit="",
+                category=None,
+                data_points=[],
+                statistics=LabTestComponentTrendStatistics(
+                    count=0, normal_count=0, abnormal_count=0, trend_direction="stable"
+                ),
+                is_aggregated=False,
+                aggregation_period=None,
+            )
+
+        # Calculate statistics
+        statistics = calculate_trend_statistics(components)
+
+        # Build data points with proper date handling
+        data_points = []
+        for component in components:
+            # Use completed_date if available
+            recorded_date = (
+                component.lab_result.completed_date
+                if component.lab_result.completed_date
+                else None
+            )
+
+            data_point = LabTestComponentTrendDataPoint(
+                id=component.id,
+                value=component.value,
+                unit=component.unit,
+                status=component.status,
+                ref_range_min=component.ref_range_min,
+                ref_range_max=component.ref_range_max,
+                ref_range_text=component.ref_range_text,
+                recorded_date=recorded_date,
+                created_at=component.created_at,
+                result_type=component.result_type or "quantitative",
+                qualitative_value=component.qualitative_value,
+                textual_value=component.textual_value,
+                source_document_id=component.source_document_id,
+                source_page=component.source_page,
+                source_locator=component.source_locator,
+                lab_result=LabResultBasicForTrend(
+                    id=component.lab_result.id,
+                    test_name=component.lab_result.test_name,
+                    completed_date=component.lab_result.completed_date,
+                ),
+            )
+            data_points.append(data_point)
+
+        # Get unit, category, and result_type from most recent component
+        unit = components[0].unit
+        category = components[0].category
+        result_type = components[0].result_type or "quantitative"
+
+        # Build response
+        response = LabTestComponentTrendResponse(
+            test_name=test_name,
+            unit=unit,
+            category=category,
+            data_points=data_points,
+            statistics=statistics,
+            is_aggregated=False,
+            aggregation_period=None,
+            result_type=result_type,
+        )
+
+        return response

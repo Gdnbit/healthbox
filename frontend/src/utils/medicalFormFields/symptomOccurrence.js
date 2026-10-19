@@ -1,0 +1,179 @@
+/**
+ * Symptom Occurrence form field configuration
+ * For logging individual episodes
+ */
+
+import { getTodayEndOfDay } from './shared';
+
+export const symptomOccurrenceFormFields = [
+  {
+    name: 'occurrence_date',
+    type: 'date',
+    labelKey: 'medical:symptoms.occurrence.occurrenceDate.label',
+    placeholderKey: 'medical:symptoms.occurrence.occurrenceDate.placeholder',
+    required: true,
+    descriptionKey: 'medical:symptoms.occurrence.occurrenceDate.description',
+    gridColumn: 6,
+    maxDate: getTodayEndOfDay,
+  },
+  {
+    name: 'occurrence_time',
+    type: 'time',
+    labelKey: 'medical:symptoms.occurrence.timeOfDay.label',
+    placeholderKey: 'medical:symptoms.occurrence.timeOfDay.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.timeOfDay.description',
+    gridColumn: 6,
+  },
+  {
+    name: 'severity',
+    type: 'select',
+    labelKey: 'shared:fields.severity',
+    placeholderKey: 'shared:labels.selectSeverityLevel',
+    required: true,
+    descriptionKey: 'medical:symptoms.occurrence.severity.description',
+    gridColumn: 6,
+    options: [
+      {
+        value: 'mild',
+        labelKey: 'common:severity.mild',
+      },
+      {
+        value: 'moderate',
+        labelKey: 'common:severity.moderate',
+      },
+      {
+        value: 'severe',
+        labelKey: 'common:severity.severe',
+      },
+      {
+        value: 'critical',
+        labelKey: 'common:severity.critical',
+      },
+    ],
+  },
+  {
+    name: 'pain_scale',
+    type: 'number',
+    labelKey: 'medical:symptoms.occurrence.painScale.label',
+    placeholderKey: 'medical:symptoms.occurrence.painScale.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.painScale.description',
+    gridColumn: 6,
+    min: 0,
+    max: 10,
+    step: 1,
+  },
+  {
+    name: 'duration',
+    type: 'text',
+    labelKey: 'medical:symptoms.occurrence.duration.label',
+    placeholderKey: 'medical:symptoms.occurrence.duration.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.duration.description',
+    gridColumn: 6,
+    maxLength: 100,
+  },
+  {
+    name: 'location',
+    type: 'text',
+    labelKey: 'medical:symptoms.occurrence.location.label',
+    placeholderKey: 'medical:symptoms.occurrence.location.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.location.description',
+    gridColumn: 6,
+    maxLength: 200,
+  },
+  {
+    name: 'impact_level',
+    type: 'select',
+    labelKey: 'medical:symptoms.occurrence.impactLevel.label',
+    placeholderKey: 'medical:symptoms.occurrence.impactLevel.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.impactLevel.description',
+    gridColumn: 12,
+    clearable: true,
+    options: [
+      {
+        value: 'no_impact',
+        labelKey: 'medical:symptoms.occurrence.impactLevelOptions.noImpact',
+      },
+      {
+        value: 'mild',
+        labelKey: 'medical:symptoms.occurrence.impactLevelOptions.mild',
+      },
+      {
+        value: 'moderate',
+        labelKey: 'medical:symptoms.occurrence.impactLevelOptions.moderate',
+      },
+      {
+        value: 'severe',
+        labelKey: 'medical:symptoms.occurrence.impactLevelOptions.severe',
+      },
+      {
+        value: 'debilitating',
+        labelKey: 'medical:symptoms.occurrence.impactLevelOptions.debilitating',
+      },
+    ],
+  },
+  {
+    name: 'triggers',
+    type: 'text',
+    labelKey: 'medical:symptoms.occurrence.triggers.label',
+    placeholderKey: 'medical:symptoms.occurrence.triggers.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.triggers.description',
+    gridColumn: 12,
+  },
+  {
+    name: 'relief_methods',
+    type: 'text',
+    labelKey: 'medical:symptoms.occurrence.reliefMethods.label',
+    placeholderKey: 'medical:symptoms.occurrence.reliefMethods.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.reliefMethods.description',
+    gridColumn: 12,
+  },
+  {
+    name: 'associated_symptoms',
+    type: 'text',
+    labelKey: 'medical:symptoms.occurrence.associatedSymptoms.label',
+    placeholderKey:
+      'medical:symptoms.occurrence.associatedSymptoms.placeholder',
+    descriptionKey:
+      'medical:symptoms.occurrence.associatedSymptoms.description',
+    gridColumn: 12,
+  },
+  {
+    name: 'resolved_date',
+    type: 'date',
+    labelKey: 'medical:symptoms.occurrence.resolvedDate.label',
+    placeholderKey: 'medical:symptoms.occurrence.resolvedDate.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.resolvedDate.description',
+    gridColumn: 6,
+    maxDate: getTodayEndOfDay,
+  },
+  {
+    name: 'resolved_time',
+    type: 'time',
+    labelKey: 'medical:symptoms.occurrence.resolvedTime.label',
+    placeholderKey: 'medical:symptoms.occurrence.resolvedTime.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.resolvedTime.description',
+    gridColumn: 6,
+  },
+  {
+    name: 'resolution_notes',
+    type: 'textarea',
+    labelKey: 'medical:symptoms.occurrence.resolutionNotes.label',
+    placeholderKey: 'medical:symptoms.occurrence.resolutionNotes.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.resolutionNotes.description',
+    gridColumn: 12,
+    minRows: 2,
+    maxRows: 4,
+    maxLength: 2000,
+  },
+  {
+    name: 'notes',
+    type: 'textarea',
+    labelKey: 'shared:fields.additionalNotes',
+    placeholderKey: 'medical:symptoms.occurrence.additionalNotes.placeholder',
+    descriptionKey: 'medical:symptoms.occurrence.additionalNotes.description',
+    gridColumn: 12,
+    minRows: 3,
+    maxRows: 6,
+    maxLength: 2000,
+  },
+];

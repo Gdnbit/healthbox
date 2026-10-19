@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "synthetic_only": true,
+  "cases": [
+    {
+      "id": "fictional-community-lab",
+      "title": "Fictional Community Laboratory",
+      "lines": [
+        "Fictional Community Laboratory",
+        "Annual Laboratory Report",
+        "Report date 2026-01-15",
+        "Glucose 5.2 mmol/L 3.9-6.1 Normal",
+        "LDL cholesterol 3.8 mmol/L 0.0-3.4 High",
+        "Uric acid 428 umol/L 208-428 Normal",
+        "Creatinine 81 umol/L 57-111 Normal"
+      ]
+    },
+    {
+      "id": "fictional-wellness-center",
+      "title": "Fictional Wellness Center",
+      "lines": [
+        "Fictional Wellness Center",
+        "Health Screening Laboratory",
+        "Collected 2025/11/02",
+        "ALT 46 U/L 9-50 Normal",
+        "AST 32 U/L 15-40 Normal",
+        "WBC 6.4 10^9/L 3.5-9.5 Normal",
+        "Platelets 212 10^9/L 125-350 Normal",
+        "Hemoglobin 151 g/L 130-175 Normal"
+      ]
+    }
+  ]
+}

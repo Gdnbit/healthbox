@@ -1,0 +1,911 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import { notifications } from '@mantine/notifications';
+import {
+  Button,
+  Stack,
+  Text,
+  Container,
+  Paper,
+  Badge,
+  Group,
+} from '@mantine/core';
+import {
+  IconAlertTriangle,
+  IconPlus,
+  IconPill,
+  IconFilter,
+} from '@tabler/icons-react';
+import { useMedicalData } from '../../hooks/useMedicalData';
+import { useDataManagement } from '../../hooks/useDataManagement';
+import { useEntityFileCounts } from '../../hooks/useEntityFileCounts';
+import { useViewModalNavigation } from '../../hooks/useViewModalNavigation';
+import EmptyState from '../../components/shared/EmptyState';
+import MedicalPageAlerts from '../../components/shared/MedicalPageAlerts';
+import { apiService } from '../../services/api';
+import { useDateFormat } from '../../hooks/useDateFormat';
+import { getMedicalPageConfig } from '../../utils/medicalPageConfigs';
+import { getWontFireWarning } from '../../utils/medicationReminders';
+import { usePatientWithStaticData } from '../../hooks/useGlobalData';
+import { getEntityFormatters } from '../../utils/tableFormatters';
+import { PageHeader } from '../../components';
+import { ResponsiveTable } from '../../components/adapters';
+import MedicalPageFilters from '../../components/shared/MedicalPageFilters';
+import MedicalPageActions from '../../components/shared/MedicalPageActions';
+import MedicalPageLoading from '../../components/shared/MedicalPageLoading';
+import AnimatedCardGrid from '../../components/shared/AnimatedCardGrid';
+import PaginationControls from '../../components/shared/PaginationControls';
+import {
+  MedicationCard,
+  MedicationViewModal,
+  MedicationFormWrapper,
+} from '../../components/medical/medications';
+import { withResponsive } from '../../hoc/withResponsive';
+import { useResponsive } from '../../hooks/useResponsive';
+import { usePersistedViewMode } from '../../hooks/usePersistedViewMode';
+import { usePagination } from '../../hooks/usePagination';
+import { MEDICATION_TYPES } from '../../constants/medicationTypes';
+import { useFormSubmissionWithUploads } from '../../hooks/useFormSubmissionWithUploads';
+import logger from '../../services/logger';
+import { usePatientPermissions } from '../../hooks/usePatientPermissions';
+
+const Medication = () => {
+  const { t } = useTranslation(['common', 'medical', 'shared']);
+  const { isViewOnly, viewOnlyTooltip } = usePatientPermissions();
+  const { formatDate } = useDateFormat();
+  const navigate = useNavigate();
+  const responsive = useResponsive();
+  const [viewMode, setViewMode] = usePersistedViewMode('medications');
+  const {
+    page,
+    setPage,
+    pageSize,
+    handlePageSizeChange,
+    paginateData,
+    totalPages,
+    resetPage,
+    clampPage,
+    PAGE_SIZE_OPTIONS,
+  } = usePagination();
+
+  // Form state - moved up to be available for refs logic
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingMedication, setEditingMedication] = useState(null);
+
+  // Get practitioners and pharmacies data
+  const { practitioners: practitionersObject, pharmacies: pharmaciesObject } =
+    usePatientWithStaticData();
+
+  // Memoize practitioners and pharmacies to prevent unnecessary re-renders
+  // Only recalculate when the actual data changes (not reference)
+  const practitioners = useMemo(() => {
+    const data = practitionersObject?.practitioners || [];
+    logger.debug('Practitioners data updated', {
+      component: 'Medication',
+      practitionersCount: data.length,
+    });
+    return data;
+  }, [practitionersObject?.practitioners]);
+
+  const pharmacies = useMemo(() => {
+    const data = pharmaciesObject?.pharmacies || [];
+    logger.debug('Pharmacies data updated', {
+      component: 'Medication',
+      pharmaciesCount: data.length,
+    });
+    return data;
+  }, [pharmaciesObject?.pharmacies]);
+
+  // Modern data management with useMedicalData
+  const {
+    items: medications,
+    currentPatient,
+    loading,
+    error,
+    successMessage,
+    createItem,
+    updateItem,
+    deleteItem,
+    refreshData,
+    clearError,
+    setError,
+  } = useMedicalData({
+    entityName: 'medication',
+    apiMethodsConfig: {
+      getAll: signal => apiService.getMedications(signal),
+      getByPatient: (patientId, signal) =>
+        apiService.getPatientMedications(patientId, signal),
+      create: (data, signal) => apiService.createMedication(data, signal),
+      update: (id, data, signal) =>
+        apiService.updateMedication(id, data, signal),
+      delete: (id, signal) => apiService.deleteMedication(id, signal),
+    },
+    requiresPatient: true,
+  });
+
+  // Fetch conditions for the condition-linking dropdown in the form and view modal.
+  // Depends on currentPatient so it refreshes when the active patient changes.
+  // Fetches all conditions (including inactive) so they can be linked to medications.
+  const [conditions, setConditions] = useState([]);
+  useEffect(() => {
+    if (!currentPatient?.id) return;
+    apiService
+      .getConditionsDropdown(false)
+      .then(data => {
+        setConditions(data || []);
+      })
+      .catch(err => {
+        logger.warn('Failed to fetch conditions dropdown:', err);
+      });
+  }, [currentPatient?.id]);
+
+  // Get standardized configuration
+  const config = getMedicalPageConfig('medications');
+
+  // Use standardized data management
+  const dataManagement = useDataManagement(medications, config);
+
+  // File count management for cards
+  const { fileCounts, fileCountsLoading, cleanupFileCount, refreshFileCount } =
+    useEntityFileCounts('medication', medications);
+
+  // View modal navigation with URL deep linking
+  const {
+    isOpen: showViewModal,
+    viewingItem: viewingMedication,
+    openModal: handleViewMedication,
+    closeModal: handleCloseViewModal,
+  } = useViewModalNavigation({
+    items: medications,
+    loading,
+  });
+
+  // Display medication purpose (indication only, since conditions are now linked via many-to-many)
+  const getMedicationPurpose = (medication, _asText = false) => {
+    const indication = medication.indication?.trim();
+    return indication || '-';
+  };
+
+  // Get standardized formatters for medications with linking support
+  const formatters = {
+    ...getEntityFormatters(
+      'medications',
+      practitioners,
+      navigate,
+      null,
+      formatDate
+    ),
+    // Override indication formatter to use smart display (text version for tables)
+    indication: (value, medication) => getMedicationPurpose(medication, true),
+  };
+
+  // Document management state
+  const [documentManagerMethods, setDocumentManagerMethods] = useState(null);
+
+  // Track if we need to refresh after form submission
+  const needsRefreshAfterSubmissionRef = useRef(false);
+
+  // Form data state
+  const [formData, setFormData] = useState({
+    medication_name: '',
+    alternative_name: '',
+    medication_type: 'prescription',
+    dosage: '',
+    frequency: '',
+    route: '',
+    indication: '',
+    effective_period_start: '',
+    effective_period_end: '',
+    status: 'active',
+    practitioner_id: null,
+    pharmacy_id: null,
+    notes: '',
+    side_effects: '',
+    condition_ids: [],
+    reminder_enabled: false,
+    reminder_times: [],
+    reminder_days: null,
+    reminder_message: '',
+  });
+
+  const {
+    startSubmission,
+    completeFormSubmission,
+    startFileUpload,
+    completeFileUpload,
+    handleSubmissionFailure,
+    resetSubmission,
+    isBlocking,
+    canSubmit,
+    statusMessage,
+  } = useFormSubmissionWithUploads({
+    entityType: 'medication',
+    onSuccess: () => {
+      resetForm();
+
+      if (needsRefreshAfterSubmissionRef.current) {
+        needsRefreshAfterSubmissionRef.current = false;
+        refreshData();
+      }
+    },
+    onError: error => {
+      logger.error('medications_form_error', {
+        message: 'Form submission error in medications',
+        error,
+        component: 'Medication',
+      });
+    },
+    component: 'Medication',
+  });
+
+  const handleInputChange = useCallback(e => {
+    const { name, value } = e.target;
+    let processedValue = value;
+
+    // Handle ID fields - convert empty string to null, otherwise keep as string for Mantine
+    if (name === 'practitioner_id' || name === 'pharmacy_id') {
+      if (value === '') {
+        processedValue = null;
+      } else {
+        processedValue = value; // Keep as string for Mantine compatibility
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: processedValue,
+    }));
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      medication_name: '',
+      alternative_name: '',
+      medication_type: 'prescription',
+      dosage: '',
+      frequency: '',
+      route: '',
+      indication: '',
+      effective_period_start: '',
+      effective_period_end: '',
+      status: 'active',
+      practitioner_id: null,
+      pharmacy_id: null,
+      notes: '',
+      side_effects: '',
+      tags: [],
+      condition_ids: [],
+      reminder_enabled: false,
+      reminder_times: [],
+      reminder_days: null,
+      reminder_message: '',
+    });
+    setEditingMedication(null);
+    setShowAddForm(false);
+  }, []);
+
+  const handleAddMedication = () => {
+    resetSubmission();
+    setDocumentManagerMethods(null);
+    resetForm();
+    setShowAddForm(true);
+  };
+
+  const handleCloseForm = useCallback(() => {
+    if (isBlocking) return;
+    setShowAddForm(false);
+    setEditingMedication(null);
+  }, [isBlocking]);
+
+  const handleEditMedication = useCallback(
+    medication => {
+      resetSubmission();
+      setFormData({
+        medication_name: medication.medication_name || '',
+        alternative_name: medication.alternative_name || '',
+        medication_type: medication.medication_type || 'prescription',
+        dosage: medication.dosage || '',
+        frequency: medication.frequency || '',
+        route: medication.route || '',
+        indication: medication.indication || '',
+        effective_period_start: medication.effective_period_start || '',
+        effective_period_end: medication.effective_period_end || '',
+        status: medication.status || 'active',
+        practitioner_id: medication.practitioner_id
+          ? String(medication.practitioner_id)
+          : null,
+        pharmacy_id: medication.pharmacy_id
+          ? String(medication.pharmacy_id)
+          : null,
+        notes: medication.notes || '',
+        side_effects: medication.side_effects || '',
+        tags: medication.tags || [],
+        reminder_enabled: Boolean(medication.reminder_enabled),
+        reminder_times: Array.isArray(medication.reminder_times)
+          ? medication.reminder_times
+          : [],
+        reminder_days: Array.isArray(medication.reminder_days)
+          ? medication.reminder_days
+          : null,
+        reminder_message: medication.reminder_message || '',
+      });
+      setEditingMedication(medication);
+      setShowAddForm(true);
+    },
+    [resetSubmission]
+  );
+
+  const handleDeleteMedication = async medicationId => {
+    const success = await deleteItem(medicationId);
+    if (success) {
+      cleanupFileCount(medicationId);
+      await refreshData();
+    }
+  };
+
+  const handleSubmit = useCallback(
+    async e => {
+      e.preventDefault();
+
+      if (!currentPatient?.id) {
+        setError('Patient information not available');
+        return;
+      }
+
+      const medicationName = formData.medication_name?.trim() || '';
+      if (!medicationName) {
+        setError('Medication name is required');
+        return;
+      }
+
+      if (medicationName.length < 2) {
+        setError('Medication name must be at least 2 characters long');
+        return;
+      }
+
+      startSubmission();
+
+      if (!canSubmit) {
+        return;
+      }
+
+      const medicationData = {
+        medication_name: medicationName,
+        alternative_name: formData.alternative_name?.trim() || null,
+        medication_type: formData.medication_type || 'prescription',
+        dosage: formData.dosage?.trim() || null,
+        frequency: formData.frequency?.trim() || null,
+        route: formData.route?.trim() || null,
+        indication: formData.indication?.trim() || null,
+        status: formData.status || 'active',
+        patient_id: currentPatient.id,
+        practitioner_id: formData.practitioner_id
+          ? parseInt(formData.practitioner_id)
+          : null,
+        pharmacy_id: formData.pharmacy_id
+          ? parseInt(formData.pharmacy_id)
+          : null,
+        notes: formData.notes?.trim() || null,
+        side_effects: formData.side_effects?.trim() || null,
+        tags: formData.tags || [],
+        reminder_enabled: Boolean(formData.reminder_enabled),
+        reminder_times: Array.isArray(formData.reminder_times)
+          ? formData.reminder_times.filter(Boolean)
+          : [],
+        reminder_days:
+          Array.isArray(formData.reminder_days) && formData.reminder_days.length
+            ? formData.reminder_days
+            : null,
+        reminder_message: formData.reminder_message?.trim() || null,
+      };
+
+      if (formData.effective_period_start) {
+        medicationData.effective_period_start = formData.effective_period_start;
+      }
+      if (formData.effective_period_end) {
+        medicationData.effective_period_end = formData.effective_period_end;
+      }
+
+      try {
+        let success;
+        let resultId;
+
+        if (editingMedication) {
+          success = await updateItem(editingMedication.id, medicationData);
+          resultId = editingMedication.id;
+        } else {
+          const result = await createItem(medicationData);
+          success = !!result;
+          resultId = result?.id;
+          if (success) {
+            needsRefreshAfterSubmissionRef.current = true;
+          }
+        }
+
+        completeFormSubmission(success, resultId);
+
+        if (success && resultId) {
+          if (!editingMedication && formData.condition_ids.length > 0) {
+            const linkResults = await Promise.allSettled(
+              formData.condition_ids.map(conditionId => {
+                const id = parseInt(conditionId, 10);
+                return apiService.createConditionMedication(id, {
+                  medication_id: resultId,
+                });
+              })
+            );
+            const failures = linkResults.filter(r => r.status === 'rejected');
+            if (failures.length > 0) {
+              logger.warn('medications_condition_link_partial_failure', {
+                message: `Failed to link ${failures.length} of ${formData.condition_ids.length} conditions`,
+                medicationId: resultId,
+                failedCount: failures.length,
+                component: 'Medication',
+              });
+              notifications.show({
+                title: t(
+                  'medical:medications.form.conditionLinkPartialFailure',
+                  { count: failures.length }
+                ),
+                message: t('medical:medications.form.conditionLinkFailed'),
+                color: 'yellow',
+              });
+            }
+          }
+
+          // Reminders that can never fire are easy to save by accident
+          // (lapsed effective period, non-active status). Surface it at the
+          // moment of saving, not just inside the Reminders tab.
+          const wontFireWarning = getWontFireWarning(medicationData, t);
+          if (wontFireWarning) {
+            notifications.show({
+              title: wontFireWarning.title,
+              message: wontFireWarning.message,
+              color: 'yellow',
+              autoClose: 10000,
+            });
+          }
+
+          const hasPendingFiles = documentManagerMethods?.hasPendingFiles?.();
+
+          if (hasPendingFiles) {
+            logger.info('medications_starting_file_upload', {
+              message: 'Starting file upload process',
+              medicationId: resultId,
+              pendingFilesCount: documentManagerMethods.getPendingFilesCount(),
+              component: 'Medication',
+            });
+
+            const pendingCount = documentManagerMethods.getPendingFilesCount();
+
+            startFileUpload();
+
+            try {
+              await documentManagerMethods.uploadPendingFiles(resultId);
+              completeFileUpload(true, pendingCount, 0);
+            } catch (uploadError) {
+              logger.error('medications_file_upload_error', {
+                message: 'File upload failed',
+                medicationId: resultId,
+                error: uploadError.message,
+                component: 'Medication',
+              });
+              completeFileUpload(false, 0, pendingCount);
+            }
+          } else {
+            completeFileUpload(true, 0, 0);
+          }
+        } else {
+          handleSubmissionFailure(new Error('Form submission failed'), 'form');
+        }
+      } catch (error) {
+        logger.error('medications_submission_error', {
+          message: 'Form submission failed',
+          error: error.message,
+          component: 'Medication',
+        });
+        handleSubmissionFailure(error, 'form');
+      }
+    },
+    [
+      formData,
+      currentPatient,
+      editingMedication,
+      setError,
+      updateItem,
+      createItem,
+      startSubmission,
+      canSubmit,
+      completeFormSubmission,
+      startFileUpload,
+      completeFileUpload,
+      handleSubmissionFailure,
+      documentManagerMethods,
+      needsRefreshAfterSubmissionRef,
+      t,
+    ]
+  );
+
+  // Get processed data from data management and add practitioner/pharmacy names for sorting
+  const processedMedications = useMemo(() => {
+    return dataManagement.data.map(medication => ({
+      ...medication,
+      // Add practitioner name for sorting
+      practitioner_name: medication.practitioner_id
+        ? practitioners.find(p => p.id === medication.practitioner_id)?.name ||
+          ''
+        : '',
+      // Add pharmacy name for sorting
+      pharmacy_name: medication.pharmacy_id
+        ? pharmacies.find(p => p.id === medication.pharmacy_id)?.name || ''
+        : '',
+    }));
+  }, [dataManagement.data, practitioners, pharmacies]);
+
+  const paginatedMedications = paginateData(processedMedications);
+
+  useEffect(() => {
+    resetPage();
+  }, [dataManagement.hasActiveFilters, resetPage]);
+  useEffect(() => {
+    clampPage(processedMedications.length);
+  }, [processedMedications.length, clampPage]);
+
+  if (loading) {
+    return (
+      <MedicalPageLoading
+        message={t('medications.loading', 'Loading medications...')}
+      />
+    );
+  }
+
+  return (
+    <Container size="xl" py="sm">
+      <PageHeader
+        title={t('shared:categories.medications', 'Medications')}
+        icon="💊"
+      />
+
+      <Stack gap="sm" mt="md">
+        <MedicalPageAlerts
+          error={error}
+          successMessage={successMessage}
+          onClearError={clearError}
+        />
+
+        <MedicalPageActions
+          primaryAction={{
+            label: t('medications.addNew', 'Add New Medication'),
+            onClick: handleAddMedication,
+            leftSection: <IconPlus size={16} />,
+            size: 'sm',
+            disabled: isViewOnly,
+            tooltip: viewOnlyTooltip,
+          }}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          viewToggleSize="sm"
+          mb={0}
+        />
+
+        {/* Quick Type Filters */}
+        <Paper p="xs" radius="md" withBorder>
+          <Group gap="xs" wrap="wrap">
+            <Text size="sm" fw={500} c="dimmed">
+              <IconFilter
+                size={16}
+                style={{ verticalAlign: 'middle', marginRight: 4 }}
+              />
+              {t('medications.quickFilter', 'Quick Filter')}:
+            </Text>
+            <Button
+              variant={
+                dataManagement.filters.medicationType === 'all'
+                  ? 'filled'
+                  : 'light'
+              }
+              size="xs"
+              onClick={() =>
+                dataManagement.updateFilter('medicationType', 'all')
+              }
+            >
+              {t('medications.allTypes', 'All Types')}
+              <Badge size="xs" ml={4} variant="filled" color="dark">
+                {medications.length}
+              </Badge>
+            </Button>
+            <Button
+              variant={
+                dataManagement.filters.medicationType ===
+                MEDICATION_TYPES.PRESCRIPTION
+                  ? 'filled'
+                  : 'light'
+              }
+              size="xs"
+              leftSection={<IconPill size={14} />}
+              onClick={() =>
+                dataManagement.updateFilter(
+                  'medicationType',
+                  MEDICATION_TYPES.PRESCRIPTION
+                )
+              }
+            >
+              {t('medications.types.prescription')}
+              <Badge size="xs" ml={4} variant="filled" color="dark">
+                {
+                  medications.filter(
+                    m => m.medication_type === MEDICATION_TYPES.PRESCRIPTION
+                  ).length
+                }
+              </Badge>
+            </Button>
+            <Button
+              variant={
+                dataManagement.filters.medicationType ===
+                MEDICATION_TYPES.SUPPLEMENT
+                  ? 'filled'
+                  : 'light'
+              }
+              size="xs"
+              onClick={() =>
+                dataManagement.updateFilter(
+                  'medicationType',
+                  MEDICATION_TYPES.SUPPLEMENT
+                )
+              }
+            >
+              {t('medications.types.supplement')}
+              <Badge size="xs" ml={4} variant="filled" color="dark">
+                {
+                  medications.filter(
+                    m => m.medication_type === MEDICATION_TYPES.SUPPLEMENT
+                  ).length
+                }
+              </Badge>
+            </Button>
+            <Button
+              variant={
+                dataManagement.filters.medicationType === MEDICATION_TYPES.OTC
+                  ? 'filled'
+                  : 'light'
+              }
+              size="xs"
+              onClick={() =>
+                dataManagement.updateFilter(
+                  'medicationType',
+                  MEDICATION_TYPES.OTC
+                )
+              }
+            >
+              {t('medications.types.otc')}
+              <Badge size="xs" ml={4} variant="filled" color="dark">
+                {
+                  medications.filter(
+                    m => m.medication_type === MEDICATION_TYPES.OTC
+                  ).length
+                }
+              </Badge>
+            </Button>
+            <Button
+              variant={
+                dataManagement.filters.medicationType ===
+                MEDICATION_TYPES.HERBAL
+                  ? 'filled'
+                  : 'light'
+              }
+              size="xs"
+              onClick={() =>
+                dataManagement.updateFilter(
+                  'medicationType',
+                  MEDICATION_TYPES.HERBAL
+                )
+              }
+            >
+              {t('medications.types.herbal')}
+              <Badge size="xs" ml={4} variant="filled" color="dark">
+                {
+                  medications.filter(
+                    m => m.medication_type === MEDICATION_TYPES.HERBAL
+                  ).length
+                }
+              </Badge>
+            </Button>
+          </Group>
+        </Paper>
+
+        {/* Mantine Filter Controls */}
+        <MedicalPageFilters dataManagement={dataManagement} config={config} />
+
+        {/* Form Modal */}
+        <MedicationFormWrapper
+          isOpen={showAddForm}
+          onClose={handleCloseForm}
+          title={editingMedication ? 'Edit Medication' : 'Add New Medication'}
+          formData={formData}
+          onInputChange={handleInputChange}
+          onSubmit={handleSubmit}
+          practitioners={practitioners}
+          pharmacies={pharmacies}
+          editingMedication={editingMedication}
+          conditions={conditions}
+          navigate={navigate}
+          isLoading={isBlocking}
+          statusMessage={statusMessage}
+          onDocumentManagerRef={setDocumentManagerMethods}
+          onFileUploadComplete={(success, _completedCount, _failedCount) => {
+            if (success && editingMedication?.id) {
+              refreshFileCount(editingMedication.id);
+            }
+          }}
+        />
+
+        {/* Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          {processedMedications.length === 0 ? (
+            <EmptyState
+              icon={IconAlertTriangle}
+              title={t(
+                'medications.noMedications',
+                'No medications or supplements found'
+              )}
+              hasActiveFilters={dataManagement.hasActiveFilters}
+              filteredMessage={t(
+                'shared:emptyStates.adjustSearch',
+                'Try adjusting your search or filter criteria.'
+              )}
+              noDataMessage={t(
+                'medications.clickToStart',
+                'Click "Add New Medication" to get started.'
+              )}
+            />
+          ) : viewMode === 'cards' ? (
+            <AnimatedCardGrid
+              items={paginatedMedications}
+              staggerDelay={0.05}
+              renderCard={medication => (
+                <MedicationCard
+                  medication={medication}
+                  onView={handleViewMedication}
+                  onEdit={handleEditMedication}
+                  onDelete={handleDeleteMedication}
+                  navigate={navigate}
+                  fileCount={fileCounts[medication.id] || 0}
+                  fileCountLoading={fileCountsLoading[medication.id] || false}
+                  onError={setError}
+                  disableActions={isViewOnly}
+                  disableActionsTooltip={viewOnlyTooltip}
+                />
+              )}
+            />
+          ) : (
+            <Paper shadow="sm" radius="md" withBorder>
+              <ResponsiveTable
+                persistKey="medications"
+                data={paginatedMedications}
+                pagination={false}
+                disableEdit={isViewOnly}
+                disableDelete={isViewOnly}
+                disableActionsTooltip={viewOnlyTooltip}
+                columns={[
+                  {
+                    header: 'Medication Name',
+                    accessor: 'medication_name',
+                    priority: 'high',
+                    width: 200,
+                  },
+                  {
+                    header: 'Type',
+                    accessor: 'medication_type',
+                    priority: 'medium',
+                    width: 150,
+                  },
+                  {
+                    header: 'Dosage',
+                    accessor: 'dosage',
+                    priority: 'high',
+                    width: 120,
+                  },
+                  {
+                    header: 'Frequency',
+                    accessor: 'frequency',
+                    priority: 'medium',
+                    width: 120,
+                  },
+                  {
+                    header: 'Route',
+                    accessor: 'route',
+                    priority: 'low',
+                    width: 100,
+                  },
+                  {
+                    header: 'Purpose',
+                    accessor: 'indication',
+                    priority: 'medium',
+                    width: 180,
+                  },
+                  {
+                    header: 'Prescriber',
+                    accessor: 'practitioner_name',
+                    priority: 'low',
+                    width: 150,
+                  },
+                  {
+                    header: 'Pharmacy',
+                    accessor: 'pharmacy_name',
+                    priority: 'low',
+                    width: 150,
+                  },
+                  {
+                    header: 'Start Date',
+                    accessor: 'effective_period_start',
+                    priority: 'low',
+                    width: 120,
+                  },
+                  {
+                    header: 'End Date',
+                    accessor: 'effective_period_end',
+                    priority: 'low',
+                    width: 120,
+                  },
+                  {
+                    header: 'Status',
+                    accessor: 'status',
+                    priority: 'high',
+                    width: 100,
+                  },
+                ]}
+                patientData={currentPatient}
+                tableName="Medications"
+                onView={handleViewMedication}
+                onEdit={handleEditMedication}
+                onDelete={handleDeleteMedication}
+                formatters={formatters}
+                dataType="medical"
+                medicalContext="medications"
+                responsive={responsive}
+              />
+            </Paper>
+          )}
+          {processedMedications.length > 0 && (
+            <PaginationControls
+              page={page}
+              totalPages={totalPages(processedMedications.length)}
+              pageSize={pageSize}
+              totalRecords={processedMedications.length}
+              onPageChange={setPage}
+              onPageSizeChange={handlePageSizeChange}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+            />
+          )}
+        </motion.div>
+
+        {/* Medication View Modal */}
+        <MedicationViewModal
+          isOpen={showViewModal}
+          onClose={handleCloseViewModal}
+          medication={viewingMedication}
+          onEdit={handleEditMedication}
+          navigate={navigate}
+          onError={setError}
+          practitioners={practitioners}
+          conditions={conditions}
+          disableEdit={isViewOnly}
+          disableEditTooltip={viewOnlyTooltip}
+        />
+      </Stack>
+    </Container>
+  );
+};
+
+// Wrap with responsive HOC for enhanced responsive capabilities
+export default withResponsive(Medication, {
+  injectResponsive: true,
+  displayName: 'ResponsiveMedication',
+});

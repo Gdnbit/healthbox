@@ -1,0 +1,23 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "short_name": "HealthBox",
+  "name": "HealthBox · 健康档案盒",
+  "description": "An open-source personal and family health records manager.",
+  "icons": [
+    {
+      "src": "/healthbox-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#087f8c",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["medical", "health", "productivity"],
+  "lang": "zh-CN",
+  "prefer_related_applications": false
+}

@@ -1,0 +1,14 @@
+HealthBox · 健康档案盒
+
+This product includes software derived from MediKeep:
+https://github.com/afairgiant/MediKeep
+Copyright 2025 Alex Fair
+Licensed under the Apache License, Version 2.0.
+
+HealthBox modifications include household sharing, source preservation,
+reviewed imports, revision tracking, Chinese interfaces, scoped read-only AI
+contracts, and local release hardening. These modifications do not imply
+endorsement by, or official affiliation with, the MediKeep maintainers.
+
+Existing source-level and third-party attribution notices remain applicable.
+Dependency licenses must accompany redistributed dependency distributions.

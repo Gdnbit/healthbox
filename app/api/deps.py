@@ -1,0 +1,1019 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+from typing import NamedTuple, Optional
+
+from fastapi import Depends, HTTPException, Query, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from app.api.v1.endpoints.system import get_client_ip
+from app.core.config import settings
+from app.core.constants import is_admin_role
+from app.core.database.database import get_db
+from app.core.http.error_handling import (
+    BusinessLogicException,
+    ConflictException,
+    DatabaseException,
+    ForbiddenException,
+    MedicalRecordsAPIException,
+    NotFoundException,
+    ServiceUnavailableException,
+    UnauthorizedException,
+    ValidationException,
+)
+from app.core.http.response_models import ExceptionCode
+from app.core.logging.config import get_logger, log_security_event
+from app.core.logging.constants import LogFields, sanitize_log_input
+from app.core.utils.cookie_auth import get_token_from_cookie
+from app.crud.user import user
+from app.models.models import User
+
+# Security scheme for JWT tokens
+# Set auto_error=False to handle missing credentials with our custom error messages
+security = HTTPBearer(auto_error=False)
+
+# Initialize security logger
+security_logger = get_logger(__name__, "security")
+
+
+class TokenValidationResult(NamedTuple):
+    """Result of JWT token validation containing decoded payload and username."""
+
+    payload: dict
+    username: str
+
+
+def _enforce_session_contract(
+    db_user: User,
+    payload: dict,
+    request: Request,
+) -> None:
+    """Keep restricted MFA challenges out of all business endpoints.
+
+    Legacy password-only tokens remain valid for ordinary members during the
+    migration window. Administrator sessions are fail-closed: they must be
+    explicit access tokens with a verified second factor and current version.
+    """
+    token_use = payload.get("token_use")
+    if token_use == "mfa_challenge" or token_use not in (None, "access"):
+        raise UnauthorizedException(
+            message="Authentication failed",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token_auth_version = payload.get("auth_version")
+    if token_auth_version is not None and token_auth_version != db_user.auth_version:
+        raise UnauthorizedException(
+            message="Authentication failed",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if is_admin_role(db_user.role) and (
+        token_use != "access"
+        or payload.get("mfa_verified") is not True
+        or token_auth_version != db_user.auth_version
+    ):
+        raise UnauthorizedException(
+            message="Authentication failed",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def _validate_and_decode_token(
+    token: str, request: Request, auth_method: str = "header"
+) -> TokenValidationResult:
+    """
+    Shared JWT token validation and decoding logic.
+
+    This function consolidates token validation to ensure consistent security
+    behavior across all authentication methods (header and query parameter).
+
+    Args:
+        token: JWT token string to validate
+        request: FastAPI request object for logging context
+        auth_method: Authentication method ("header" or "query_param") for logging
+
+    Returns:
+        TokenValidationResult containing:
+            - payload: Decoded JWT payload dictionary
+            - username: Extracted username from token subject claim
+
+    Raises:
+        UnauthorizedException: If token is invalid, expired, or malformed
+
+    Security Notes:
+        - Validates JWT format (3-part structure)
+        - Decodes using configured SECRET_KEY and ALGORITHM
+        - Logs all validation attempts for security monitoring
+        - Sanitizes all user-provided data before logging
+    """
+    # Extract client information for security logging
+    client_ip = get_client_ip(request)
+    user_agent = sanitize_log_input(request.headers.get("user-agent", "unknown"))
+
+    # Validate token format before attempting to decode
+    token_str = token.strip()
+    if not token_str:
+        security_logger.info(f"AUTH ({auth_method}): Empty token provided")
+        log_security_event(
+            security_logger,
+            event="token_empty",
+            ip_address=client_ip,
+            user_agent=user_agent,
+            message=f"Empty JWT token provided (auth method: {auth_method})",
+        )
+        raise UnauthorizedException(
+            message="Authentication failed",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Basic JWT format validation (should have 3 parts separated by dots)
+    token_parts = token_str.split(".")
+    if len(token_parts) != 3:
+        security_logger.info(
+            f"AUTH ({auth_method}): Invalid token format - expected 3 parts, got {len(token_parts)}"
+        )
+        log_security_event(
+            security_logger,
+            event="token_invalid_format",
+            ip_address=client_ip,
+            user_agent=user_agent,
+            message=f"Invalid JWT token format - expected 3 parts, got {len(token_parts)} (auth method: {auth_method})",
+        )
+        raise UnauthorizedException(
+            message="Authentication failed",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Decode JWT token
+    try:
+        payload = jwt.decode(
+            token_str,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+        username = payload.get("sub")
+        if username is None:
+            security_logger.info(f"AUTH ({auth_method}): Token missing subject claim")
+            log_security_event(
+                security_logger,
+                event="token_invalid_no_subject",
+                ip_address=client_ip,
+                user_agent=user_agent,
+                message=f"JWT token missing subject claim (auth method: {auth_method})",
+            )
+            raise UnauthorizedException(
+                message="Authentication failed",
+                request=request,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        security_logger.info(
+            f"AUTH ({auth_method}): Token decoded successfully for user: {username}"
+        )
+
+        return TokenValidationResult(payload=payload, username=username)
+
+    except JWTError as e:
+        security_logger.info(f"AUTH ({auth_method}): Token decode failed: {str(e)}")
+        log_security_event(
+            security_logger,
+            event="token_decode_failed",
+            ip_address=client_ip,
+            user_agent=user_agent,
+            message=f"JWT token decode failed (auth method: {auth_method}): {str(e)}",
+        )
+        raise UnauthorizedException(
+            message="Token validation failed",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> User:
+    """
+    Get current authenticated user from JWT token via Authorization header.
+
+    This is the standard authentication method for API requests. Validates the
+    JWT token from the Authorization header and returns the authenticated user.
+
+    Args:
+        request: FastAPI request object for extracting client info
+        db: Database session
+        credentials: JWT token from Authorization header
+
+    Returns:
+        Current user object
+
+    Raises:
+        UnauthorizedException: If token is invalid or user not found
+
+    See Also:
+        get_current_user_flexible_auth: For endpoints requiring query parameter auth
+        _validate_and_decode_token: Shared token validation logic
+    """
+    # Extract client information for security logging
+    client_ip = get_client_ip(request)
+    user_agent = sanitize_log_input(request.headers.get("user-agent", "unknown"))
+
+    # Check credentials: Authorization header first, then HttpOnly cookie
+    jwt_token = None
+    auth_method = "header"
+
+    if credentials and credentials.credentials:
+        jwt_token = credentials.credentials
+    elif cookie_token := get_token_from_cookie(request):
+        jwt_token = cookie_token
+        auth_method = "cookie"
+    else:
+        security_logger.info("No authentication credentials provided")
+        log_security_event(
+            security_logger,
+            event="no_credentials",
+            ip_address=client_ip,
+            user_agent=user_agent,
+            message="No authentication credentials provided (header or cookie)",
+        )
+        raise UnauthorizedException(
+            message="Authentication required",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Validate and decode token using shared logic
+    result = _validate_and_decode_token(jwt_token, request, auth_method=auth_method)
+
+    # Get user from database
+    try:
+        db_user = user.get_by_username(db, username=result.username)
+        if db_user is None:
+            log_security_event(
+                security_logger,
+                event="token_user_not_found",
+                ip_address=client_ip,
+                user_agent=user_agent,
+                message=f"Token valid but user not found: {result.username}",
+                username=result.username,
+            )
+            raise UnauthorizedException(
+                message="Authentication failed",
+                request=request,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except Exception as e:
+        # Don't catch UnauthorizedException - let it propagate naturally
+        if isinstance(e, UnauthorizedException):
+            raise
+        log_security_event(
+            security_logger,
+            event="token_user_lookup_error",
+            ip_address=client_ip,
+            user_agent=user_agent,
+            message=f"Database error during user lookup for {result.username}: {str(e)}",
+            username=result.username,
+        )
+        raise UnauthorizedException(
+            message="Token validation failed",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    _enforce_session_contract(db_user, result.payload, request)
+
+    # Log successful token validation
+    user_id = getattr(db_user, "id", None)
+    log_security_event(
+        security_logger,
+        event="token_validated_success",
+        user_id=user_id,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        message=f"Token successfully validated for user: {result.username}",
+        username=result.username,
+    )
+
+    # Block all endpoints for users who have a pending forced password change,
+    # except the change-password, logout, and /users/me (needed for frontend
+    # auth-state re-validation on reload) endpoints.
+    if db_user.must_change_password:
+        allowed_paths = {
+            "/api/v1/auth/change-password",
+            "/api/v1/auth/logout",
+            "/api/v1/users/me",
+        }
+        if request.url.path not in allowed_paths:
+            raise ForbiddenException(
+                message="Password change required before accessing this resource",
+                request=request,
+            )
+
+    from app.services.privacy_consent_service import privacy_consent_required
+
+    if privacy_consent_required(db, db_user.id):
+        allowed_paths = {
+            "/api/v1/privacy-consent/current",
+            "/api/v1/privacy-consent/decisions",
+            "/api/v1/auth/change-password",
+            "/api/v1/auth/logout",
+            "/api/v1/users/me",
+        }
+        if request.url.path not in allowed_paths:
+            raise ForbiddenException(
+                message="Privacy consent required before accessing this resource",
+                request=request,
+            )
+
+    return db_user
+
+
+def get_current_user_flexible_auth(
+    request: Request,
+    db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+        HTTPBearer(auto_error=False)
+    ),
+    token: Optional[str] = Query(
+        None, description="JWT token for query parameter authentication"
+    ),
+) -> User:
+    """
+    Get current authenticated user with flexible authentication.
+
+    Supports both Authorization header and query parameter token authentication.
+    This is primarily intended for file viewing endpoints where Authorization headers
+    may not be available (e.g., when opening files in new browser tabs via window.open).
+
+    SECURITY CONSIDERATIONS:
+    - Query parameter tokens may be logged in server access logs
+    - Query parameter tokens appear in browser history
+    - Authorization header is ALWAYS preferred when available
+    - This method should ONLY be used for endpoints that require browser-native access
+    - Currently used by: /api/v1/entity-files/files/{id}/view
+
+    Args:
+        request: FastAPI request object
+        db: Database session
+        credentials: JWT token from Authorization header (optional)
+        token: JWT token from query parameter (optional, for file viewing)
+
+    Returns:
+        Current user object
+
+    Raises:
+        UnauthorizedException: If no valid token is provided or token is invalid
+
+    See Also:
+        get_current_user: Standard auth for regular API endpoints
+        _validate_and_decode_token: Shared token validation logic
+
+    Example Usage:
+        # Frontend opens PDF in new tab
+        window.open(`/api/v1/entity-files/files/123/view?token=${userToken}`)
+    """
+    # Extract client information for security logging
+    client_ip = get_client_ip(request)
+    user_agent = sanitize_log_input(request.headers.get("user-agent", "unknown"))
+
+    # Try to get token: Authorization header > HttpOnly cookie > query parameter
+    jwt_token = None
+    auth_method = None
+
+    if credentials and credentials.credentials:
+        jwt_token = credentials.credentials
+        auth_method = "header"
+    elif cookie_token := get_token_from_cookie(request):
+        jwt_token = cookie_token
+        auth_method = "cookie"
+    elif token:
+        jwt_token = token
+        auth_method = "query_param"
+        # Log query parameter usage for security monitoring
+        security_logger.info(
+            "Authentication via query parameter token (for file viewing)"
+        )
+    else:
+        security_logger.warning(
+            "No authentication token provided (header, cookie, or query param)"
+        )
+        log_security_event(
+            security_logger,
+            event="auth_no_token_provided",
+            ip_address=client_ip,
+            user_agent=user_agent,
+            message="No JWT token provided in header, cookie, or query parameter",
+        )
+        raise UnauthorizedException(
+            message="Token validation failed",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Validate and decode token using shared logic
+    result = _validate_and_decode_token(jwt_token, request, auth_method=auth_method)
+
+    # Get user from database
+    try:
+        db_user = user.get_by_username(db, username=result.username)
+        if db_user is None:
+            log_security_event(
+                security_logger,
+                event="token_user_not_found",
+                ip_address=client_ip,
+                user_agent=user_agent,
+                message=f"Token valid but user not found: {result.username} (auth method: {auth_method})",
+                username=result.username,
+            )
+            raise UnauthorizedException(
+                message="Authentication failed",
+                request=request,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except Exception as e:
+        # Don't catch UnauthorizedException - let it propagate naturally
+        if isinstance(e, UnauthorizedException):
+            raise
+        log_security_event(
+            security_logger,
+            event="token_user_lookup_error",
+            ip_address=client_ip,
+            user_agent=user_agent,
+            message=f"Database error during user lookup for {result.username} (auth method: {auth_method}): {str(e)}",
+            username=result.username,
+        )
+        raise UnauthorizedException(
+            message="Token validation failed",
+            request=request,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    _enforce_session_contract(db_user, result.payload, request)
+
+    # Log successful token validation with auth method
+    user_id = getattr(db_user, "id", None)
+    log_security_event(
+        security_logger,
+        event="token_validated_success",
+        user_id=user_id,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        message=f"Token successfully validated for user: {result.username} (auth method: {auth_method})",
+        username=result.username,
+    )
+
+    # Apply the same forced-password-change enforcement as get_current_user.
+    if db_user.must_change_password:
+        allowed_paths = {
+            "/api/v1/auth/change-password",
+            "/api/v1/auth/logout",
+            "/api/v1/users/me",
+        }
+        if request.url.path not in allowed_paths:
+            raise ForbiddenException(
+                message="Password change required before accessing this resource",
+                request=request,
+            )
+
+    from app.services.privacy_consent_service import privacy_consent_required
+
+    if privacy_consent_required(db, db_user.id):
+        allowed_paths = {
+            "/api/v1/privacy-consent/current",
+            "/api/v1/privacy-consent/decisions",
+            "/api/v1/auth/change-password",
+            "/api/v1/auth/logout",
+            "/api/v1/users/me",
+        }
+        if request.url.path not in allowed_paths:
+            raise ForbiddenException(
+                message="Privacy consent required before accessing this resource",
+                request=request,
+            )
+
+    return db_user
+
+
+def _extract_user_id(current_user: User) -> int:
+    """Extract and validate the integer user ID from a SQLAlchemy User model instance."""
+    user_id = getattr(current_user, "id", None)
+    if user_id is None:
+        raise MedicalRecordsAPIException(
+            error_code=ExceptionCode.INTERNAL_SERVER_ERROR,
+            http_status_code=500,
+            message="User ID not found",
+            request=None,
+        )
+    return user_id
+
+
+def get_current_user_id(current_user: User = Depends(get_current_user)) -> int:
+    """
+    Get the current user's ID as an integer.
+
+    Ensures we get the actual integer value instead of the SQLAlchemy
+    Column descriptor for type safety.
+    """
+    return _extract_user_id(current_user)
+
+
+def get_current_user_id_flexible_auth(
+    current_user: User = Depends(get_current_user_flexible_auth),
+) -> int:
+    """
+    Get the current user's ID as an integer using flexible authentication.
+
+    Works with the flexible authentication dependency that supports both
+    header and query parameter authentication.
+    """
+    return _extract_user_id(current_user)
+
+
+def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Get current authenticated admin user.
+
+    Checks that the current user has admin role privileges.
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        Current user object if they are an admin
+
+    Raises:
+        ForbiddenException: If user is not an admin
+    """
+    user_role = getattr(current_user, "role", None)
+    if not is_admin_role(user_role):
+        log_security_event(
+            security_logger,
+            event="admin_access_denied",
+            user_id=getattr(current_user, "id", None),
+            ip_address="middleware",
+            message=f"Non-admin user attempted admin access: {current_user.username}",
+            username=current_user.username,
+        )
+        raise ForbiddenException(message="Admin privileges required", request=None)
+
+    log_security_event(
+        security_logger,
+        event="admin_access_granted",
+        user_id=getattr(current_user, "id", None),
+        ip_address="middleware",
+        message=f"Admin access granted to: {current_user.username}",
+        username=current_user.username,
+    )
+
+    return current_user
+
+
+def get_current_user_patient_id(
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id),
+) -> int:
+    """
+    Get the current user's active patient ID.
+
+    This is a convenience dependency that handles getting the user's active patient record
+    and returns the patient_id for use in medical record endpoints. If no active patient
+    is set, attempts to auto-resolve by selecting the user's best owned patient.
+
+    Args:
+        db: Database session
+        current_user_id: Current authenticated user ID
+
+    Returns:
+        Active patient ID for the current user
+
+    Raises:
+        NotFoundException: If no patient records found or active patient not accessible
+    """
+    from app.models.models import Patient
+
+    # Get user with active patient ID (multi-patient system)
+    user = db.query(User).filter(User.id == current_user_id).first()
+    if not user:
+        raise NotFoundException(message="User not found", request=None)
+
+    if not user.active_patient_id:
+        from app.services.patient_management import PatientManagementService
+
+        try:
+            patient_service = PatientManagementService(db)
+            resolved = patient_service.ensure_active_patient(user)
+        except (SQLAlchemyError, ValueError) as e:
+            db.rollback()
+            security_logger.warning(
+                "Failed to auto-resolve active patient",
+                extra={
+                    LogFields.USER_ID: current_user_id,
+                    LogFields.ERROR: str(e),
+                },
+            )
+            resolved = None
+
+        if not resolved:
+            raise NotFoundException(
+                message="No patient records found for user", request=None
+            )
+
+        # ensure_active_patient already verified ownership
+        return resolved.id
+
+    # Verify the active patient exists and user has access (owned or shared)
+    patient_record = (
+        db.query(Patient)
+        .filter(
+            Patient.id == user.active_patient_id,
+        )
+        .first()
+    )
+
+    if not patient_record:
+        raise NotFoundException(message="Active patient record not found", request=None)
+
+    # Owner always has access
+    if patient_record.owner_user_id == current_user_id:
+        return patient_record.id
+
+    # Check shared access
+    from app.services.patient_access import PatientAccessService
+
+    access_service = PatientAccessService(db)
+    if access_service.can_access_patient(user, patient_record, "view"):
+        return patient_record.id
+
+    raise NotFoundException(message="Active patient record not found", request=None)
+
+
+def require_legacy_directional_sharing_enabled() -> None:
+    """Hide retired one-way sharing APIs unless compatibility is explicit."""
+
+    if not settings.LEGACY_DIRECTIONAL_SHARING_ENABLED:
+        raise MedicalRecordsAPIException(
+            error_code="legacy_directional_sharing_disabled",
+            http_status_code=404,
+            message="Legacy directional sharing is not available",
+            description="The requested resource does not exist",
+        )
+
+
+def verify_patient_record_access(
+    record_patient_id: int,
+    current_user_patient_id: int,
+    record_type: str = "record",
+    db: Optional[Session] = None,
+    current_user: Optional[User] = None,
+    permission: str = "view",
+) -> None:
+    """
+    Verify that a medical record belongs to a patient accessible by the current user.
+
+    Supports multi-patient scenarios where a user can have multiple patients.
+    Checks if the record's patient is owned by or shared with the current user.
+
+    Args:
+        record_patient_id: Patient ID from the medical record
+        current_user_patient_id: Patient ID of the current user (for backward compatibility)
+        record_type: Type of record for error message (e.g., "medication", "allergy")
+        db: Database session (optional, required for multi-patient access checking)
+        current_user: Current user object (optional, required for multi-patient access checking)
+        permission: Required permission level ('view', 'edit', 'full')
+
+    Raises:
+        NotFoundException: If record doesn't belong to user or user doesn't have access
+        ForbiddenException: If user has access but insufficient permissions
+    """
+    # If db and current_user are provided, use proper multi-patient access checking
+    if db is not None and current_user is not None:
+        from app.models.models import Patient
+        from app.services.patient_access import PatientAccessService
+
+        # Get the patient record
+        patient_record = (
+            db.query(Patient).filter(Patient.id == record_patient_id).first()
+        )
+        if not patient_record:
+            raise NotFoundException(
+                message=f"{record_type.title()} not found", request=None
+            )
+
+        # Check if user has access to this patient with required permission level
+        access_service = PatientAccessService(db)
+        if not access_service.can_access_patient(
+            current_user, patient_record, permission
+        ):
+            # Return 404 to avoid leaking information about existence of records
+            raise NotFoundException(
+                message=f"{record_type.title()} not found", request=None
+            )
+    else:
+        # Fallback to simple equality check for backward compatibility
+        # This handles single-patient scenarios
+        if record_patient_id != current_user_patient_id:
+            raise NotFoundException(
+                message=f"{record_type.title()} not found", request=None
+            )
+
+
+def verify_patient_access(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    required_permission: str = "view",
+) -> int:
+    """
+    Dependency that verifies the current user can access the specified patient's records.
+
+    This function supports Phase 1 patient access including:
+    - Own patients (always accessible)
+    - Shared patients (with proper permission levels)
+
+    Args:
+        patient_id: The patient ID from the URL path
+        db: Database session
+        current_user: Current authenticated user
+        required_permission: Required permission level ('view', 'edit', 'full')
+
+    Returns:
+        The verified patient_id
+
+    Raises:
+        NotFoundException: If patient not found
+        ForbiddenException: If access denied
+    """
+    from app.models.models import Patient
+    from app.services.patient_access import PatientAccessService
+
+    # Get the patient record
+    patient_record = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient_record:
+        raise NotFoundException(message="Patient not found", request=None)
+
+    # Check access using the PatientAccessService
+    access_service = PatientAccessService(db)
+    if not access_service.can_access_patient(
+        current_user, patient_record, required_permission
+    ):
+        raise ForbiddenException(
+            message=f"Access denied to patient {patient_id}", request=None
+        )
+
+    return patient_id
+
+
+def verify_patient_edit_access(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> int:
+    """FastAPI dependency for endpoints that mutate a patient archive."""
+
+    return verify_patient_access(
+        patient_id,
+        db,
+        current_user,
+        required_permission="edit",
+    )
+
+
+def verify_patient_owner_access(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> int:
+    """Require direct archive ownership, never a legacy share or circle."""
+
+    from app.models.models import Patient
+
+    patient_record = db.query(Patient).filter(Patient.id == patient_id).first()
+    if patient_record is None:
+        raise NotFoundException(message="Patient not found", request=None)
+    if patient_record.owner_user_id != current_user.id:
+        raise ForbiddenException(
+            message=f"Access denied to patient {patient_id}",
+            request=None,
+        )
+    return patient_id
+
+
+def verify_patient_revision_access(
+    patient_id: int,
+    db: Session,
+    current_user: User,
+    *,
+    request: Request,
+    requested_admin_action: Optional[str],
+    admin_action_reason: Optional[str],
+    required_capability: str,
+    operation: str,
+    object_type: str,
+    object_id: int,
+):
+    """Authorize an owner's edit or one explicit sole-admin cross-subject action."""
+
+    from app.models.models import Patient
+    from app.services.admin_cross_subject_action_service import (
+        AdminCrossSubjectActionError,
+        authorize_admin_cross_subject_action,
+    )
+
+    if requested_admin_action is not None or admin_action_reason is not None:
+        try:
+            return authorize_admin_cross_subject_action(
+                db,
+                actor=current_user,
+                patient_id=patient_id,
+                requested_capability=requested_admin_action,
+                reason=admin_action_reason,
+                required_capability=required_capability,
+                operation=operation,
+                object_type=object_type,
+                object_id=object_id,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+            )
+        except AdminCrossSubjectActionError as error:
+            raise HTTPException(
+                status_code=error.status_code,
+                detail={"code": error.code, "message": error.message},
+                headers={"X-Error-Code": error.code},
+            ) from error
+
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if patient is None:
+        raise NotFoundException(message="Patient not found", request=request)
+    verify_patient_access(
+        patient_id,
+        db,
+        current_user,
+        required_permission="edit",
+    )
+    if patient.owner_user_id != current_user.id:
+        raise ForbiddenException(
+            message="Only the archive owner can revise formal health records",
+            request=request,
+        )
+    return None
+
+
+def verify_patient_read_access(
+    patient_id: int,
+    db: Session,
+    current_user: User,
+    *,
+    request: Request,
+    requested_owner_access: Optional[str],
+    owner_access_reason: Optional[str],
+    resource: str,
+    allow_standard_access: bool = True,
+    source_document_id: Optional[int] = None,
+    handoff_kind: Optional[str] = None,
+    handoff_scope: Optional[str] = None,
+    include_reports: Optional[bool] = None,
+    metric_count: Optional[int] = None,
+    report_count: Optional[int] = None,
+) -> int:
+    """Authorize a normal view or an explicit, audited sole-owner global read."""
+
+    from app.models.models import Patient
+    from app.services.owner_access_service import (
+        OwnerAccessError,
+        authorize_owner_global_read,
+    )
+    from app.services.patient_access import PatientAccessService
+
+    patient_record = db.query(Patient).filter(Patient.id == patient_id).first()
+    if patient_record is None:
+        raise NotFoundException(message="Patient not found", request=request)
+
+    access_service = PatientAccessService(db)
+    if allow_standard_access and access_service.can_access_patient(
+        current_user, patient_record, "view"
+    ):
+        return patient_id
+
+    try:
+        authorize_owner_global_read(
+            db,
+            actor=current_user,
+            patient=patient_record,
+            requested_capability=requested_owner_access,
+            purpose=owner_access_reason,
+            resource=resource,
+            request_method=request.method,
+            request_path=request.url.path,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            source_document_id=source_document_id,
+            handoff_kind=handoff_kind,
+            handoff_scope=handoff_scope,
+            include_reports=include_reports,
+            metric_count=metric_count,
+            report_count=report_count,
+        )
+    except OwnerAccessError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={"code": error.code, "message": error.message},
+        ) from error
+    return patient_id
+
+
+def get_accessible_patient_id(
+    request: Request,
+    patient_id: Optional[int] = Query(
+        None, description="Patient ID for Phase 1 patient switching"
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    owner_access: Optional[str] = Query(
+        None, description="Explicit sole-administrator read capability"
+    ),
+    owner_access_reason: Optional[str] = Query(
+        None, description="Bounded reason for administrator cross-subject access"
+    ),
+) -> int:
+    """
+    Get an accessible patient ID for Phase 1 patient switching.
+
+    If patient_id is provided, verifies access and returns it.
+    If patient_id is None, returns the current user's own patient ID.
+
+    Args:
+        patient_id: Optional patient ID from query parameter
+        db: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        Patient ID that the user can access
+
+    Raises:
+        NotFoundException: If patient not found
+        ForbiddenException: If access denied
+    """
+    if patient_id is not None:
+        resource_by_path = {
+            "/api/v1/vitals/": "vitals",
+            "/api/v1/vitals/stats": "vitals",
+        }
+        resource = resource_by_path.get(request.url.path)
+        if resource is None and owner_access is not None:
+            raise ForbiddenException(
+                message="Administrator global read is not enabled for this resource",
+                request=request,
+            )
+        return verify_patient_read_access(
+            patient_id,
+            db,
+            current_user,
+            request=request,
+            requested_owner_access=owner_access,
+            owner_access_reason=owner_access_reason,
+            resource=resource or "vitals",
+        )
+    # Fall back to user's own patient ID
+    return get_current_user_patient_id(db, current_user.id)
+
+
+# Export all dependencies and exceptions for convenient importing
+# This allows other modules to import everything from one place:
+# from app.api.deps import get_db, NotFoundException, ForbiddenException
+# Note: handle_database_errors remains in app.core.error_handling and is not re-exported here by design.
+__all__ = [
+    # Database dependencies
+    "get_db",
+    # Authentication dependencies
+    "get_current_user",
+    "get_current_user_flexible_auth",
+    "get_current_user_id",
+    "get_current_user_id_flexible_auth",
+    "get_current_admin_user",
+    # Patient access dependencies
+    "get_current_user_patient_id",
+    "verify_patient_record_access",
+    "verify_patient_access",
+    "verify_patient_read_access",
+    "get_accessible_patient_id",
+    # Token validation (internal)
+    "TokenValidationResult",
+    # Exception classes (re-exported from error_handling)
+    "MedicalRecordsAPIException",
+    "ValidationException",
+    "UnauthorizedException",
+    "ForbiddenException",
+    "NotFoundException",
+    "ConflictException",
+    "DatabaseException",
+    "BusinessLogicException",
+    "ServiceUnavailableException",
+]

@@ -1,0 +1,48 @@
+/* Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md. */
+/* Admin Header - minimal responsive rules only */
+.admin-header {
+  z-index: 100;
+}
+
+/* Sidebar toggle hidden on desktop, shown on mobile */
+.sidebar-toggle-btn {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .sidebar-toggle-btn {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-header {
+    padding-inline: 12px !important;
+  }
+
+  .admin-header-title {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 1rem !important;
+    text-overflow: ellipsis;
+  }
+
+  .admin-header-theme-toggle {
+    display: none !important;
+  }
+
+  .admin-layout .admin-header-logout {
+    width: 44px;
+    min-width: 44px !important;
+    min-height: 44px;
+    padding: 0 !important;
+  }
+
+  .admin-header-logout .mantine-Button-label {
+    display: none;
+  }
+
+  .admin-header-logout .mantine-Button-section {
+    margin: 0;
+  }
+}

@@ -1,0 +1,106 @@
+.admin-delegated-upload-page {
+  display: grid;
+  gap: 20px;
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  padding-bottom: 44px;
+}
+
+.admin-delegated-upload-prototype {
+  min-height: 100vh;
+  padding: clamp(18px, 4vw, 48px);
+  background: var(--mantine-color-gray-0);
+}
+
+.admin-delegated-upload-loading {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  min-height: 280px;
+}
+
+.admin-delegated-upload-eyebrow {
+  margin-bottom: 4px;
+  color: var(--mantine-color-orange-7);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.admin-delegated-upload-toggle {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.admin-delegated-upload-target-grid,
+.admin-delegated-upload-disclosure {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-delegated-upload-disclosure {
+  padding: 16px;
+  border: 1px solid var(--mantine-color-orange-3);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-orange-0);
+}
+
+.admin-delegated-upload-batches,
+.admin-delegated-upload-files {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-delegated-upload-batch {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+}
+
+.admin-delegated-upload-files {
+  padding-top: 12px;
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.admin-delegated-upload-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .admin-delegated-upload-toggle,
+  .admin-delegated-upload-target-grid,
+  .admin-delegated-upload-disclosure {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-delegated-upload-toggle > button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-delegated-upload-prototype {
+    padding: 14px;
+  }
+
+  .admin-delegated-upload-page {
+    gap: 14px;
+  }
+
+  .admin-delegated-upload-file {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-delegated-upload-file > button {
+    width: 100%;
+  }
+}

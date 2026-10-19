@@ -1,0 +1,366 @@
+import re
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, PositiveInt, field_validator, model_validator
+
+from app.schemas.validators import empty_strings_to_none
+from app.schemas.validators import validate_phone_number as _validate_phone
+
+
+# Shared validation helper functions to avoid code duplication
+def _validate_practice_value(v: Optional[str]) -> Optional[str]:
+    """
+    Shared practice validation logic.
+
+    Args:
+        v: The practice value to validate
+
+    Returns:
+        Cleaned practice (stripped whitespace) or None
+
+    Raises:
+        ValueError: If practice is provided but too short or too long
+    """
+    if v is None or v.strip() == "":
+        return None
+    if len(v.strip()) < 2:
+        raise ValueError("Practice must be at least 2 characters long")
+    if len(v) > 100:
+        raise ValueError("Practice must be less than 100 characters")
+    return v.strip()
+
+
+def _validate_email_value(v: Optional[str]) -> Optional[str]:
+    """
+    Shared email validation logic.
+
+    Args:
+        v: The email value to validate
+
+    Returns:
+        Cleaned email (stripped whitespace, lowercase) or None
+
+    Raises:
+        ValueError: If email format is invalid
+    """
+    if v is None or v.strip() == "":
+        return None
+
+    email = v.strip().lower()
+
+    # Basic email validation pattern
+    email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+
+    if not email_pattern.match(email):
+        raise ValueError("Please enter a valid email address")
+
+    if len(email) > 254:
+        raise ValueError("Email address must be less than 254 characters")
+
+    return email
+
+
+_WEBSITE_URL_PATTERN = re.compile(
+    r"^https?://"  # http:// or https://
+    r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain...
+    r"localhost|"  # localhost...
+    r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
+    r"(?::\d+)?"  # optional port
+    r"(?:/?|[/?]\S+)$",
+    re.IGNORECASE,
+)
+
+
+def _validate_website_value(v: Optional[str]) -> Optional[str]:
+    """Shared website URL validation; returns cleaned https-prefixed URL or None."""
+    if v is None or v.strip() == "":
+        return None
+
+    cleaned_url = v.strip()
+    if not cleaned_url.startswith(("http://", "https://")):
+        cleaned_url = "https://" + cleaned_url
+
+    if not _WEBSITE_URL_PATTERN.match(cleaned_url):
+        raise ValueError("Please enter a valid website URL")
+
+    return cleaned_url
+
+
+def _validate_rating_value(v):
+    """Shared rating validation; returns rating rounded to 1 decimal or None."""
+    if v is None:
+        return None
+
+    if not isinstance(v, (int, float)):
+        raise ValueError("Rating must be a number")
+
+    if v < 0 or v > 5:
+        raise ValueError("Rating must be between 0 and 5")
+
+    return round(float(v), 1)
+
+
+class PractitionerBase(BaseModel):
+    """
+    Base Practitioner schema with common fields.
+
+    Contains the core fields shared across different Practitioner schemas.
+    Practitioners are healthcare providers (doctors, nurses, specialists, etc.)
+    """
+
+    name: str
+    specialty_id: PositiveInt
+    practice: Optional[str] = None  # Legacy field - kept for backward compatibility
+    practice_id: Optional[int] = None
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+    rating: Optional[float] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        """
+        Validate practitioner name requirements.
+
+        Args:
+            v: The name value to validate
+
+        Returns:
+            Cleaned name (stripped whitespace)
+
+        Raises:
+            ValueError: If name doesn't meet requirements
+        """
+        if not v or len(v.strip()) < 2:
+            raise ValueError("Practitioner name must be at least 2 characters long")
+        if len(v) > 100:
+            raise ValueError("Practitioner name must be less than 100 characters")
+        return v.strip()
+
+    @field_validator("practice")
+    @classmethod
+    def validate_practice(cls, v):
+        """Validate practice field using shared helper."""
+        return _validate_practice_value(v)
+
+    @field_validator("phone_number", mode="before")
+    @classmethod
+    def validate_phone_number(cls, v):
+        """Validate phone number using shared validator."""
+        return _validate_phone(v, field_name="Phone number")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v):
+        """Validate email field using shared helper."""
+        return _validate_email_value(v)
+
+    @field_validator("website")
+    @classmethod
+    def validate_website(cls, v):
+        """Validate website URL using shared helper."""
+        return _validate_website_value(v)
+
+    @field_validator("rating")
+    @classmethod
+    def validate_rating(cls, v):
+        """Validate rating using shared helper."""
+        return _validate_rating_value(v)
+
+
+class PractitionerCreate(PractitionerBase):
+    """
+    Schema for creating a new practitioner.
+
+    Includes all fields from PractitionerBase.
+    Used when adding a new healthcare provider to the system.
+
+    Example:
+        practitioner_data = PractitionerCreate(
+            name="Dr. John Smith",
+            specialty_id=3,
+        )
+    """
+
+
+class PractitionerUpdate(BaseModel):
+    """
+    Schema for updating an existing practitioner.
+
+    All fields are optional, so practitioners can be updated partially.
+
+    Example:
+        update_data = PractitionerUpdate(
+            specialty_id=3
+        )
+    """
+
+    name: Optional[str] = None
+    specialty_id: Optional[PositiveInt] = None
+    practice: Optional[str] = None  # Legacy field
+    practice_id: Optional[int] = None
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+    rating: Optional[float] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_empty_strings(cls, values):
+        return empty_strings_to_none(
+            values,
+            ["practice", "phone_number", "email", "website"],
+        )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        """Validate name if provided."""
+        if v is not None:
+            if len(v.strip()) < 2:
+                raise ValueError("Practitioner name must be at least 2 characters long")
+            if len(v) > 100:
+                raise ValueError("Practitioner name must be less than 100 characters")
+            return v.strip()
+        return v
+
+    @field_validator("practice")
+    @classmethod
+    def validate_practice(cls, v):
+        """Validate practice if provided using shared helper."""
+        return _validate_practice_value(v)
+
+    @field_validator("phone_number", mode="before")
+    @classmethod
+    def validate_phone_number_update(cls, v):
+        """Validate phone number if provided using shared validator."""
+        return _validate_phone(v, field_name="Phone number")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_update(cls, v):
+        """Validate email if provided using shared helper."""
+        return _validate_email_value(v)
+
+    @field_validator("website")
+    @classmethod
+    def validate_website_update(cls, v):
+        """Validate website URL if provided using shared helper."""
+        return _validate_website_value(v)
+
+    @field_validator("rating")
+    @classmethod
+    def validate_rating_update(cls, v):
+        """Validate rating if provided using shared helper."""
+        return _validate_rating_value(v)
+
+
+class Practitioner(PractitionerBase):
+    """
+    Schema for reading/returning practitioner data.
+
+    This includes all the base fields plus the database-generated id field.
+    This is what gets returned when fetching practitioner data from the API.
+
+    Example response:
+        {
+            "id": 1,
+            "name": "Dr. John Smith",
+            "specialty_id": 3,
+            "specialty": "Cardiology",
+            "practice_name": "City General Hospital"
+        }
+    """
+
+    id: int
+    specialty: Optional[str] = None
+    practice_name: Optional[str] = None
+    specialty_name: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PractitionerSummary(BaseModel):
+    """
+    Schema for practitioner summary information.
+
+    Lightweight version used in lists or when full details aren't needed.
+
+    Example:
+        {
+            "id": 1,
+            "name": "Dr. John Smith",
+            "specialty": "Cardiology"
+        }
+    """
+
+    id: int
+    name: str
+    specialty: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PractitionerResponse(Practitioner):
+    """
+    Schema for practitioner response (alias for Practitioner).
+
+    This provides consistency with other model Response schemas.
+    """
+
+
+class PractitionerSearch(BaseModel):
+    """
+    Schema for practitioner search parameters.
+
+    Used for search endpoints to validate search criteria.
+
+    Example:
+        search_params = PractitionerSearch(
+            name="Smith",
+            specialty_id=3,
+        )
+    """
+
+    name: Optional[str] = None
+    specialty_id: Optional[PositiveInt] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name_search(cls, v):
+        """Validate search name parameter."""
+        if v is not None and len(v.strip()) < 1:
+            raise ValueError("Search name must not be empty")
+        return v.strip() if v else v
+
+
+class PractitionerWithStats(Practitioner):
+    """
+    Schema for practitioner with usage statistics.
+
+    Extends the base Practitioner schema with additional computed fields
+    showing how often this practitioner is referenced.
+
+    Example:
+        {
+            "id": 1,
+            "name": "Dr. John Smith",
+            "specialty": "Cardiology",
+            "total_encounters": 25,
+            "total_procedures": 15,
+            "total_treatments": 30
+        }
+    """
+
+    total_encounters: Optional[int] = 0
+    total_procedures: Optional[int] = 0
+    total_treatments: Optional[int] = 0
+    total_lab_results: Optional[int] = 0
+    total_conditions: Optional[int] = 0
+    total_immunizations: Optional[int] = 0
+
+    model_config = ConfigDict(from_attributes=True)

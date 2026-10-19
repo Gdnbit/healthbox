@@ -1,0 +1,24 @@
+{
+  "defaultLanguage": "zh",
+  "criticalTerms": {
+    "dashboard": "仪表板",
+    "patients": "家庭成员",
+    "labResults": "检验结果",
+    "vitals": "生命体征",
+    "reports": "报告",
+    "backup": "备份",
+    "restore": "恢复"
+  },
+  "allowedLatinTokens": [
+    "MediKeep",
+    "PDF",
+    "CSV",
+    "JSON",
+    "API",
+    "BMI",
+    "ICD-10",
+    "LOINC",
+    "Paperless-ngx",
+    "Papra"
+  ]
+}

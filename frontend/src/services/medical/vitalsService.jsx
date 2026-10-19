@@ -1,0 +1,353 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+/**
+ * Vitals Service
+ * Handles all API calls related to patient vital signs
+ */
+
+import { apiClient } from '../apiClient';
+import { GLUCOSE_CONTEXT_VALUES } from '../../components/medical/vitals/types';
+
+class VitalsService {
+  /**
+   * Get all vitals with optional pagination
+   * @param {Object} params - Query parameters (skip, limit)
+   * @returns {Promise<Array>}
+   */
+  async getVitals(params = {}) {
+    const queryParams = new URLSearchParams(params).toString();
+    const url = queryParams ? `/vitals/?${queryParams}` : '/vitals/';
+    return await apiClient.get(url);
+  }
+
+  /**
+   * Get vitals by ID
+   * @param {number} vitalsId
+   * @returns {Promise<Object>}
+   */
+  async getVitalsById(vitalsId) {
+    return await apiClient.get(`/vitals/${vitalsId}`);
+  }
+
+  /**
+   * Create new vitals record
+   * @param {Object} vitalsData
+   * @returns {Promise<Object>}
+   */
+  async createVitals(vitalsData) {
+    return await apiClient.post('/vitals/', vitalsData);
+  }
+
+  /**
+   * Update vitals record
+   * @param {number} vitalsId
+   * @param {Object} vitalsData
+   * @returns {Promise<Object>}
+   */
+  async updateVitals(vitalsId, vitalsData) {
+    return await apiClient.put(`/vitals/${vitalsId}`, vitalsData);
+  }
+
+  /**
+   * Delete vitals record
+   * @param {number} vitalsId
+   * @returns {Promise<void>}
+   */
+  async deleteVitals(vitalsId) {
+    return await apiClient.delete(`/vitals/${vitalsId}`);
+  }
+
+  /**
+   * Get vitals for a specific patient
+   * @param {number} patientId
+   * @param {Object} params - Query parameters (skip, limit, start_date, end_date)
+   * @returns {Promise<Array>}
+   */
+  async getPatientVitals(patientId, params = {}) {
+    const queryParams = new URLSearchParams(params).toString();
+    const url = queryParams
+      ? `/vitals/patient/${patientId}?${queryParams}`
+      : `/vitals/patient/${patientId}`;
+    return await apiClient.get(url);
+  }
+
+  /**
+   * Get paginated vitals for a specific patient with total count
+   * @param {number} patientId
+   * @param {Object} params - Query parameters (skip, limit, vital_type)
+   * @returns {Promise<{items: Array, total: number, skip: number, limit: number}>}
+   */
+  async getPatientVitalsPaginated(patientId, params = {}) {
+    const queryParams = new URLSearchParams(params).toString();
+    const url = queryParams
+      ? `/vitals/patient/${patientId}/paginated?${queryParams}`
+      : `/vitals/patient/${patientId}/paginated`;
+    const response = await apiClient.get(url);
+    return response?.data ?? response;
+  }
+
+  /**
+   * Get vitals statistics for a patient
+   * @param {number} patientId
+   * @param {Object} params - Query parameters (start_date, end_date)
+   * @returns {Promise<Object>}
+   */
+  async getPatientVitalsStats(patientId, params = {}) {
+    const queryParams = new URLSearchParams(params).toString();
+    const url = queryParams
+      ? `/vitals/patient/${patientId}/stats?${queryParams}`
+      : `/vitals/patient/${patientId}/stats`;
+    return await apiClient.get(url);
+  }
+
+  /**
+   * Get vitals for a patient within date range
+   * @param {number} patientId
+   * @param {string|undefined} startDate - Inclusive UTC start boundary
+   * @param {string|undefined} endDate - Inclusive UTC end boundary
+   * @param {Object} params - Additional query parameters
+   * @returns {Promise<Array>}
+   */
+  async getPatientVitalsDateRange(patientId, startDate, endDate, params = {}) {
+    const dateParams = { ...params };
+    if (startDate) dateParams.start_date = startDate;
+    if (endDate) dateParams.end_date = endDate;
+    const queryParams = new URLSearchParams(dateParams).toString();
+    return await apiClient.get(
+      `/vitals/patient/${patientId}/date-range?${queryParams}`
+    );
+  }
+
+  /**
+   * Get list of supported import devices
+   * @returns {Promise<{devices: Array<{key: string, name: string}>}>}
+   */
+  async getImportDevices() {
+    const response = await apiClient.get('/vitals/import/devices');
+    return response?.data ?? response;
+  }
+
+  /**
+   * Preview a vitals CSV import with duplicate detection
+   * @param {number} patientId
+   * @param {string} deviceKey - e.g., "dexcom_clarity"
+   * @param {File} file - CSV file
+   * @returns {Promise<Object>} Preview response with counts and sample rows
+   */
+  async previewImport(patientId, deviceKey, file) {
+    const formData = new FormData();
+    formData.append('device_key', deviceKey);
+    formData.append('file', file);
+    const response = await apiClient.postForm(
+      `/vitals/patient/${patientId}/import/preview`,
+      formData
+    );
+    return response?.data ?? response;
+  }
+
+  /**
+   * Execute a vitals CSV import
+   * @param {number} patientId
+   * @param {string} deviceKey
+   * @param {File} file - CSV file (re-uploaded)
+   * @param {boolean} skipDuplicates
+   * @returns {Promise<Object>} Import result with counts
+   */
+  async executeImport(patientId, deviceKey, file, skipDuplicates = true) {
+    const formData = new FormData();
+    formData.append('device_key', deviceKey);
+    formData.append('file', file);
+    formData.append('skip_duplicates', String(skipDuplicates));
+    const response = await apiClient.postForm(
+      `/vitals/patient/${patientId}/import/execute`,
+      formData
+    );
+    return response?.data ?? response;
+  }
+
+  /**
+   * Delete all imported vitals for a patient on a specific date
+   * @param {number} patientId
+   * @param {string} importSource - e.g., "dexcom_clarity"
+   * @param {string} date - YYYY-MM-DD
+   * @returns {Promise<{deleted_count: number}>}
+   */
+  async deleteImportedDay(patientId, importSource, date) {
+    const response = await apiClient.delete(
+      `/vitals/patient/${patientId}/import/${importSource}/date/${date}`
+    );
+    return response?.data ?? response;
+  }
+
+  /**
+   * Calculate BMI from height and weight
+   * @param {number} weight - Weight in lbs
+   * @param {number} height - Height in inches
+   * @returns {number} BMI value
+   */
+  calculateBMI(weight, height) {
+    if (!weight || !height || weight <= 0 || height <= 0) {
+      return null;
+    }
+
+    // Convert weight from lbs to kg
+    const weightInKg = weight / 2.205;
+
+    // Convert height from inches to meters
+    const heightInMeters = height * 0.0254;
+
+    // Calculate BMI: weight(kg) / height(m)^2
+    const bmi = weightInKg / (heightInMeters * heightInMeters);
+
+    return parseFloat(bmi.toFixed(1));
+  }
+
+  /**
+   * Get BMI category
+   * @param {number} bmi
+   * @returns {string} BMI category
+   */
+  getBMICategory(bmi) {
+    if (!bmi || bmi <= 0) return 'Unknown';
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25) return 'Normal weight';
+    if (bmi < 30) return 'Overweight';
+    return 'Above normal weight';
+  }
+
+  /**
+   * Get blood pressure category
+   * @param {number} systolic
+   * @param {number} diastolic
+   * @returns {string} Blood pressure category
+   */
+  getBloodPressureCategory(systolic, diastolic) {
+    if (!systolic || !diastolic) return 'Unknown';
+
+    if (systolic < 120 && diastolic < 80) return 'Normal';
+    if (systolic < 130 && diastolic < 80) return 'Elevated';
+    if (
+      (systolic >= 130 && systolic < 140) ||
+      (diastolic >= 80 && diastolic < 90)
+    ) {
+      return 'Stage 1 Hypertension';
+    }
+    if (
+      (systolic >= 140 && systolic < 180) ||
+      (diastolic >= 90 && diastolic < 120)
+    ) {
+      return 'Stage 2 Hypertension';
+    }
+    if (systolic >= 180 || diastolic >= 120) return 'Hypertensive Crisis';
+
+    return 'Unknown';
+  }
+
+  /**
+   * Validate vitals data
+   * @param {Object} vitalsData
+   * @returns {Object} Validation result
+   */
+  validateVitalsData(vitalsData) {
+    const errors = {};
+    const warnings = [];
+
+    // Required fields
+    if (!vitalsData.patient_id) errors.patient_id = 'Patient is required';
+    if (!vitalsData.recorded_date)
+      errors.recorded_date = 'Measurement date is required';
+
+    // Blood pressure validation
+    if (vitalsData.systolic_bp) {
+      if (vitalsData.systolic_bp < 50 || vitalsData.systolic_bp > 300) {
+        errors.systolic_bp = 'Systolic BP must be between 50-300 mmHg';
+      }
+    }
+    if (vitalsData.diastolic_bp) {
+      if (vitalsData.diastolic_bp < 30 || vitalsData.diastolic_bp > 200) {
+        errors.diastolic_bp = 'Diastolic BP must be between 30-200 mmHg';
+      }
+    }
+
+    // Heart rate validation
+    if (vitalsData.heart_rate) {
+      if (vitalsData.heart_rate < 30 || vitalsData.heart_rate > 250) {
+        errors.heart_rate = 'Heart rate must be between 30-250 BPM';
+      }
+    }
+
+    // Temperature validation
+    if (vitalsData.temperature) {
+      if (vitalsData.temperature < 90 || vitalsData.temperature > 110) {
+        errors.temperature = 'Temperature must be between 90-110°F';
+      }
+    }
+
+    // Weight validation
+    if (vitalsData.weight) {
+      if (vitalsData.weight < 0.1 || vitalsData.weight > 2200) {
+        errors.weight = 'Weight must be between 0.1-2200 lbs';
+      }
+    }
+
+    // Height validation (in inches)
+    if (vitalsData.height) {
+      if (vitalsData.height < 12 || vitalsData.height > 120) {
+        errors.height = 'Height must be between 12-120 inches';
+      }
+    }
+
+    // Blood glucose validation
+    if (vitalsData.blood_glucose) {
+      if (vitalsData.blood_glucose < 20 || vitalsData.blood_glucose > 800) {
+        errors.blood_glucose = 'Blood glucose must be between 20-800 mg/dL';
+      }
+    }
+
+    // Glucose context validation
+    if (vitalsData.glucose_context) {
+      if (!GLUCOSE_CONTEXT_VALUES.includes(vitalsData.glucose_context)) {
+        errors.glucose_context = `Glucose context must be one of: ${GLUCOSE_CONTEXT_VALUES.join(', ')}`;
+      }
+    }
+
+    // A1C validation
+    if (vitalsData.a1c) {
+      if (vitalsData.a1c < 0 || vitalsData.a1c > 20) {
+        errors.a1c = 'A1C must be between 0-20%';
+      }
+    }
+
+    // Add warnings for unusual values
+    if (vitalsData.systolic_bp && vitalsData.diastolic_bp) {
+      const bpCategory = this.getBloodPressureCategory(
+        vitalsData.systolic_bp,
+        vitalsData.diastolic_bp
+      );
+      if (
+        bpCategory.includes('Hypertension') ||
+        bpCategory === 'Hypertensive Crisis'
+      ) {
+        warnings.push(`Blood pressure indicates ${bpCategory}`);
+      }
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors,
+      warnings,
+    };
+  }
+
+  /**
+   * Get vitals statistics for the current user
+   * @param {Object} params - Query parameters (start_date, end_date)
+   * @returns {Promise<Object>}
+   */
+  async getVitalsStats(params = {}) {
+    const queryParams = new URLSearchParams(params).toString();
+    const url = queryParams ? `/vitals/stats?${queryParams}` : `/vitals/stats`;
+    return await apiClient.get(url);
+  }
+}
+
+export const vitalsService = new VitalsService();

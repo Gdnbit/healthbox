@@ -1,0 +1,44 @@
+/* Admin Sidebar - positioning and transitions only */
+.admin-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  background: var(--mantine-color-body);
+  border-right: 1px solid var(--mantine-color-default-border);
+  transition: width 0.3s ease;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.admin-sidebar.open {
+  width: 280px;
+}
+
+.admin-sidebar.closed {
+  width: 60px;
+}
+
+/* Mobile: sidebar is hidden when closed, full overlay when open */
+@media (max-width: 768px) {
+  .admin-sidebar.closed {
+    width: 0;
+  }
+
+  .admin-sidebar.open {
+    width: 280px;
+  }
+
+  .mobile-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+  }
+}
+
+/* Desktop: backdrop not needed */
+@media (min-width: 769px) {
+  .mobile-sidebar-backdrop {
+    display: none;
+  }
+}

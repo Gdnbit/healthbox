@@ -1,0 +1,114 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "alert": {
+    "errorCount": "{{count}} Fout",
+    "errorCount_one": "{{count}} Fout",
+    "errorCount_other": "{{count}} Fouten",
+    "formError": "Formulierfout",
+    "highPriority": "{{count}} hoge prioriteit",
+    "highPriority_one": "{{count}} hoge prioriteit",
+    "highPriority_other": "{{count}} hoge prioriteit",
+    "suggestions": "Suggesties:"
+  },
+  "boundary": {
+    "componentLabel": "Component:",
+    "errorDetails": "Foutdetails",
+    "errorIdLabel": "Fout-ID:",
+    "errorLogged": "De fout is automatisch geregistreerd voor onderzoek.",
+    "reloadPage": "Pagina herladen",
+    "somethingWentWrong": "Er is iets misgegaan",
+    "tryAgain": "Opnieuw proberen",
+    "unexpectedError": "Onze excuses, maar er is iets onverwachts gebeurd in het medisch dossiersysteem."
+  },
+  "file": {
+    "deleteFailed": "Bestand verwijderen mislukt. Probeer het opnieuw.",
+    "downloadFailed": "Bestand downloaden mislukt. Probeer het opnieuw.",
+    "notFound": "Bestand niet gevonden.",
+    "viewFailed": "Bestand openen voor weergave mislukt. Probeer het opnieuw."
+  },
+  "form": {
+    "conditionNotSelected": "Selecteer een aandoening",
+    "entityNotFound": "Het gevraagde item kon niet worden gevonden.",
+    "equipmentFieldsRequired": "Naam en type van de apparatuur zijn verplicht",
+    "equipmentNotSelected": "Selecteer minimaal één apparatuur",
+    "invalidDate": "Voer een geldige datum in.",
+    "invalidEmail": "Voer een geldig e-mailadres in.",
+    "invalidPhone": "Voer een geldig telefoonnummer in.",
+    "invalidPhoneDigits": "Voer een geldig telefoonnummer in",
+    "invalidWebsiteUrl": "Voer een geldige website-URL in",
+    "labResultNotSelected": "Please select at least one lab result",
+    "medicationNotSelected": "Selecteer een medicatie",
+    "mustBeValidNumber": "Moet een geldig getal zijn",
+    "patientNotSelected": "Selecteer een patiënt.",
+    "requiredFieldMissing": "Vul alle verplichte velden in.",
+    "submissionFailed": "Formulier opslaan mislukt. Controleer uw invoer en probeer het opnieuw."
+  },
+  "general": {
+    "maintenanceMode": "Het systeem is momenteel in onderhoud. Probeer het later opnieuw.",
+    "permissionDenied": "U heeft geen toestemming om deze actie uit te voeren.",
+    "rateLimitExceeded": "Te veel verzoeken. Wacht even en probeer het opnieuw.",
+    "sessionExpired": "Uw sessie is verlopen. Log opnieuw in.",
+    "storageFull": "Opslaglimiet bereikt. Maak ruimte vrij en probeer het opnieuw.",
+    "unknownError": "Er is een onverwachte fout opgetreden. Probeer het opnieuw.",
+    "validationError": "Controleer uw invoer en probeer het opnieuw."
+  },
+  "network": {
+    "connectionError": "Verbindingsfout. Controleer uw netwerk en probeer het opnieuw.",
+    "serverError": "Serverfout opgetreden. Probeer het later opnieuw.",
+    "timeout": "Verzoek verlopen. Probeer het opnieuw.",
+    "unavailable": "Netwerk niet beschikbaar. Controleer uw verbinding."
+  },
+  "paperless": {
+    "authFailed": "Authenticatie met Paperless-service mislukt. Controleer de inloggegevens.",
+    "configIncomplete": "Paperless-configuratie is onvolledig. Controleer uw instellingen.",
+    "connectionFailed": "Kan geen verbinding maken met Paperless-service. Controleer de configuratie.",
+    "duplicateDocument": "Dit document bestaat al in Paperless. Identieke documenten kunnen niet tweemaal worden geüpload.",
+    "notEnabled": "Paperless-integratie is niet ingeschakeld. Schakel deze in bij Instellingen.",
+    "taskFailed": "Document uploaden naar Paperless mislukt. Probeer het opnieuw of neem contact op met ondersteuning.",
+    "taskTimeout": "Documentverwerking is verlopen. Het document wordt mogelijk nog verwerkt in Paperless.",
+    "unavailable": "Documentbeheerservice is momenteel niet beschikbaar.",
+    "uploadFailed": "Uploaden naar Paperless-documentbeheersysteem mislukt."
+  },
+  "patientForm": {
+    "birthDateFuture": "Geboortedatum kan niet in de toekomst liggen",
+    "birthDateRequired": "Geboortedatum is verplicht",
+    "createFailed": "Aanmaken mislukt: {{message}}",
+    "firstNameRequired": "Voornaam is verplicht",
+    "lastNameRequired": "Achternaam is verplicht",
+    "updateFailed": "Bijwerken mislukt: {{message}}"
+  },
+  "patientNotAvailable": "Patiëntinformatie niet beschikbaar",
+  "relationships": {
+    "addConditionFailed": "Aandoeningrelatie toevoegen mislukt",
+    "addFailed": "Relatie toevoegen mislukt",
+    "addMedicationFailed": "Medicatierelatie toevoegen mislukt",
+    "deleteFailed": "Relatie verwijderen mislukt",
+    "fetchFailed": "Relaties laden mislukt",
+    "updateFailed": "Relatie bijwerken mislukt"
+  },
+  "success": {
+    "batchUploadSuccess": "Alle bestanden succesvol geüpload!",
+    "fileDeleted": "Bestand succesvol verwijderd.",
+    "formSaved": "Formulier succesvol opgeslagen!",
+    "paperlessSyncSuccess": "Succesvol gesynchroniseerd met Paperless-documentbeheer.",
+    "uploadMultipleSuccess": "Alle bestanden succesvol geüpload!",
+    "uploadSuccess": "Bestand succesvol geüpload!"
+  },
+  "upload": {
+    "allUploadsFailed": "Alle uploads zijn mislukt. Controleer uw verbinding en probeer het opnieuw.",
+    "batchUploadFailed": "Sommige bestanden zijn niet geüpload. Controleer de individuele bestandsfouten.",
+    "connectionError": "Verbindingsfout. Controleer uw netwerk en probeer het opnieuw.",
+    "duplicateFile": "Dit bestand is al geüpload.",
+    "failed": "Bestand uploaden mislukt. Probeer het opnieuw.",
+    "fileProcessingFailed": "Bestand verwerken mislukt. Probeer een ander bestand.",
+    "fileTooLarge": "Bestandsgrootte overschrijdt de maximale limiet.",
+    "invalidFileType": "Bestandstype wordt niet ondersteund.",
+    "partialUploadSuccess": "Upload voltooid met enkele fouten. Controleer de mislukte bestanden."
+  },
+  "warnings": {
+    "duplicateWarning": "Dit bestand lijkt een duplicaat te zijn.",
+    "largeFileWarning": "Groot bestand gedetecteerd. Upload kan enkele minuten duren.",
+    "partialSuccess": "Bewerking voltooid met enkele waarschuwingen.",
+    "slowConnection": "Upload duurt langer dan gebruikelijk vanwege een trage verbinding."
+  }
+}

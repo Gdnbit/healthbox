@@ -1,0 +1,12 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "version": "healthbox-starter-1",
+  "lastUpdated": "2026-10-19",
+  "_source": "Original minimal HealthBox list of generic labels, not a WHO catalog or immunization schedule. who_code remains null for schema compatibility.",
+  "_license": "Apache-2.0",
+  "vaccines": [
+    {"who_code":null,"vaccine_name":"Polio vaccine","short_name":null,"category":"Viral","common_names":["脊髓灰质炎疫苗"],"is_combined":false,"components":null,"disease_keys":["Polio"],"default_manufacturer":null,"is_common":true,"display_order":1},
+    {"who_code":null,"vaccine_name":"Hepatitis B vaccine","short_name":null,"category":"Viral","common_names":["乙肝疫苗"],"is_combined":false,"components":null,"disease_keys":["Hepatitis B"],"default_manufacturer":null,"is_common":true,"display_order":2},
+    {"who_code":null,"vaccine_name":"Influenza vaccine","short_name":null,"category":"Viral","common_names":["流感疫苗"],"is_combined":false,"components":null,"disease_keys":["Influenza"],"default_manufacturer":null,"is_common":true,"display_order":3}
+  ]
+}

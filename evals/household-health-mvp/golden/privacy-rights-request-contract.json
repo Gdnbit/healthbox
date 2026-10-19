@@ -1,0 +1,228 @@
+{
+  "contract_id": "household-privacy-rights-request@1.0.0",
+  "scope": {
+    "authenticated": true,
+    "subject_scope": "exactly_one_owned_subject",
+    "cross_subject_parameters_allowed": false,
+    "administrator_create_for_member": false,
+    "shared_dashboard_grants_request_access": false,
+    "owner_global_read_grants_request_creation": false
+  },
+  "endpoints": {
+    "member": [
+      "GET /api/v1/privacy-rights/requests",
+      "POST /api/v1/privacy-rights/requests",
+      "GET /api/v1/privacy-rights/requests/{request_id}",
+      "POST /api/v1/privacy-rights/requests/{request_id}/supplements",
+      "POST /api/v1/privacy-rights/requests/{request_id}/cancel"
+    ],
+    "administrator": [
+      "GET /api/v1/admin/privacy-rights/requests",
+      "GET /api/v1/admin/privacy-rights/requests/{request_id}",
+      "POST /api/v1/admin/privacy-rights/requests/{request_id}/transitions"
+    ],
+    "delete_endpoint": false
+  },
+  "request_types": {
+    "data_copy": {
+      "member_label": "获取我的数据副本",
+      "preferred_self_service_route": "/health-archive-export",
+      "fulfillment_evidence_types": ["health_archive_job"]
+    },
+    "correction": {
+      "member_label": "更正我的数据",
+      "preferred_self_service_route": "/family-health/archive",
+      "fulfillment_evidence_types": [
+        "formal_metric_revision",
+        "health_background_revision",
+        "coverage_revision"
+      ]
+    },
+    "stop_sharing": {
+      "member_label": "停止共享我的档案",
+      "reciprocal_effect_notice_required": true,
+      "fulfillment_evidence_types": ["archive_membership_change"]
+    },
+    "deactivate_account": {
+      "member_label": "停用我的账号",
+      "session_revocation_required": true,
+      "fulfillment_evidence_types": [
+        "account_deactivation",
+        "session_revocation"
+      ]
+    },
+    "delete_data": {
+      "member_label": "申请删除我的数据",
+      "automatic_physical_delete": false,
+      "fulfillment_evidence_types": ["controlled_purge_case"]
+    },
+    "restrict_processing": {
+      "member_label": "申请停止或限制处理",
+      "automatic_restriction": false,
+      "fulfillment_evidence_types": ["processing_restriction_record"]
+    }
+  },
+  "submission": {
+    "required_fields": ["request_type", "idempotency_key"],
+    "optional_member_description": {
+      "min_length_when_present": 3,
+      "max_length": 1000,
+      "trimmed": true,
+      "may_contain_sensitive_content": true,
+      "excluded_from_list_responses": true,
+      "excluded_from_audit": true
+    },
+    "idempotency_key": {
+      "min_length": 8,
+      "max_length": 64,
+      "same_key_same_payload_returns_existing": true,
+      "same_key_different_payload_rejected": true
+    },
+    "forbidden_target_fields": [
+      "patient_id",
+      "user_id",
+      "subject_id",
+      "member_name",
+      "circle_id",
+      "membership_id"
+    ]
+  },
+  "lifecycle": {
+    "initial_state": "submitted",
+    "states": [
+      "submitted",
+      "in_review",
+      "needs_information",
+      "fulfilled",
+      "partially_fulfilled",
+      "rejected",
+      "cancelled"
+    ],
+    "transitions": {
+      "submitted": [
+        "in_review",
+        "needs_information",
+        "fulfilled",
+        "partially_fulfilled",
+        "rejected",
+        "cancelled"
+      ],
+      "in_review": [
+        "needs_information",
+        "fulfilled",
+        "partially_fulfilled",
+        "rejected"
+      ],
+      "needs_information": ["submitted", "cancelled"],
+      "fulfilled": [],
+      "partially_fulfilled": [],
+      "rejected": [],
+      "cancelled": []
+    },
+    "member_cancel_states": ["submitted", "needs_information"],
+    "events_append_only": true,
+    "terminal_events_hard_deletable": false,
+    "reopen_terminal_request": false
+  },
+  "deadline_policy": {
+    "policy_version": "household-rights-response-target@1.0.0",
+    "decision_reference": "D-52",
+    "decision_status": "design_provisional",
+    "target_calendar_days": 30,
+    "timezone": "Asia/Shanghai",
+    "internal_operational_target_only": true,
+    "legal_deadline_or_compliance_claim": false,
+    "historical_due_at_rewritten_on_policy_change": false
+  },
+  "member_response": {
+    "list_fields": [
+      "request_id",
+      "request_type",
+      "status",
+      "submitted_at",
+      "updated_at",
+      "due_at",
+      "is_overdue",
+      "next_step"
+    ],
+    "detail_additional_fields": [
+      "member_description",
+      "member_visible_outcome",
+      "limitation_reasons",
+      "retained_categories",
+      "expected_backup_expiry",
+      "evidence_summaries",
+      "resolved_at"
+    ],
+    "forbidden_fields": [
+      "user_id",
+      "patient_id",
+      "subject_id",
+      "circle_id",
+      "membership_id",
+      "administrator_user_id",
+      "internal_note",
+      "raw_evidence_id",
+      "health_values",
+      "report_text",
+      "source_file_content",
+      "server_path",
+      "backup_path"
+    ]
+  },
+  "administrator_processing": {
+    "member_description_immutable": true,
+    "terminal_member_visible_outcome_required": true,
+    "terminal_transition_reason_required": true,
+    "fulfillment_evidence_required_for": ["fulfilled", "partially_fulfilled"],
+    "request_record_executes_business_mutation": false,
+    "internal_note_visible_to_member": false,
+    "processing_actions_use_separate_authorized_services": true
+  },
+  "destructive_request_guards": {
+    "delete_or_restrict_without_execution_evidence_can_be_fulfilled": false,
+    "backup_or_audit_limitations_require_partial_or_nonterminal_status": true,
+    "retained_categories_and_reasons_required_when_limited": true,
+    "backup_natural_expiry_notice_required_when_applicable": true,
+    "request_cancellation_restores_or_deletes_health_data": false
+  },
+  "audit": {
+    "records_actor_request_type_status_policy_result_and_time": true,
+    "forbidden_values": [
+      "member_description",
+      "supplement_text",
+      "internal_note",
+      "member_visible_outcome",
+      "health_metric_values",
+      "report_content",
+      "source_file_content",
+      "server_paths",
+      "credentials",
+      "tokens"
+    ]
+  },
+  "ui": {
+    "member_route": "/privacy-rights",
+    "member_entry": "我的/数据与隐私/我的数据权利",
+    "administrator_route": "/admin/privacy-rights",
+    "language": "zh-CN",
+    "mobile_width_baseline_px": 390,
+    "self_service_before_request": true,
+    "destructive_request_second_confirmation": true,
+    "submission_is_not_immediate_execution_notice": true
+  },
+  "acceptance_cases": [
+    "member_can_only_create_and_read_requests_for_current_owned_subject",
+    "shared_or_owner_global_read_access_does_not_grant_request_creation",
+    "idempotent_replay_returns_original_and_mismatched_replay_fails",
+    "stop_sharing_submission_discloses_reciprocal_effect_without_circle_metadata",
+    "request_submission_never_mutates_health_sharing_account_or_storage",
+    "administrator_transition_requires_reason_and_terminal_evidence",
+    "delete_or_restrict_cannot_be_fulfilled_without_controlled_execution_evidence",
+    "backup_and_audit_limitations_are_visible_and_not_misreported_as_erased",
+    "member_description_and_health_content_never_enter_audit",
+    "member_can_cancel_only_submitted_or_needs_information_requests",
+    "request_history_has_no_hard_delete_endpoint",
+    "deadline_is_presented_as_versioned_internal_target_not_legal_claim"
+  ]
+}

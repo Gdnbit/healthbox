@@ -1,0 +1,18 @@
+{
+  "today": "2026-07-22",
+  "date_windows": [
+    { "preset": "3months", "expected_from": "2026-04-22", "expected_to": "2026-07-22" },
+    { "date_from": "2025-01-01", "date_to": "2025-12-31", "expected": "valid" },
+    { "date_from": "2025-12-31", "date_to": "2025-01-01", "expected": "reversed" },
+    { "date_from": "2025-02-30", "date_to": "", "expected": "invalid_format" }
+  ],
+  "lab_points": [
+    { "id": 701, "date": "2024-01-10", "value": 10.0, "unit": "u/L", "lab_result_id": 1701, "source_document_id": 2701, "source_page": 2 },
+    { "id": 702, "date": "2025-01-10", "value": 12.5, "unit": "u/L", "lab_result_id": 1702, "source_document_id": 2702, "source_page": 3 },
+    { "id": 703, "date": "2025-01-10", "value": 11.5, "unit": "u/L", "lab_result_id": 1703, "source_document_id": null, "source_page": null }
+  ],
+  "blood_pressure_points": [
+    { "id": 801, "date": "2025-02-01T08:00:00Z", "primary": 118, "secondary": 76, "unit": "mmHg" },
+    { "id": 802, "date": "2025-06-01T08:00:00Z", "primary": 121, "secondary": 79, "unit": "mmHg" }
+  ]
+}

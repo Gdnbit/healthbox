@@ -1,0 +1,490 @@
+"""
+System endpoints for medical records application.
+Phase 4: Backend Log Level Endpoint implementation.
+
+Provides system configuration and logging level information for frontend integration.
+"""
+
+import os
+import time
+from collections import defaultdict, deque
+from datetime import datetime
+from typing import Any, Dict
+
+from fastapi import APIRouter, HTTPException, Query, Request, status
+
+from app.core.config import settings
+from app.core.logging.config import get_logger
+from app.core.logging.constants import (
+    CATEGORIES,
+    DEFAULT_LOG_LEVEL,
+    VALID_LOG_LEVELS,
+    LogFields,
+    get_log_level_numeric,
+    sanitize_log_input,
+    validate_log_level,
+)
+from app.core.logging.helpers import log_security_event
+from app.services.release_notes_service import get_release_notes_service
+
+# Constants
+BYTES_PER_MB = 1048576  # 1024 * 1024
+
+router = APIRouter()
+
+# Initialize loggers using shared constants
+app_logger = get_logger(__name__, "app")
+security_logger = get_logger(__name__, "security")
+
+
+# Simple rate limiting implementation (10 requests per minute)
+# Using collections for efficiency and automatic cleanup
+class SimpleRateLimiter:
+    """
+    Simple in-memory rate limiter for log level endpoint.
+    Tracks requests per IP address with automatic cleanup.
+    """
+
+    def __init__(self, max_requests: int = 10, window_minutes: int = 1):
+        self.max_requests = max_requests
+        self.window_seconds = window_minutes * 60
+        self.requests: Dict[str, deque] = defaultdict(deque)
+
+    def is_allowed(self, client_ip: str) -> bool:
+        """
+        Check if client IP is allowed to make a request.
+
+        Args:
+            client_ip: IP address of the client
+
+        Returns:
+            True if allowed, False if rate limited
+        """
+        now = time.time()
+        client_requests = self.requests[client_ip]
+
+        # Remove old requests outside the window
+        while client_requests and client_requests[0] <= now - self.window_seconds:
+            client_requests.popleft()
+
+        # Check if under limit
+        if len(client_requests) < self.max_requests:
+            client_requests.append(now)
+            return True
+
+        return False
+
+    def get_remaining_requests(self, client_ip: str) -> int:
+        """Get number of remaining requests for client."""
+        now = time.time()
+        client_requests = self.requests[client_ip]
+
+        # Remove old requests
+        while client_requests and client_requests[0] <= now - self.window_seconds:
+            client_requests.popleft()
+
+        return max(0, self.max_requests - len(client_requests))
+
+    def get_reset_time(self, client_ip: str) -> float:
+        """Get timestamp when rate limit resets for client."""
+        client_requests = self.requests[client_ip]
+        if not client_requests:
+            return time.time()
+        return client_requests[0] + self.window_seconds
+
+
+# Initialize rate limiter for log level endpoint
+# 60 requests per minute = 1 per second (reasonable for frontend usage)
+rate_limiter = SimpleRateLimiter(max_requests=60, window_minutes=1)
+
+
+def get_client_ip(request: Request) -> str:
+    """
+    Safely extract client IP address from request.
+
+    Args:
+        request: FastAPI request object
+
+    Returns:
+        Sanitized client IP address
+    """
+    # Try various headers for real IP (useful behind proxies)
+    potential_ips = [
+        request.headers.get("x-forwarded-for", "").split(",")[0].strip(),
+        request.headers.get("x-real-ip", ""),
+        getattr(request.client, "host", "unknown") if request.client else "unknown",
+    ]
+
+    # Return first non-empty IP, sanitized
+    for ip in potential_ips:
+        if ip and ip != "unknown":
+            return sanitize_log_input(ip, max_length=45)  # IPv6 max length
+
+    return "unknown"
+
+
+@router.get("/log-level")
+def get_log_level(request: Request) -> Dict[str, Any]:
+    """
+    Get current logging configuration for frontend integration.
+
+    Returns current LOG_LEVEL and available configuration options.
+    Rate limited to 60 requests per minute per IP address.
+
+    Returns:
+        Dict containing:
+        - current_level: Current LOG_LEVEL setting
+        - available_levels: List of valid log levels
+        - default_level: Default level when not specified
+        - categories: Available log categories
+        - file_mapping: Description of log files
+        - timestamp: Current timestamp
+        - rate_limit_info: Rate limiting information
+    """
+    client_ip = get_client_ip(request)
+
+    try:
+        # Apply rate limiting
+        if not rate_limiter.is_allowed(client_ip):
+            remaining_requests = rate_limiter.get_remaining_requests(client_ip)
+            reset_time = rate_limiter.get_reset_time(client_ip)
+            reset_datetime = datetime.fromtimestamp(reset_time)
+
+            # Log rate limit violation for security monitoring
+            log_security_event(
+                security_logger,
+                "rate_limit_exceeded",
+                request,
+                f"Rate limit exceeded for log level endpoint from {client_ip}",
+                endpoint="/api/v1/system/log-level",
+                remaining_requests=remaining_requests,
+                reset_time=reset_datetime.isoformat(),
+            )
+
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Rate limit exceeded. Maximum 60 requests per minute.",
+                headers={
+                    "X-RateLimit-Limit": "60",
+                    "X-RateLimit-Remaining": str(remaining_requests),
+                    "X-RateLimit-Reset": str(int(reset_time)),
+                    "Retry-After": str(int(reset_time - time.time())),
+                },
+            )
+
+        # Log successful access attempt for app monitoring
+        app_logger.info(
+            f"Log level endpoint accessed from {client_ip}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "log_level_endpoint_access",
+                LogFields.IP: client_ip,
+                "user_agent": sanitize_log_input(
+                    request.headers.get("user-agent", "unknown")
+                ),
+            },
+        )
+
+        # Get current log level with validation using shared constants
+        current_level = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper().strip()
+
+        # Validate and fallback if needed
+        if not validate_log_level(current_level):
+            app_logger.warning(
+                f"Invalid LOG_LEVEL '{current_level}' detected, falling back to {DEFAULT_LOG_LEVEL}",
+                extra={
+                    LogFields.CATEGORY: "app",
+                    LogFields.EVENT: "invalid_log_level_fallback",
+                    "invalid_level": current_level,
+                    "fallback_level": DEFAULT_LOG_LEVEL,
+                },
+            )
+            current_level = DEFAULT_LOG_LEVEL
+
+        # Get rate limit info for response
+        remaining_requests = rate_limiter.get_remaining_requests(client_ip)
+        reset_time = rate_limiter.get_reset_time(client_ip)
+
+        # Build comprehensive response
+        response_data = {
+            "current_level": current_level,
+            "available_levels": VALID_LOG_LEVELS,
+            "default_level": DEFAULT_LOG_LEVEL,
+            "categories": CATEGORIES,
+            "file_mapping": {
+                "app": "logs/app.log - Patient access, API calls, frontend errors, performance events",
+                "security": "logs/security.log - Authentication failures, security threats, suspicious activity",
+            },
+            "configuration": {
+                "log_level_numeric": get_log_level_numeric(current_level),
+                "simplified_structure": True,
+                "file_count": len(CATEGORIES),
+                "max_file_size_mb": 50,
+                "backup_count": 10,
+            },
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "rate_limit_info": {
+                "requests_remaining": remaining_requests,
+                "requests_limit": 60,
+                "window_seconds": 60,
+                "reset_time": datetime.fromtimestamp(reset_time).isoformat() + "Z",
+            },
+        }
+
+        app_logger.debug(
+            f"Log level configuration returned to {client_ip}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "log_level_config_returned",
+                LogFields.IP: client_ip,
+                "current_level": current_level,
+                "requests_remaining": remaining_requests,
+            },
+        )
+
+        return response_data
+
+    except HTTPException:
+        # Re-raise HTTP exceptions (like rate limiting)
+        raise
+    except Exception as e:
+        # Log unexpected errors for debugging
+        app_logger.error(
+            f"Log level endpoint error for {client_ip}: {e}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "log_level_endpoint_error",
+                LogFields.IP: client_ip,
+                LogFields.ERROR: sanitize_log_input(str(e)),
+                "error_type": type(e).__name__,
+            },
+        )
+
+        # Don't expose internal error details to clients
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error. Please try again later.",
+        )
+
+
+@router.get("/version")
+def get_version() -> Dict[str, Any]:
+    """
+    Get application version information.
+
+    Returns:
+        Dict containing app name, version, and timestamp
+    """
+    return {
+        "app_name": settings.APP_NAME,
+        "version": settings.VERSION,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+
+
+@router.get("/health")
+def system_health() -> Dict[str, Any]:
+    """
+    Basic system health check endpoint.
+
+    Returns:
+        System health status and logging system status
+    """
+    try:
+        # Basic health check
+        current_level = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL)
+        is_valid_level = validate_log_level(current_level)
+
+        return {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "logging_system": {
+                "current_level": current_level,
+                "level_valid": is_valid_level,
+                "categories_configured": len(CATEGORIES),
+            },
+        }
+    except Exception as e:
+        app_logger.error(
+            f"System health check failed: {e}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "health_check_failed",
+                LogFields.ERROR: sanitize_log_input(str(e)),
+            },
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="System health check failed",
+        )
+
+
+@router.get("/log-rotation-config")
+def get_log_rotation_config(request: Request) -> Dict[str, Any]:
+    """
+    Get current log rotation configuration (admin endpoint).
+
+    Returns detailed information about log rotation settings including:
+    - Active rotation method (logrotate vs Python)
+    - Configuration settings (size, backup count, retention)
+    - Log directory and file information
+    - Feature availability by method
+
+    Rate limited to 60 requests per minute per IP address.
+
+    Returns:
+        Dict containing log rotation configuration details
+    """
+    client_ip = get_client_ip(request)
+
+    try:
+        # Apply rate limiting
+        if not rate_limiter.is_allowed(client_ip):
+            remaining_requests = rate_limiter.get_remaining_requests(client_ip)
+            reset_time = rate_limiter.get_reset_time(client_ip)
+
+            log_security_event(
+                security_logger,
+                "rate_limit_exceeded",
+                request,
+                f"Rate limit exceeded for log rotation config endpoint from {client_ip}",
+                endpoint="/api/v1/system/log-rotation-config",
+            )
+
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Rate limit exceeded. Maximum 60 requests per minute.",
+                headers={
+                    "X-RateLimit-Limit": "60",
+                    "X-RateLimit-Remaining": str(remaining_requests),
+                    "X-RateLimit-Reset": str(int(reset_time)),
+                },
+            )
+
+        # Log access
+        app_logger.info(
+            f"Log rotation config endpoint accessed from {client_ip}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "log_rotation_config_access",
+                LogFields.IP: client_ip,
+            },
+        )
+
+        # Get rotation configuration
+        from pathlib import Path
+
+        from app.core.logging.config import (
+            _get_rotation_method,
+            _is_logrotate_available,
+        )
+
+        rotation_method = _get_rotation_method()
+        log_dir = Path(settings.LOG_DIR)
+
+        # Get log file sizes
+        log_files = {}
+        for category in CATEGORIES:
+            log_file = log_dir / f"{category}.log"
+            if log_file.exists():
+                size_bytes = log_file.stat().st_size
+                size_mb = size_bytes / BYTES_PER_MB
+                log_files[category] = {
+                    "path": str(log_file),
+                    "size_bytes": size_bytes,
+                    "size_mb": round(size_mb, 2),
+                    "exists": True,
+                }
+            else:
+                log_files[category] = {
+                    "path": str(log_file),
+                    "exists": False,
+                }
+
+        response_data = {
+            "rotation_method": rotation_method,
+            "logrotate_available": _is_logrotate_available(),
+            "configuration": {
+                "method": settings.LOG_ROTATION_METHOD,
+                "size": settings.LOG_ROTATION_SIZE,
+                "time": settings.LOG_ROTATION_TIME,
+                "backup_count": settings.LOG_ROTATION_BACKUP_COUNT,
+                "compression": settings.LOG_COMPRESSION,
+                "retention_days": settings.LOG_RETENTION_DAYS,
+            },
+            "log_directory": str(log_dir),
+            "log_files": log_files,
+            "features": {
+                "size_based_rotation": True,
+                "time_based_rotation": rotation_method == "logrotate",
+                "compression": rotation_method == "logrotate",
+                "hybrid_rotation": rotation_method == "logrotate",
+            },
+            "notes": {
+                "python_rotation": "Size-based only, fallback for development/Windows",
+                "logrotate_rotation": "Full features including time-based and compression",
+            },
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        }
+
+        return response_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        app_logger.error(
+            f"Log rotation config endpoint error for {client_ip}: {e}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "log_rotation_config_error",
+                LogFields.IP: client_ip,
+                LogFields.ERROR: sanitize_log_input(str(e)),
+            },
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error. Please try again later.",
+        )
+
+
+@router.get("/releases")
+async def get_releases(limit: int = Query(default=10, ge=1, le=20)) -> Dict[str, Any]:
+    """
+    Get application release notes from GitHub.
+
+    Returns recent releases with version info for the frontend
+    to display release notes and "What's New" notifications.
+
+    Args:
+        limit: Maximum number of releases to return (capped at 20)
+
+    Returns:
+        Dict containing releases list, current version, and timestamp
+    """
+    try:
+        service = get_release_notes_service()
+        releases = await service.get_releases(limit=limit)
+
+        return {
+            "releases": releases,
+            "current_version": settings.VERSION,
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        }
+    except Exception as e:
+        app_logger.error(
+            f"Release notes endpoint error: {e}",
+            extra={
+                LogFields.CATEGORY: "app",
+                LogFields.EVENT: "release_notes_endpoint_error",
+                LogFields.ERROR: sanitize_log_input(str(e)),
+            },
+        )
+
+        # Return empty releases on error rather than failing
+        return {
+            "releases": [],
+            "current_version": settings.VERSION,
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        }

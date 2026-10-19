@@ -1,0 +1,978 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import { vi } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { MantineProvider } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { useFormSubmissionWithUploads } from '../useFormSubmissionWithUploads';
+import logger from '../../services/logger';
+
+const mockTranslation = vi.hoisted(() => (key, values = {}) => {
+  const translations = {
+    'toasts.formSubmission.failedMessage': 'Form submission failed.',
+    'toasts.formSubmission.failedShortTitle': 'Failed',
+    'toasts.formSubmission.failedTitle': 'Form Submission Failed',
+    'toasts.formSubmission.partialCompleteMessage':
+      'Form saved, but some files failed to upload.',
+    'toasts.formSubmission.partialCompleteTitle': 'Partially Complete',
+    'toasts.formSubmission.partialMessage': `Form saved successfully, but ${values.failed} file(s) failed to upload. ${values.completed} file(s) uploaded successfully.`,
+    'toasts.formSubmission.partialTitle': 'Partially Successful',
+    'toasts.formSubmission.savingMessage':
+      'Please wait while your information is being saved.',
+    'toasts.formSubmission.savingTitle': 'Saving Form...',
+    'toasts.formSubmission.successMessage': 'Form saved successfully!',
+    'toasts.formSubmission.successTitle': 'Success!',
+    'toasts.formSubmission.successWithFiles': `Form saved and ${values.count} file(s) uploaded successfully!`,
+    'toasts.formSubmission.successWithFilesMessage':
+      'Form and files saved successfully.',
+    'toasts.formSubmission.uploadFailedMessage':
+      'The files could not be uploaded.',
+    'toasts.formSubmission.uploadFailedTitle': 'File Upload Failed',
+    'toasts.formSubmission.uploadingMessage':
+      'Your form has been saved, now uploading files...',
+    'toasts.formSubmission.uploadingTitle': 'Uploading Files...',
+  };
+  return translations[key] ?? key;
+});
+
+// Mock dependencies
+vi.mock('@mantine/notifications', () => ({
+  notifications: {
+    show: vi.fn(),
+  },
+}));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: mockTranslation,
+  }),
+}));
+
+vi.mock('../../services/logger', () => ({
+  default: {
+    info: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Mock error messages
+vi.mock('../../constants/errorMessages', () => ({
+  ERROR_MESSAGES: {
+    FORM_SUBMISSION_FAILED: 'Form submission failed',
+    UPLOAD_FAILED: 'Upload failed',
+  },
+  SUCCESS_MESSAGES: {
+    FORM_SAVED: 'Form saved successfully!',
+  },
+  WARNING_MESSAGES: {},
+  getUserFriendlyError: vi.fn((error, _context) => `User friendly: ${error}`),
+}));
+
+// Wrapper component for Mantine provider
+const wrapper = ({ children }) => <MantineProvider>{children}</MantineProvider>;
+
+describe('useFormSubmissionWithUploads Hook', () => {
+  const mockOnSuccess = vi.fn();
+  const mockOnError = vi.fn();
+
+  const defaultProps = {
+    entityType: 'test-entity',
+    onSuccess: mockOnSuccess,
+    onError: mockOnError,
+    component: 'TestComponent',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.clearAllTimers();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+  });
+
+  describe('Initial State', () => {
+    test('should initialize with default state', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      expect(result.current.submissionState).toEqual({
+        isSubmitting: false,
+        isUploading: false,
+        isCompleted: false,
+        hasErrors: false,
+        submitSuccess: false,
+        uploadSuccess: false,
+        canClose: true,
+      });
+
+      expect(result.current.isBlocking).toBe(false);
+      expect(result.current.canSubmit).toBe(true);
+      expect(result.current.isSubmitting).toBe(false);
+      expect(result.current.isUploading).toBe(false);
+      expect(result.current.isCompleted).toBe(false);
+      expect(result.current.canClose).toBe(true);
+      expect(result.current.statusMessage).toBeNull();
+    });
+  });
+
+  describe('Form Submission Flow', () => {
+    test('should handle complete successful form submission with uploads', async () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      // Start submission
+      act(() => {
+        result.current.startSubmission();
+      });
+
+      expect(result.current.submissionState.isSubmitting).toBe(true);
+      expect(result.current.submissionState.canClose).toBe(false);
+      expect(result.current.isBlocking).toBe(true);
+      expect(result.current.canSubmit).toBe(false);
+
+      // Complete form submission successfully
+      act(() => {
+        result.current.completeFormSubmission(true, 'entity-123');
+      });
+
+      expect(result.current.submissionState.isSubmitting).toBe(false);
+      expect(result.current.submissionState.submitSuccess).toBe(true);
+
+      // Start file upload
+      act(() => {
+        result.current.startFileUpload();
+      });
+
+      expect(result.current.submissionState.isUploading).toBe(true);
+      expect(result.current.submissionState.canClose).toBe(false);
+
+      // Complete file upload successfully
+      act(() => {
+        result.current.completeFileUpload(true, 3, 0);
+      });
+
+      expect(result.current.submissionState.isUploading).toBe(false);
+      expect(result.current.submissionState.uploadSuccess).toBe(true);
+      expect(result.current.submissionState.isCompleted).toBe(true);
+      expect(result.current.submissionState.canClose).toBe(true);
+
+      // Verify onSuccess callback is triggered (state effect fires synchronously in act())
+      expect(mockOnSuccess).toHaveBeenCalled();
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Success!',
+          color: 'green',
+        })
+      );
+    });
+
+    test('should handle form submission failure', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+      });
+
+      act(() => {
+        result.current.completeFormSubmission(false);
+      });
+
+      expect(result.current.submissionState.submitSuccess).toBe(false);
+      expect(result.current.submissionState.hasErrors).toBe(true);
+      expect(mockOnError).toHaveBeenCalledWith('Form submission failed.');
+    });
+
+    test('should handle partial upload success (some files failed)', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      // Complete successful form submission
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true, 'entity-123');
+        result.current.startFileUpload();
+      });
+
+      // Complete upload with some failures
+      act(() => {
+        result.current.completeFileUpload(false, 2, 1); // 2 successful, 1 failed
+      });
+
+      expect(result.current.submissionState.uploadSuccess).toBe(false);
+      expect(result.current.submissionState.hasErrors).toBe(true);
+      expect(result.current.submissionState.isCompleted).toBe(true);
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Partially Successful',
+          color: 'orange',
+        })
+      );
+    });
+
+    test('should handle complete upload failure', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      // Complete successful form submission but upload fails
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true, 'entity-123');
+        result.current.startFileUpload();
+        result.current.completeFileUpload(false, 0, 3); // All failed
+      });
+
+      expect(result.current.submissionState.uploadSuccess).toBe(false);
+      expect(result.current.submissionState.hasErrors).toBe(true);
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Partially Successful',
+          color: 'orange',
+        })
+      );
+    });
+  });
+
+  describe('Status Messages', () => {
+    test('should return correct status message for form submission', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+      });
+
+      const statusMessage = result.current.statusMessage;
+      expect(statusMessage).toEqual({
+        title: 'Saving Form...',
+        message: 'Please wait while your information is being saved.',
+        type: 'loading',
+      });
+    });
+
+    test('should return correct status message for file upload', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+      });
+
+      const statusMessage = result.current.statusMessage;
+      expect(statusMessage).toEqual({
+        title: 'Uploading Files...',
+        message: 'Your form has been saved, now uploading files...',
+        type: 'loading',
+      });
+    });
+
+    test('should return correct status message for successful completion', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 2, 0);
+      });
+
+      const statusMessage = result.current.statusMessage;
+      expect(statusMessage).toEqual({
+        title: 'Success!',
+        message: 'Form and files saved successfully.',
+        type: 'success',
+      });
+    });
+
+    test('fires onSuccess once per completed submission, not on callback identity change (regression: render loop)', () => {
+      const firstOnSuccess = vi.fn();
+      const { result, rerender } = renderHook(
+        props => useFormSubmissionWithUploads(props),
+        {
+          wrapper,
+          initialProps: {
+            entityType: 'test-entity',
+            onSuccess: firstOnSuccess,
+            onError: mockOnError,
+            component: 'TestComponent',
+          },
+        }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 2, 0);
+      });
+
+      expect(firstOnSuccess).toHaveBeenCalledTimes(1);
+
+      // Parents recreate the onSuccess closure on every render while the
+      // completed flags are still true. Re-firing on the new identity
+      // (onSuccess -> resetForm -> setFormData -> render -> new onSuccess)
+      // was an infinite render loop on the Medication page.
+      const nextOnSuccess = vi.fn();
+      rerender({
+        entityType: 'test-entity',
+        onSuccess: nextOnSuccess,
+        onError: mockOnError,
+        component: 'TestComponent',
+      });
+
+      expect(nextOnSuccess).not.toHaveBeenCalled();
+      expect(firstOnSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    test('keeps statusMessage identity stable across re-renders (regression: medication form render loop)', () => {
+      const { result, rerender } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 2, 0);
+      });
+
+      const first = result.current.statusMessage;
+      expect(first).not.toBeNull();
+
+      rerender();
+
+      // A new object identity on every render defeats memo comparators
+      // downstream (MedicationFormWrapper) and fed an infinite re-render
+      // loop through the DocumentManager methods callback chain.
+      expect(result.current.statusMessage).toBe(first);
+    });
+
+    test('should return correct status message for partial success', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+        result.current.completeFileUpload(false, 1, 1);
+      });
+
+      const statusMessage = result.current.statusMessage;
+      expect(statusMessage).toEqual({
+        title: 'Partially Complete',
+        message: 'Form saved, but some files failed to upload.',
+        type: 'warning',
+      });
+    });
+
+    test('should return correct status message for form failure', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+      });
+
+      act(() => {
+        result.current.completeFormSubmission(false);
+      });
+
+      act(() => {
+        result.current.completeFileUpload(false, 0, 0);
+      });
+
+      const statusMessage = result.current.statusMessage;
+      expect(statusMessage).toEqual({
+        title: 'Failed',
+        message: 'Form submission failed.',
+        type: 'error',
+      });
+    });
+
+    test('should return null status message when not active', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      const statusMessage = result.current.statusMessage;
+      expect(statusMessage).toBeNull();
+    });
+  });
+
+  describe('Error Handling', () => {
+    test('should handle form submission failure with error details', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      const testError = new Error('Network connection failed');
+
+      act(() => {
+        result.current.handleSubmissionFailure(testError, 'form');
+      });
+
+      expect(result.current.submissionState.hasErrors).toBe(true);
+      expect(result.current.submissionState.isCompleted).toBe(true);
+      expect(result.current.submissionState.canClose).toBe(true);
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Form Submission Failed',
+          color: 'red',
+        })
+      );
+
+      expect(mockOnError).toHaveBeenCalledWith(
+        'User friendly: Error: Network connection failed'
+      );
+    });
+
+    test('should handle upload failure with error details', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      const testError = { message: 'File size too large' };
+
+      act(() => {
+        result.current.handleSubmissionFailure(testError, 'upload');
+      });
+
+      expect(result.current.submissionState.hasErrors).toBe(true);
+      expect(result.current.submissionState.isUploading).toBe(false);
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'File Upload Failed',
+          color: 'red',
+        })
+      );
+
+      expect(mockOnError).toHaveBeenCalledWith(
+        'User friendly: [object Object]'
+      );
+    });
+
+    test('should handle unknown error gracefully', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.handleSubmissionFailure(null, 'form');
+      });
+
+      expect(result.current.submissionState.hasErrors).toBe(true);
+      expect(mockOnError).toHaveBeenCalledWith('User friendly: null');
+    });
+  });
+
+  describe('Reset Functionality', () => {
+    test('should reset submission state correctly', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      // Start and complete a submission
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 2, 0);
+      });
+
+      expect(result.current.submissionState.isCompleted).toBe(true);
+
+      // Reset
+      act(() => {
+        result.current.resetSubmission();
+      });
+
+      expect(result.current.submissionState).toEqual({
+        isSubmitting: false,
+        isUploading: false,
+        isCompleted: false,
+        hasErrors: false,
+        submitSuccess: false,
+        uploadSuccess: false,
+        canClose: true,
+      });
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'form_submission_reset',
+        expect.any(Object)
+      );
+    });
+  });
+
+  describe('Coordination Between Form and Upload', () => {
+    test('should coordinate form submission success with upload start', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+      });
+
+      expect(result.current.submissionState.isSubmitting).toBe(true);
+      expect(result.current.submissionState.isUploading).toBe(false);
+
+      act(() => {
+        result.current.completeFormSubmission(true, 'entity-123');
+      });
+
+      expect(result.current.submissionState.isSubmitting).toBe(false);
+      expect(result.current.submissionState.submitSuccess).toBe(true);
+
+      // Now start upload
+      act(() => {
+        result.current.startFileUpload();
+      });
+
+      expect(result.current.submissionState.isUploading).toBe(true);
+      expect(result.current.isBlocking).toBe(true);
+    });
+
+    test('should prevent submission when already submitting or uploading', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+      });
+
+      expect(result.current.canSubmit).toBe(false);
+
+      act(() => {
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+      });
+
+      expect(result.current.canSubmit).toBe(false);
+    });
+
+    test('should handle race condition between form completion and upload start', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+      });
+
+      // Simulate rapid succession of form completion and upload start
+      act(() => {
+        result.current.completeFormSubmission(true, 'entity-123');
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 1, 0);
+      });
+
+      expect(result.current.submissionState.submitSuccess).toBe(true);
+      expect(result.current.submissionState.uploadSuccess).toBe(true);
+      expect(result.current.submissionState.isCompleted).toBe(true);
+    });
+  });
+
+  describe('Callback Integration', () => {
+    test('should call onSuccess only when both form and upload succeed', async () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true, 'entity-123');
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 2, 0);
+      });
+
+      expect(mockOnSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    test('should not call onSuccess when form fails', async () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(false);
+      });
+
+      // Wait a bit to ensure onSuccess is not called
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(mockOnSuccess).not.toHaveBeenCalled();
+    });
+
+    test('should not call onSuccess when upload fails', async () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true, 'entity-123');
+        result.current.startFileUpload();
+        result.current.completeFileUpload(false, 0, 3);
+      });
+
+      // Wait a bit to ensure onSuccess is not called
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(mockOnSuccess).not.toHaveBeenCalled();
+    });
+
+    test('should handle missing onSuccess callback gracefully', async () => {
+      const propsWithoutCallback = { ...defaultProps, onSuccess: undefined };
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(propsWithoutCallback),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true, 'entity-123');
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 2, 0);
+      });
+
+      // Should not throw error
+      expect(result.current.submissionState.isCompleted).toBe(true);
+    });
+
+    test('should handle missing onError callback gracefully', () => {
+      const propsWithoutCallback = { ...defaultProps, onError: undefined };
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(propsWithoutCallback),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.handleSubmissionFailure(new Error('Test error'), 'form');
+      });
+
+      // Should not throw error
+      expect(result.current.submissionState.hasErrors).toBe(true);
+    });
+  });
+
+  describe('Logging', () => {
+    test('should log all major state transitions', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+      });
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'form_submission_started',
+        expect.any(Object)
+      );
+
+      act(() => {
+        result.current.completeFormSubmission(true, 'entity-123');
+      });
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'form_submission_completed',
+        expect.any(Object)
+      );
+
+      act(() => {
+        result.current.startFileUpload();
+      });
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'form_file_upload_started',
+        expect.any(Object)
+      );
+
+      act(() => {
+        result.current.completeFileUpload(true, 2, 0);
+      });
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'form_file_upload_completed',
+        expect.any(Object)
+      );
+    });
+
+    test('should log errors with appropriate context', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      const testError = new Error('Test error message');
+
+      act(() => {
+        result.current.handleSubmissionFailure(testError, 'upload');
+      });
+
+      expect(logger.error).toHaveBeenCalledWith(
+        'form_submission_failure',
+        expect.objectContaining({
+          entityType: 'test-entity',
+          stage: 'upload',
+          error: 'Test error message',
+          component: 'TestComponent',
+        })
+      );
+    });
+  });
+
+  describe('Notification Handling', () => {
+    test('should show appropriate notification for single file success', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 1, 0);
+      });
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Success!',
+          message: expect.stringContaining('1 file(s) uploaded successfully'),
+          color: 'green',
+        })
+      );
+    });
+
+    test('should show appropriate notification for multiple files success', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 5, 0);
+      });
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Success!',
+          message: expect.stringContaining('5 file(s) uploaded successfully'),
+          color: 'green',
+        })
+      );
+    });
+
+    test('should show form only success when no files uploaded', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+        result.current.completeFileUpload(true, 0, 0);
+      });
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Success!',
+          message: 'Form saved successfully!',
+          color: 'green',
+        })
+      );
+    });
+  });
+
+  describe('Edge Cases', () => {
+    test('should handle multiple start submission calls', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.startSubmission(); // Second call
+      });
+
+      // Should maintain consistent state
+      expect(result.current.submissionState.isSubmitting).toBe(true);
+      expect(result.current.submissionState.canClose).toBe(false);
+    });
+
+    test('should handle upload start before form completion', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.startFileUpload(); // Start upload before form completion
+      });
+
+      expect(result.current.submissionState.isSubmitting).toBe(true);
+      expect(result.current.submissionState.isUploading).toBe(true);
+    });
+
+    test('should handle completion calls without start', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.completeFormSubmission(true, 'entity-123');
+      });
+
+      expect(result.current.submissionState.submitSuccess).toBe(true);
+      expect(result.current.submissionState.isSubmitting).toBe(false);
+    });
+
+    test('should handle very large numbers of completed/failed files', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      act(() => {
+        result.current.startSubmission();
+        result.current.completeFormSubmission(true);
+        result.current.startFileUpload();
+        result.current.completeFileUpload(false, 1000, 500); // Large numbers
+      });
+
+      expect(result.current.submissionState.uploadSuccess).toBe(false);
+      expect(result.current.submissionState.hasErrors).toBe(true);
+
+      expect(notifications.show).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('1000'),
+        })
+      );
+    });
+  });
+
+  describe('State Consistency', () => {
+    test('should maintain consistent blocking state throughout workflow', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      // Initial state - not blocking
+      expect(result.current.isBlocking).toBe(false);
+
+      // During form submission - blocking
+      act(() => {
+        result.current.startSubmission();
+      });
+      expect(result.current.isBlocking).toBe(true);
+
+      // Form completed but upload not started - not blocking (transition state)
+      act(() => {
+        result.current.completeFormSubmission(true);
+      });
+      expect(result.current.isBlocking).toBe(false);
+
+      // During upload - blocking
+      act(() => {
+        result.current.startFileUpload();
+      });
+      expect(result.current.isBlocking).toBe(true);
+
+      // Upload completed - not blocking
+      act(() => {
+        result.current.completeFileUpload(true, 1, 0);
+      });
+      expect(result.current.isBlocking).toBe(false);
+    });
+
+    test('should maintain consistent canSubmit state', () => {
+      const { result } = renderHook(
+        () => useFormSubmissionWithUploads(defaultProps),
+        { wrapper }
+      );
+
+      expect(result.current.canSubmit).toBe(true);
+
+      act(() => {
+        result.current.startSubmission();
+      });
+      expect(result.current.canSubmit).toBe(false);
+
+      act(() => {
+        result.current.completeFormSubmission(true);
+      });
+      expect(result.current.canSubmit).toBe(true);
+
+      act(() => {
+        result.current.startFileUpload();
+      });
+      expect(result.current.canSubmit).toBe(false);
+
+      act(() => {
+        result.current.completeFileUpload(true, 1, 0);
+      });
+      expect(result.current.canSubmit).toBe(true);
+    });
+  });
+});

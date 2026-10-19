@@ -1,0 +1,869 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+/**
+ * Simple Authentication Service for current backend
+ * Works with the existing Medical Records backend API
+ */
+
+import logger from '../logger';
+import { isAdminRole } from '../../utils/authUtils';
+
+class SimpleAuthService {
+  constructor() {
+    // Authentication is cookie-based. Keep every auth request on the page
+    // origin so login, MFA, and later API calls all share the same cookie jar.
+    // Vite proxies this relative path in development; the reverse proxy serves
+    // it in production.
+    this.baseURL = '/api/v1';
+    this.tokenKey = 'token';
+    this.userKey = 'user';
+  }
+
+  // Make an authenticated, same-origin API request.
+  async makeRequest(endpoint, options = {}) {
+    // Pull `signal` out so we can react to AbortError separately from other
+    // fetch errors (don't log, don't fire /health ping on intentional abort).
+    const { signal, ...fetchOptions } = options;
+    const urls = [`${this.baseURL}${endpoint}`];
+
+    let lastError = null;
+
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      const started = performance.now();
+      const requestController = new AbortController();
+      let requestTimedOut = false;
+      const abortFromExternalSignal = () => requestController.abort();
+      if (signal?.aborted) {
+        abortFromExternalSignal();
+      } else {
+        signal?.addEventListener('abort', abortFromExternalSignal, {
+          once: true,
+        });
+      }
+
+      // Longer window for SSO operations; all other auth requests use 15s.
+      const isSSO = url.includes('/sso/');
+      const timeout = isSSO ? 30000 : 15000;
+      const timeoutId = setTimeout(() => {
+        requestTimedOut = true;
+        requestController.abort();
+      }, timeout);
+
+      try {
+        logger.info(`Attempting request ${i + 1}/${urls.length}`, {
+          url,
+          attempt: i + 1,
+          totalUrls: urls.length,
+          category: 'auth_connection',
+        });
+
+        const response = await fetch(url, {
+          ...fetchOptions,
+          credentials: 'include',
+          signal: requestController.signal,
+        });
+
+        logger.info(`Response received from ${url}`, {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          elapsedMs: Math.round(performance.now() - started),
+          category: 'auth_connection',
+        });
+
+        // Return response regardless of status (let caller handle HTTP errors)
+        return response;
+      } catch (error) {
+        // External aborts are intentional (component unmount, superseded
+        // retry, or manual cancellation). Preserve AbortError semantics.
+        if (signal?.aborted) {
+          throw typeof DOMException === 'function'
+            ? new DOMException('The operation was aborted.', 'AbortError')
+            : Object.assign(new Error('The operation was aborted.'), {
+                name: 'AbortError',
+              });
+        }
+        // A timed-out request is actively aborted so a late response cannot
+        // set an authentication cookie after the caller has already failed.
+        if (!requestTimedOut && error.name === 'AbortError') {
+          throw error;
+        }
+        const requestError = requestTimedOut
+          ? new Error('Request timeout')
+          : error;
+        // The backend FrontendLogRequest schema ignores unknown top-level fields,
+        // so enrichment goes under `details` (captured as-is) and the stack goes
+        // under the declared `stack_trace` field.
+        logger.warn(`Failed to connect to ${url}`, {
+          category: 'auth_connection_failure',
+          stack_trace: requestError.stack,
+          details: {
+            url,
+            error: requestError.message,
+            errorName: requestError.name,
+            errorCause: requestError.cause?.message,
+            elapsedMs: Math.round(performance.now() - started),
+            navigatorOnline:
+              typeof navigator !== 'undefined' ? navigator.onLine : null,
+            hasServiceWorker:
+              typeof navigator !== 'undefined' &&
+              !!navigator.serviceWorker?.controller,
+            pageOrigin:
+              typeof window !== 'undefined' ? window.location.origin : null,
+          },
+        });
+        lastError = requestError;
+      } finally {
+        clearTimeout(timeoutId);
+        signal?.removeEventListener('abort', abortFromExternalSignal);
+      }
+    }
+
+    // The same-origin request failed. Fire a short correlation ping to /health
+    // (no credentials, backend's root /health endpoint) to distinguish
+    // "server unreachable" from "only /api/v1/auth/* is blocked". Derive the
+    // ping origin from the request URL. Relative URLs resolve to the page
+    // origin in both development and production.
+    let pingURL = '/health';
+    try {
+      const baseOrigin =
+        typeof window !== 'undefined' ? window.location.origin : undefined;
+      const targetOrigin = new URL(urls[0], baseOrigin).origin;
+      pingURL = `${targetOrigin}/health`;
+    } catch {
+      // Fall through with relative /health as a best-effort
+    }
+
+    // Fire-and-forget: the ping is purely diagnostic and must not delay the
+    // throw (or block the caller's await for up to the 3s ping timeout). It
+    // logs its own result, correlated with the failure below by `endpoint`.
+    void (async () => {
+      const pingStarted = performance.now();
+      let pingStatus = 'not_attempted';
+      let pingElapsedMs = null;
+      try {
+        const pingPromise = fetch(pingURL, {
+          method: 'GET',
+          credentials: 'omit',
+        });
+        const pingTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Ping timeout')), 3000);
+        });
+        const pingResponse = await Promise.race([pingPromise, pingTimeout]);
+        pingStatus = `ok_${pingResponse.status}`;
+      } catch (pingError) {
+        pingStatus = `failed_${pingError.name || 'Error'}`;
+      } finally {
+        pingElapsedMs = Math.round(performance.now() - pingStarted);
+      }
+      logger.info('Connectivity ping result after auth endpoint failure', {
+        category: 'auth_connection_failure',
+        details: { endpoint, pingURL, pingStatus, pingElapsedMs },
+      });
+    })();
+
+    logger.error('Authentication API request failed', {
+      category: 'auth_connection_failure',
+      details: {
+        endpoint,
+        lastError: lastError?.message,
+        lastErrorName: lastError?.name,
+        pingURL,
+      },
+    });
+
+    throw new Error(
+      `Authentication API request failed. Last error: ${lastError?.message || 'Unknown error'}`
+    );
+  }
+
+  // Parse JWT payload (used to extract user info from login response body)
+  parseJWT(token) {
+    try {
+      if (!token || token.split('.').length !== 3) return null;
+
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      logger.error('Error parsing JWT token', {
+        error: error.message,
+        category: 'auth_token_parse_error',
+      });
+      return null;
+    }
+  }
+
+  pendingMfaResult(data) {
+    if (
+      data?.status !== 'mfa_required' &&
+      data?.status !== 'mfa_enrollment_required'
+    ) {
+      return null;
+    }
+    return {
+      success: true,
+      authenticationPending: true,
+      challengeType: data.status,
+      challengeToken: data.challenge_token,
+      challengeExpiresIn: data.challenge_expires_in,
+      isNewUser: data.is_new_user || false,
+    };
+  }
+
+  authenticatedResult(data) {
+    if (!data?.access_token) {
+      return {
+        success: false,
+        error: 'No access token received',
+      };
+    }
+    const payload = this.parseJWT(data.access_token);
+    if (!payload) {
+      return {
+        success: false,
+        error: 'Invalid access token received',
+      };
+    }
+    const user = {
+      id: payload.user_id,
+      username: payload.sub,
+      role: payload.role || 'user',
+      fullName: payload.full_name || payload.sub,
+      isAdmin: isAdminRole(payload.role),
+    };
+    return {
+      success: true,
+      user,
+      token: null,
+      tokenExpiry: null,
+      sessionTimeoutMinutes: data.session_timeout_minutes || 120,
+      mustChangePassword: data.must_change_password || false,
+      privacyConsentRequired: data.privacy_consent_required || false,
+      recoveryCodes: data.recovery_codes || null,
+    };
+  }
+
+  // Login user
+  async login(credentials) {
+    try {
+      logger.info('Attempting user login', {
+        username: credentials.username,
+        category: 'auth_login_attempt',
+      });
+
+      const formData = new URLSearchParams();
+      formData.append('username', credentials.username);
+      formData.append('password', credentials.password);
+
+      const response = await this.makeRequest('/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+
+      logger.info('Login response received', {
+        status: response.status,
+        statusText: response.statusText,
+        category: 'auth_login_response',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        logger.error('Login failed', {
+          status: response.status,
+          errorData,
+          category: 'auth_login_failure',
+        });
+        return {
+          success: false,
+          error: errorData.detail || `HTTP ${response.status}: Login failed`,
+        };
+      }
+
+      const data = await response.json();
+      const pendingMfa = this.pendingMfaResult(data);
+      if (pendingMfa) {
+        logger.info('Administrator second factor required', {
+          challengeType: pendingMfa.challengeType,
+          category: 'auth_mfa_required',
+        });
+        return pendingMfa;
+      }
+
+      logger.info('Login successful', {
+        hasToken: !!data.access_token,
+        tokenType: data.token_type,
+        category: 'auth_login_success',
+      });
+
+      return this.authenticatedResult(data);
+    } catch (error) {
+      logger.error('Login error occurred', {
+        error: error.message,
+        errorType: error.constructor.name,
+        category: 'auth_login_error',
+      });
+      return {
+        success: false,
+        error: error.message || 'Network error during login',
+      };
+    }
+  }
+
+  async setupAdminTotp(challengeToken) {
+    return this.postMfa('/auth/mfa/totp/setup', {
+      challenge_token: challengeToken,
+    });
+  }
+
+  async confirmAdminTotp(challengeToken, code) {
+    return this.postMfa(
+      '/auth/mfa/totp/confirm',
+      {
+        challenge_token: challengeToken,
+        code,
+      },
+      true
+    );
+  }
+
+  async verifyAdminMfa(challengeToken, code, method = 'totp') {
+    return this.postMfa(
+      '/auth/mfa/verify',
+      {
+        challenge_token: challengeToken,
+        code,
+        method,
+      },
+      true
+    );
+  }
+
+  async postMfa(endpoint, payload, expectSession = false) {
+    try {
+      const response = await this.makeRequest(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return {
+          success: false,
+          error:
+            data.detail?.message ||
+            data.detail ||
+            data.message ||
+            'MFA verification failed',
+        };
+      }
+      if (expectSession) return this.authenticatedResult(data);
+      return { success: true, ...data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'MFA verification failed',
+      };
+    }
+  }
+
+  // Register user
+  async register(userData) {
+    try {
+      logger.info('Attempting user registration', {
+        username: userData.username,
+        role: userData.role || 'user',
+        hasEmail: !!userData.email,
+        category: 'auth_registration_attempt',
+      });
+
+      const registrationData = {
+        ...userData,
+      };
+
+      const response = await this.makeRequest('/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registrationData),
+      });
+
+      logger.info('Registration response received', {
+        status: response.status,
+        statusText: response.statusText,
+        username: userData.username,
+        category: 'auth_registration_attempt',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        logger.error('Registration failed', {
+          status: response.status,
+          errorData,
+          username: userData.username,
+          category: 'auth_registration_failure',
+        });
+        return {
+          success: false,
+          error: errorData.detail || errorData.message || 'Registration failed',
+        };
+      }
+
+      const data = await response.json();
+      logger.info('Registration successful', {
+        username: userData.username,
+        userId: data?.id || data?.user_id,
+        category: 'auth_registration_success',
+      });
+
+      return {
+        success: true,
+        data,
+      };
+    } catch (error) {
+      logger.error('Registration error occurred', {
+        error: error.message,
+        errorType: error.constructor.name,
+        username: userData.username,
+        category: 'auth_registration_failure',
+      });
+      return {
+        success: false,
+        error: error.message || 'Network error during registration',
+      };
+    }
+  }
+
+  async getCurrentUser() {
+    try {
+      const response = await this.makeRequest('/users/me', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        return await response.json();
+      }
+
+      // Non-2xx means the cookie/session is invalid or the user was deleted
+      return null;
+    } catch (error) {
+      logger.error('Error fetching current user from backend', {
+        error: error.message,
+        errorType: error.constructor.name,
+        category: 'auth_user_fetch_error',
+      });
+      return null;
+    }
+  }
+
+  async getPrivacyConsent() {
+    const response = await this.makeRequest('/privacy-consent/current', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to load the current privacy notice');
+    }
+    return response.json();
+  }
+
+  async submitPrivacyConsent({ noticeVersion, decision }) {
+    const response = await this.makeRequest('/privacy-consent/decisions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notice_version: noticeVersion,
+        decision,
+      }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(
+        data.detail?.message ||
+          data.detail ||
+          'Failed to save the privacy-notice decision'
+      );
+    }
+    return response.json();
+  }
+
+  // Refresh token (not implemented for this simple auth system)
+  async refreshToken() {
+    logger.warn('Token refresh not implemented for simple auth system', {
+      category: 'auth_refresh_token',
+    });
+    return { success: false, error: 'Token refresh not supported' };
+  }
+
+  async logout() {
+    try {
+      logger.info('Logging out user', { category: 'auth_logout' });
+
+      try {
+        await this.makeRequest('/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        logger.warn('Backend logout request failed', {
+          error: error.message,
+          category: 'auth_logout',
+        });
+      }
+    } catch (error) {
+      logger.error('Error during logout process', {
+        error: error.message,
+        errorType: error.constructor.name,
+        category: 'auth_logout',
+      });
+    }
+  }
+
+  getAuthHeaders() {
+    return { 'Content-Type': 'application/json' };
+  }
+
+  // Check if user registration is enabled
+  async checkRegistrationEnabled({ signal } = {}) {
+    try {
+      const response = await this.makeRequest('/auth/registration-status', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal,
+      });
+
+      if (!response.ok) {
+        logger.error('Failed to check registration status', {
+          status: response.status,
+          category: 'auth_registration_check',
+        });
+        // error:true lets the caller distinguish "fetch failed" from "backend says disabled"
+        return { registration_enabled: false, error: true };
+      }
+
+      const data = await response.json();
+      logger.info('Registration status checked', {
+        enabled: data.registration_enabled,
+        category: 'auth_registration_check',
+      });
+      return data;
+    } catch (error) {
+      // Let AbortError propagate so the caller's retry/cleanup can distinguish
+      // "fetch aborted intentionally" from "fetch failed for real".
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+      logger.error('Error checking registration status', {
+        error: error.message,
+        category: 'auth_registration_check',
+      });
+      return { registration_enabled: false, error: true };
+    }
+  }
+
+  // SSO Methods
+
+  // Check if SSO is available and get configuration
+  async getSSOConfig({ signal } = {}) {
+    try {
+      logger.info('Checking SSO configuration', {
+        category: 'sso_config_check',
+      });
+
+      const response = await this.makeRequest('/auth/sso/config', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal,
+      });
+
+      if (!response.ok) {
+        logger.warn('Failed to get SSO config', {
+          status: response.status,
+          category: 'sso_config_check',
+        });
+        // error:true lets the caller distinguish "fetch failed" from "backend says SSO off"
+        return { enabled: false, error: true };
+      }
+
+      const data = await response.json();
+      logger.info('SSO configuration retrieved', {
+        enabled: data.enabled,
+        provider: data.provider_type,
+        registration_enabled: data.registration_enabled,
+        category: 'sso_config_check',
+      });
+      return data;
+    } catch (error) {
+      // Let AbortError propagate so the caller's retry/cleanup can distinguish
+      // "fetch aborted intentionally" from "fetch failed for real".
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+      logger.error('Error checking SSO config', {
+        error: error.message,
+        category: 'sso_config_check',
+      });
+      return { enabled: false, error: true };
+    }
+  }
+
+  // Initiate SSO login
+  async initiateSSOLogin(returnUrl = null) {
+    try {
+      logger.info('Initiating SSO login', {
+        returnUrl,
+        category: 'sso_initiate',
+      });
+
+      const params = new URLSearchParams();
+      if (returnUrl) {
+        params.append('return_url', returnUrl);
+      }
+
+      const url = `/auth/sso/initiate${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await this.makeRequest(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        logger.error('Failed to initiate SSO', {
+          status: response.status,
+          errorData,
+          category: 'sso_initiate',
+        });
+        throw new Error(
+          errorData.detail || 'Failed to start SSO authentication'
+        );
+      }
+
+      const data = await response.json();
+      logger.info('SSO initiation successful', {
+        provider: data.provider,
+        hasAuthUrl: !!data.auth_url,
+        category: 'sso_initiate',
+      });
+
+      return data;
+    } catch (error) {
+      logger.error('SSO initiation error', {
+        error: error.message,
+        category: 'sso_initiate',
+      });
+      throw error;
+    }
+  }
+
+  // Complete SSO authentication from callback
+  async completeSSOAuth(code, state) {
+    try {
+      logger.info('Completing SSO authentication', {
+        hasCode: !!code,
+        hasState: !!state,
+        category: 'sso_callback',
+      });
+
+      // Send OAuth code and state in POST body for security (not URL)
+      const response = await this.makeRequest('/auth/sso/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: code,
+          state: state,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        logger.error('SSO callback failed', {
+          status: response.status,
+          errorData,
+          category: 'sso_callback',
+        });
+
+        // Handle specific SSO errors
+        if (errorData.error_code === 'REGISTRATION_DISABLED') {
+          throw new Error(errorData.message || 'Registration is disabled');
+        }
+
+        throw new Error(errorData.message || 'SSO authentication failed');
+      }
+
+      const data = await response.json();
+
+      // Check if this is a conflict response
+      if (data.conflict) {
+        logger.info('SSO conflict detected', {
+          hasExistingUser: !!data.existing_user_info,
+          hasSSOUser: !!data.sso_user_info,
+          category: 'sso_callback',
+        });
+
+        return {
+          success: true,
+          conflict: true,
+          existing_user_info: data.existing_user_info,
+          sso_user_info: data.sso_user_info,
+          temp_token: data.temp_token,
+        };
+      }
+
+      const pendingMfa = this.pendingMfaResult(data);
+      if (pendingMfa) return pendingMfa;
+
+      logger.info('SSO authentication successful', {
+        isNewUser: data.is_new_user,
+        authMethod: data.user?.auth_method,
+        category: 'sso_callback',
+      });
+
+      const enrichedUser = data.user
+        ? {
+            id: data.user.id,
+            username: data.user.username,
+            email: data.user.email,
+            fullName: data.user.full_name,
+            role: data.user.role,
+            authMethod: data.user.auth_method,
+            isAdmin: isAdminRole(data.user.role),
+          }
+        : null;
+
+      return {
+        success: true,
+        user: enrichedUser,
+        token: null,
+        isNewUser: data.is_new_user,
+      };
+    } catch (error) {
+      logger.error('SSO callback error', {
+        error: error.message,
+        category: 'sso_callback',
+      });
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  // Test SSO connection (admin function)
+  async testSSOConnection() {
+    try {
+      logger.info('Testing SSO connection', {
+        category: 'sso_test',
+      });
+
+      const response = await this.makeRequest('/auth/sso/test-connection', {
+        method: 'POST',
+        headers: await this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        logger.error('SSO connection test failed', {
+          status: response.status,
+          category: 'sso_test',
+        });
+        return { success: false, message: 'Connection test failed' };
+      }
+
+      const data = await response.json();
+      logger.info('SSO connection test result', {
+        success: data.success,
+        category: 'sso_test',
+      });
+      return data;
+    } catch (error) {
+      logger.error('SSO connection test error', {
+        error: error.message,
+        category: 'sso_test',
+      });
+      return { success: false, message: error.message };
+    }
+  }
+
+  // Resolve SSO account conflict
+  async resolveSSOConflict(tempToken, action, preference) {
+    try {
+      logger.info('Resolving SSO account conflict', {
+        action,
+        preference,
+        category: 'sso_conflict',
+      });
+
+      const response = await this.makeRequest('/auth/sso/resolve-conflict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          temp_token: tempToken,
+          action: action,
+          preference: preference,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        logger.error('SSO conflict resolution failed', {
+          status: response.status,
+          error: errorData,
+          category: 'sso_conflict',
+        });
+
+        return {
+          success: false,
+          error:
+            errorData.detail?.message ||
+            errorData.detail ||
+            'Failed to resolve account conflict',
+        };
+      }
+
+      const data = await response.json();
+      const pendingMfa = this.pendingMfaResult(data);
+      if (pendingMfa) return pendingMfa;
+
+      logger.info('SSO conflict resolved successfully', {
+        hasToken: !!data.access_token,
+        hasUser: !!data.user,
+        category: 'sso_conflict',
+      });
+
+      // Prepare the result in the expected format
+      return {
+        success: true,
+        user: {
+          ...data.user,
+          // Ensure isAdmin property is set based on role
+          isAdmin: isAdminRole(data.user.role),
+        },
+        token: data.access_token,
+        isNewUser: data.is_new_user,
+      };
+    } catch (error) {
+      logger.error('SSO conflict resolution error', {
+        error: error.message,
+        category: 'sso_conflict',
+      });
+      return { success: false, error: error.message };
+    }
+  }
+}
+
+// Export singleton instance
+export const authService = new SimpleAuthService();
+export default authService;

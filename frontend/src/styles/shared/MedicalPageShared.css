@@ -1,0 +1,914 @@
+/* 
+ * Shared Medical Page Styles
+ * Based on the Medication page structure
+ * Use these classes across all medical pages for consistency
+ */
+
+/* Import consolidated styles */
+/* Buttons and forms now use Mantine styling */
+
+/* Main Container */
+.medical-page-container {
+  min-height: 100vh;
+  background-color: var(--color-bg-secondary, #f8f9fa);
+  font-family: var(
+    --font-family-sans,
+    'Segoe UI',
+    Tahoma,
+    Geneva,
+    Verdana,
+    sans-serif
+  );
+}
+
+/* Header Section */
+.medical-page-header {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary, #667eea) 0%,
+    var(--color-primary-dark, #764ba2) 100%
+  );
+  color: var(--color-text-light, white);
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--shadow-md, 0 2px 10px rgba(0, 0, 0, 0.1));
+}
+
+.medical-page-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  flex: 1;
+}
+
+.back-button {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-text-light, white);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md, 5px);
+  cursor: pointer;
+  transition: var(--transition-all, all 0.3s ease);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Content Area */
+.medical-page-content {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Messages */
+.error-message {
+  background: var(--color-danger-light, #f8d7da);
+  color: var(--color-danger-dark, #721c24);
+  padding: 1rem;
+  border-radius: var(--border-radius-md, 5px);
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-danger-light, #f5c6cb);
+}
+
+.success-message {
+  background: var(--color-success-light, #d4edda);
+  color: var(--color-success-dark, #155724);
+  padding: 1rem;
+  border-radius: var(--border-radius-md, 5px);
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-success-light, #c3e6cb);
+}
+
+/* Loading States */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.spinner {
+  border: 4px solid var(--color-gray-200, #f3f3f3);
+  border-top: 4px solid var(--color-primary, #667eea);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Controls Section */
+.medical-page-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.controls-left {
+  display: flex;
+  gap: 1rem;
+}
+
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* View Toggle Controls */
+.controls-center {
+  display: flex;
+  align-items: center;
+}
+
+.view-toggle {
+  display: flex;
+  background: var(--color-bg-primary, white);
+  border: 2px solid var(--color-border-light, #e9ecef);
+  border-radius: var(--border-radius-md, 5px);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
+}
+
+.view-toggle-btn {
+  background: transparent;
+  border: none;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6c757d);
+  transition: var(--transition-all, all 0.3s ease);
+  border-right: 1px solid var(--color-border-light, #e9ecef);
+}
+
+.view-toggle-btn:last-child {
+  border-right: none;
+}
+
+.view-toggle-btn:hover {
+  background: var(--color-bg-secondary, #f8f9fa);
+  color: var(--color-text-primary, #333);
+}
+
+.view-toggle-btn.active {
+  background: var(--color-primary, #667eea);
+  color: var(--color-text-light, white);
+}
+
+.view-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-primary, #667eea);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.print-button {
+  background: var(--color-info, #17a2b8);
+  color: var(--color-text-light, white);
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-md, 5px);
+  cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition-all, all 0.3s ease);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(23, 162, 184, 0.3));
+}
+
+.print-button:hover {
+  background: var(--color-info-dark, #138496);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md, 0 2px 8px rgba(23, 162, 184, 0.4));
+}
+
+.print-button:focus-visible {
+  outline: 2px solid var(--color-info, #17a2b8);
+  outline-offset: 2px;
+}
+
+/* Button styles moved to ../components/buttons.css */
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-controls label {
+  font-weight: 500;
+  color: var(--color-text-primary, #333);
+}
+
+.sort-controls select {
+  padding: 0.5rem;
+  border: 2px solid var(--color-border-light, #e9ecef);
+  border-radius: var(--border-radius-md, 5px);
+  background: var(--color-bg-primary, white);
+  color: var(--color-text-primary, #333);
+  cursor: pointer;
+  transition: var(--transition-normal, border-color 0.3s ease);
+}
+
+.sort-controls select:focus {
+  outline: none;
+  border-color: var(--color-primary, #667eea);
+}
+
+.sort-order-button {
+  background: var(--color-gray-600, #6c757d);
+  color: var(--color-text-light, white);
+  border: none;
+  padding: 0.5rem;
+  border-radius: var(--border-radius-md, 5px);
+  cursor: pointer;
+  font-size: 1rem;
+  min-width: 35px;
+  transition: var(--transition-normal, background-color 0.3s ease);
+}
+
+.sort-order-button:hover {
+  background: var(--color-gray-700, #5a6268);
+}
+
+/* Filter Controls */
+.filter-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: 0.5rem;
+  border: 2px solid var(--color-border-light, #e9ecef);
+  border-radius: var(--border-radius-md, 5px);
+  background: var(--color-bg-primary, white);
+  color: var(--color-text-primary, #333);
+  cursor: pointer;
+  transition: var(--transition-normal, border-color 0.3s ease);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--color-primary, #667eea);
+}
+
+/* Filters Section */
+.filters-section {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  background: var(--color-bg-secondary, #f8f9fa);
+  padding: 1rem;
+  border-radius: var(--border-radius-md, 5px);
+  border: 1px solid var(--color-border-light, #e9ecef);
+}
+
+.search-group {
+  flex: 1;
+  min-width: 250px;
+}
+
+.clear-filters-btn {
+  background: var(--color-gray-700, #495057);
+  color: var(--color-text-light, white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md, 5px);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: var(--transition-all, all 0.3s ease);
+  white-space: nowrap;
+}
+
+.clear-filters-btn:hover {
+  background: var(--color-gray-800, #343a40);
+  transform: translateY(-1px);
+}
+
+/* Results Summary */
+.results-summary {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #6c757d);
+}
+
+.filter-indicator {
+  color: var(--color-primary-text, #667eea);
+  font-weight: 600;
+}
+
+/* Form modal styles moved to ./forms.css */
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border-light, #e9ecef);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary, #667eea) 0%,
+    var(--color-primary-dark, #764ba2) 100%
+  );
+  color: var(--color-text-light, white);
+  border-radius: var(--border-radius-xl, 10px) var(--border-radius-xl, 10px) 0 0;
+}
+
+.form-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.medical-form-content {
+  padding: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-primary, #333);
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 2px solid var(--color-border-light, #e9ecef);
+  border-radius: var(--border-radius-md, 5px);
+  font-size: 1rem;
+  color: var(--color-text-primary, #333);
+  transition: var(--transition-normal, border-color 0.3s ease);
+  background: var(--color-bg-primary, white);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #667eea);
+  box-shadow: var(
+    --form-input-focus-shadow,
+    0 0 0 3px rgba(102, 126, 234, 0.1)
+  );
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border-light, #e9ecef);
+  margin-top: 1rem;
+}
+
+.cancel-button {
+  background: var(--color-gray-600, #6c757d);
+  color: var(--color-text-light, white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-md, 5px);
+  cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition-all, all 0.3s ease);
+  min-width: 120px;
+}
+
+.cancel-button:hover {
+  background: var(--color-gray-700, #5a6268);
+  transform: translateY(-1px);
+}
+
+.save-button {
+  background: linear-gradient(
+    135deg,
+    var(--color-success, #1a7a30) 0%,
+    var(--color-info, #20c997) 100%
+  );
+  color: var(--color-text-light, white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-md, 5px);
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition-all, all 0.3s ease);
+  min-width: 120px;
+}
+
+.save-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+/* Items List Section */
+.medical-items-list {
+  margin-top: 2rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--color-text-secondary, #6c757d);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  margin: 0 0 1rem 0;
+  color: var(--color-gray-700, #495057);
+  font-size: 1.5rem;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Grid Layout for Items */
+.medical-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Table Layout for Items */
+.medications-table-container {
+  background: var(--color-bg-primary, white);
+  border-radius: var(--border-radius-lg, 8px);
+  box-shadow: var(--shadow-lg, 0 5px 15px rgba(0, 0, 0, 0.08));
+  overflow: hidden;
+  border: 1px solid var(--color-border-light, #e9ecef);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.print-header {
+  padding: 1.5rem 2rem;
+  background: var(--color-bg-secondary, #f8f9fa);
+  border-bottom: 2px solid var(--color-border-light, #e9ecef);
+  text-align: center;
+}
+
+.print-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text-primary, #333);
+  font-size: 1.5rem;
+}
+
+.print-header p {
+  margin: 0;
+  color: var(--color-text-secondary, #6c757d);
+  font-size: 0.9rem;
+}
+
+.medications-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.medications-table th {
+  background: var(--color-primary, #667eea);
+  color: var(--color-text-light, white);
+  padding: 1rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--color-primary-dark, #5a6fd8);
+}
+
+.medications-table th:first-child {
+  padding-left: 1.5rem;
+}
+
+.medications-table th:last-child {
+  padding-right: 1.5rem;
+}
+
+.medications-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border-light, #e9ecef);
+  vertical-align: top;
+}
+
+.medications-table td:first-child {
+  padding-left: 1.5rem;
+}
+
+.medications-table td:last-child {
+  padding-right: 1.5rem;
+}
+
+.medications-table tbody tr:hover {
+  background: var(--color-bg-secondary, #f8f9fa);
+}
+
+.medications-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.medication-name {
+  font-weight: 600;
+  color: var(--color-text-primary, #333);
+}
+
+/* Status badge styles moved to ../components/medical/StatusBadge.css */
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.edit-button-small,
+.delete-button-small {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--border-radius-sm, 3px);
+  transition: var(--transition-all, all 0.2s ease);
+  font-size: 1rem;
+}
+
+.edit-button-small:hover {
+  background: var(--color-warning-light, rgba(255, 193, 7, 0.1));
+}
+
+.delete-button-small:hover {
+  background: var(--color-danger-light, rgba(220, 53, 69, 0.1));
+}
+
+/* Print Styles */
+@page {
+  size: landscape;
+  margin: 0.5in;
+}
+
+/* Item Card */
+.medical-item-card {
+  background: var(--color-bg-primary, white);
+  border-radius: var(--border-radius-xl, 10px);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg, 0 5px 15px rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--color-border-light, #e9ecef);
+  transition: var(--transition-all, all 0.3s ease);
+  position: relative;
+}
+
+.medical-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.medical-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.item-title {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--color-text-primary, #333);
+  font-weight: 600;
+  flex: 1;
+}
+
+.item-subtitle {
+  color: var(--color-text-secondary, #666);
+  font-size: 0.9rem;
+  margin: 5px 0 0 0;
+}
+
+.item-description {
+  color: var(--color-text-secondary, #666);
+  font-size: 0.9rem;
+  margin: 5px 0 0 0;
+  line-height: 1.4;
+}
+
+.item-info {
+  flex: 1;
+}
+
+/* Status Badges Container */
+.status-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+/* Status badge styles moved to components/medical/StatusBadge.css */
+
+/* Brand Badge */
+.brand-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.2);
+}
+
+.brand-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+}
+
+/* Item Details */
+.medical-item-details {
+  margin-bottom: 1.5rem;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+  gap: 10px;
+}
+
+.detail-item.full-width {
+  flex-direction: column;
+  align-items: stretch;
+  margin-bottom: 1rem;
+}
+
+.detail-item .label {
+  font-weight: 600;
+  color: var(--color-text-secondary, #6c757d);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.detail-item.full-width .label {
+  margin-bottom: 0.25rem;
+}
+
+.detail-item .value {
+  color: var(--color-text-primary, #212529);
+  text-align: right;
+  word-break: break-word;
+  flex: 1;
+}
+
+.detail-item.full-width .value {
+  text-align: left;
+}
+
+/* Item Notes */
+.medical-item-notes {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--color-bg-secondary);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-primary);
+}
+
+.notes-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #6c757d);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.medical-item-notes .notes-content {
+  color: var(--color-text-primary, #212529) !important;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  background: transparent !important;
+}
+
+/* Item Actions */
+.medical-item-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-gray-200, #f1f3f4);
+}
+
+.edit-button,
+.delete-button,
+.view-button {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md, 5px);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: var(--transition-all, all 0.3s ease);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.edit-button {
+  background: linear-gradient(
+    135deg,
+    var(--color-warning, #ffc107) 0%,
+    #fd7e14 100%
+  );
+  color: var(--color-text-light, white);
+}
+
+.edit-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md, 0 3px 10px rgba(255, 193, 7, 0.3));
+}
+
+.delete-button {
+  background: linear-gradient(
+    135deg,
+    var(--color-danger, #dc3545) 0%,
+    #c82333 100%
+  );
+  color: var(--color-text-light, white);
+}
+
+.delete-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md, 0 3px 10px rgba(220, 53, 69, 0.3));
+}
+
+.view-button {
+  background: linear-gradient(
+    135deg,
+    var(--color-success, #1a7a30) 0%,
+    var(--color-info, #20c997) 100%
+  );
+  color: var(--color-text-light, white);
+}
+
+.view-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md, 0 3px 10px rgba(40, 167, 69, 0.3));
+}
+
+/* Enhanced Visit Card Styles */
+.visit-type-badge {
+  color: var(--color-info, #0066cc);
+  font-weight: 500;
+  font-size: 0.85em;
+  text-transform: capitalize;
+}
+
+.priority-badge {
+  font-weight: 600;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.priority-badge.priority-routine {
+  color: var(--color-success, #1a7a30);
+}
+
+.priority-badge.priority-urgent {
+  color: var(--color-warning-dark, #856404);
+}
+
+.priority-badge.priority-emergency {
+  color: var(--color-danger, #dc3545);
+}
+
+.medical-item-section {
+  margin: 1rem 0;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--color-border-light, #e9ecef);
+}
+
+.medical-item-section:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+
+.section-label {
+  font-weight: 600;
+  color: var(--color-text-primary, #333);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.section-content {
+  color: var(--color-text-secondary, #555);
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+/* View Toggle Container - Fix for procedures page layout */
+.view-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Small variant - matches Mantine sm button sizing */
+.view-toggle-sm .view-toggle-btn,
+.view-toggle-sm .print-button {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Clickable Card Styles */
+.clickable-card {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clickable-card:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.clickable-card:focus-visible {
+  outline: 2px solid var(--color-primary, #667eea);
+  outline-offset: 2px;
+}

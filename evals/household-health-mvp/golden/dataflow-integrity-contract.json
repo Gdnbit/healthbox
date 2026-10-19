@@ -1,0 +1,54 @@
+{
+  "contract_id": "household-dataflow-integrity@1.0.0",
+  "legacy_directional_sharing": {
+    "household_mode": "server_disabled",
+    "patient_share_routes_available": false,
+    "directional_invitation_routes_available": false,
+    "existing_patient_share_grants_read": false,
+    "existing_patient_share_grants_write": false,
+    "archive_circle_structured_dashboard_unaffected": true,
+    "ordinary_cross_subject_mutation_status": 404
+  },
+  "mutation_authorization": {
+    "default_view_dependency_sufficient": false,
+    "vitals_create_requires": "owner_or_explicit_edit_outside_household_mode",
+    "vitals_csv_import_requires": "owner_or_explicit_edit_outside_household_mode",
+    "vitals_bulk_delete_requires": "owner_or_explicit_edit_outside_household_mode",
+    "patient_medication_create_requires": "owner_or_explicit_edit_outside_household_mode"
+  },
+  "unit_fidelity": {
+    "stored_weight": {
+      "value": 150,
+      "unit": "lb"
+    },
+    "metric_weight_display": {
+      "value_rounded": 68,
+      "unit": "kg"
+    },
+    "stored_temperature": {
+      "value": 98.6,
+      "unit": "°F"
+    },
+    "metric_temperature_display": {
+      "value_rounded": 37,
+      "unit": "°C"
+    },
+    "label_only_conversion_allowed": false,
+    "same_contract_used_by": [
+      "owner_dashboard",
+      "shared_dashboard",
+      "ai_handoff",
+      "copy",
+      "csv",
+      "print"
+    ]
+  },
+  "development_api_linkage": {
+    "configuration_key": "VITE_DEV_PROXY_TARGET",
+    "default_target": "http://localhost:8000",
+    "source_target_hardcoded_only": false,
+    "running_vite_process_requires_restart_after_target_change": true,
+    "acceptance_target_must_run_current_source": true,
+    "preexisting_4173_process_proves_current_integration": false
+  }
+}

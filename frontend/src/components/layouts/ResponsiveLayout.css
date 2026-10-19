@@ -1,0 +1,42 @@
+/* ResponsiveLayout Component Styles */
+
+.responsive-layout {
+  /* Main layout container */
+}
+
+.responsive-layout-navigation {
+  /* Navigation section */
+  position: relative;
+  z-index: 100;
+}
+
+.responsive-layout-content {
+  /* Main content area */
+  position: relative;
+  z-index: 50;
+}
+
+.app-footer {
+  /* Footer section */
+  border-top: 1px solid
+    light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+  background-color: light-dark(
+    var(--mantine-color-gray-0),
+    var(--mantine-color-dark-7)
+  );
+  margin-top: auto;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .responsive-layout {
+    border: 1px solid var(--mantine-color-gray-9);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .responsive-layout-content {
+    transition: none !important;
+  }
+}

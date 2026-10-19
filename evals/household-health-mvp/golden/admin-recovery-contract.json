@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "command_version": "1.0.0",
+  "command": "household-admin-recovery",
+  "actions": [
+    "inspect_admin_recovery",
+    "recover_admin_access"
+  ],
+  "required_success_fields": [
+    "command_version",
+    "target",
+    "action",
+    "sessions_revoked",
+    "second_factor",
+    "account",
+    "integrity_checks",
+    "maintenance_record_id",
+    "result"
+  ],
+  "required_target_fields": [
+    "user_id",
+    "username"
+  ],
+  "forbidden_output_fields": [
+    "old_password",
+    "new_password",
+    "password_hash",
+    "totp_secret",
+    "recovery_codes",
+    "recovery_code_hashes",
+    "challenge_token",
+    "database_url"
+  ],
+  "invariants": [
+    "the command targets the sole administrator or explicitly restores the configured owner only when no administrator exists",
+    "password input is interactive and is never accepted as a command-line argument",
+    "every successful recovery advances auth_version and revokes all older sessions",
+    "every successful recovery removes the TOTP credential and recovery hashes, consumes active challenges, and requires a new TOTP enrollment",
+    "the target account is active, remains the only administrator, and must change the recovery password after login",
+    "the password hash and the maintenance record are committed in the same transaction",
+    "stdout and the maintenance record never contain plaintext passwords, TOTP secrets, recovery codes, tokens, database credentials, or health values",
+    "multiple-administrator state, wrong-target confirmation, weak password, or a failed integrity check causes a full rollback"
+  ]
+}

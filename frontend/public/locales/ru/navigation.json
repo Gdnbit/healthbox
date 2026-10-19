@@ -1,0 +1,123 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "activity": {
+    "actions": {
+      "added": "Добавлено",
+      "deleted": "Удалено",
+      "modified": "Изменено",
+      "removed": "Удалено",
+      "scheduled": "Запланировано",
+      "updated": "Обновлено",
+      "viewed": "Просмотрено"
+    }
+  },
+  "dashboard": {
+    "activity": {
+      "lastUpdated": "Последнее обновление",
+      "noActivity": "Нет недавней активности",
+      "noActivityDescription": "Здесь будет отображаться активность по вашим медицинским записям"
+    },
+    "hello": "Здравствуйте",
+    "loading": "Загрузка медицинской панели управления...",
+    "modules": {
+      "exportRecords": "Экспорт записей",
+      "visitHistory": "История визитов"
+    },
+    "search": {
+      "advancedSearch": "Расширенный поиск",
+      "placeholder": "Поиск по медицинским записям..."
+    },
+    "sections": {
+      "additionalResources": "Дополнительные ресурсы",
+      "coreMedical": "Основная медицинская информация",
+      "healthMonitoring": "Мониторинг здоровья",
+      "prevention": "Профилактика и анамнез",
+      "recentActivity": "Недавняя активность",
+      "treatments": "Лечение и процедуры"
+    },
+    "stats": {
+      "activeMedications": "Активные препараты"
+    },
+    "subtitle": "Безопасное управление вашей медицинской информацией",
+    "title": "Панель управления HealthBox"
+  },
+  "invitations": {
+    "acceptButton": "Принять приглашение",
+    "confirmDescription": "Приняв приглашение, вы получите доступ к просмотру предоставленной медицинской информации.",
+    "confirmQuestion": "Вы уверены, что хотите принять это приглашение?",
+    "confirmTitle": "Подтверждение принятия приглашения",
+    "from": "От",
+    "lastUpdated": "Последнее обновление",
+    "manageAll": "Управление всеми приглашениями",
+    "noPending": "Нет ожидающих приглашений",
+    "noPendingDescription": "Новые приглашения к совместному доступу будут отображаться здесь",
+    "sharePatient": "Поделиться данными пациента",
+    "title": "Приглашения",
+    "types": {
+      "patientRecord": "Медицинская карта пациента"
+    }
+  },
+  "menu": {
+    "account": "Аккаунт",
+    "backToDashboard": "Вернуться к панели управления",
+    "darkMode": "Тёмная тема",
+    "help": "Помощь",
+    "lightMode": "Светлая тема",
+    "logout": "Выйти",
+    "patients": "Пациенты",
+    "profile": "Профиль",
+    "reports": "Отчёты",
+    "userActions": "Действия пользователя"
+  },
+  "pages": {
+    "help": "Помощь и поддержка",
+    "medicalHistory": "Анамнез",
+    "patientDetails": "Данные пациента",
+    "patientList": "Список пациентов",
+    "preferences": "Настройки",
+    "reports": "Отчёты",
+    "userProfile": "Профиль пользователя"
+  },
+  "sections": {
+    "personalInfo": "Личная информация",
+    "preferences": "Настройки"
+  },
+  "sidebarNav": {
+    "items": {
+      "adminDashboard": "Панель администратора",
+      "allergies": "Аллергии",
+      "backupManagement": "Управление резервными копиями",
+      "conditions": "Заболевания",
+      "customReports": "Пользовательские отчёты",
+      "dataModels": "Модели данных",
+      "emergencyContacts": "Экстренные контакты",
+      "exportRecords": "Экспорт записей",
+      "familyHistory": "Семейный анамнез",
+      "immunizations": "Иммунизация",
+      "injuries": "Травмы",
+      "insurance": "Страхование",
+      "labResults": "Результаты анализов",
+      "language": "Язык",
+      "medicalEquipment": "Медицинское оборудование",
+      "medications": "Препараты",
+      "patientInfo": "Информация о пациенте",
+      "pharmacies": "Аптеки",
+      "practitioners": "Врачи",
+      "procedures": "Процедуры",
+      "settings": "Настройки",
+      "symptoms": "Симптомы",
+      "systemHealth": "Состояние системы",
+      "tagManagement": "Управление тегами",
+      "theme": "Тема",
+      "treatments": "Лечение",
+      "visitHistory": "История визитов",
+      "vitalSigns": "Жизненные показатели"
+    },
+    "sections": {
+      "administration": "Администрирование",
+      "careAndTreatment": "Уход и лечение",
+      "misc": "Прочее",
+      "tools": "Инструменты"
+    }
+  }
+}

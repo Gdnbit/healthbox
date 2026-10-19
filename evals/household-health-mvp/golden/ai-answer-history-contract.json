@@ -1,0 +1,124 @@
+{
+  "contract_id": "household-ai-answer-history@1.0.0",
+  "scope": {
+    "allowed_subject": "self_owned",
+    "allowed_reader": "creating_user",
+    "denied_capabilities": [
+      "structured_dashboard",
+      "owner_global_read",
+      "administrator_cross_subject_ai"
+    ]
+  },
+  "question_contract": {
+    "question_id": "recent_changes",
+    "canonical_question": "最近有哪些变化？",
+    "client_free_text_stored": false,
+    "provider_payload_uses_server_canonical_text": true,
+    "history_uses_server_canonical_text": true,
+    "text_mismatch": {
+      "http_status": 422,
+      "error_code": "health_ai_question_text_mismatch",
+      "provider_calls": 0,
+      "history_writes": 0
+    }
+  },
+  "storage": {
+    "table": "health_ai_answers",
+    "separate_from_formal_facts": true,
+    "formal_fact": false,
+    "trend_eligible": false,
+    "screening_input": false,
+    "risk_input": false,
+    "stores": [
+      "request_id",
+      "subject_id",
+      "creating_user_id",
+      "question_id",
+      "question",
+      "range",
+      "provider",
+      "model",
+      "processing_mode",
+      "test_mode",
+      "processing_location",
+      "template_version",
+      "generated_at",
+      "data_cutoff",
+      "record_count",
+      "metric_count",
+      "validated_provider_answer",
+      "server_fixed_disclosures",
+      "citation_snapshots",
+      "limitations",
+      "next_steps",
+      "disclaimer"
+    ]
+  },
+  "read": {
+    "available_when_provider_disabled": true,
+    "list_order": "generated_at_desc",
+    "reauthorize_subject_on_every_request": true,
+    "member_processing_model_labels": {
+      "local_openai_compatible": "家庭服务器安全整理器",
+      "dynamic_test": "虚构规则测试器（非模型）"
+    },
+    "actual_model_id_visible_to_member": false
+  },
+  "citations": {
+    "snapshot_retained": true,
+    "reauthorize_on_detail_read": true,
+    "deep_link_target": "exact_metric_and_formal_record",
+    "disabled_when_record_cancelled_deleted_or_unauthorized": true,
+    "disabled_when_current_date_value_secondary_value_unit_or_status_differs": true,
+    "stale_answer_text_remains_visible": true
+  },
+  "provider_output": {
+    "answer_template_version": "household-ai-answer@1.1.0",
+    "strict_schema_required": true,
+    "all_selected_records_require_explicit_Rn_equals_value_unit_binding": true,
+    "validated_answer_stored": true,
+    "validated_answer_visible": true,
+    "unvalidated_raw_response_stored": false,
+    "unvalidated_raw_response_visible": false,
+    "history_content_source": "validated_provider_answer_with_server_fixed_disclosures",
+    "can_write_formal_health_facts_originals_or_trends": false,
+    "tools_available": [],
+    "proves_medical_correctness": false,
+    "server_fixed_disclosures": [
+      "selected_data_scope",
+      "non_diagnostic_and_no_health_safety_guarantee",
+      "cross_institution_method_reference_range_comparability"
+    ],
+    "required_fixed_comparability_limitation": "不同机构、检测方法或参考范围的结果可能不可直接比较；请结合原报告或由专业医疗人员判断。"
+  },
+  "delete": {
+    "confirmation_steps": 2,
+    "mode": "hard_delete_active_database",
+    "deletes_formal_source": false,
+    "backup_erasure_guaranteed": false,
+    "audit": {
+      "metadata_only": true,
+      "forbidden_fields": [
+        "question",
+        "answer",
+        "metric_label",
+        "health_value",
+        "provider_endpoint",
+        "model",
+        "model_id",
+        "actual_model_id",
+        "secret"
+      ]
+    }
+  },
+  "excluded": [
+    "user_feedback",
+    "external_provider",
+    "screening_state",
+    "guidance",
+    "risk_probability",
+    "shared_subject_ai",
+    "administrator_cross_subject_ai",
+    "answer_export"
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "suite_id": "household-account-invitation-acceptance@1.0.0",
+  "data_policy": "synthetic_only",
+  "cases": [
+    {
+      "id": "INV-ADMIN-CREATE-01",
+      "given": "one active administrator and available capacity",
+      "when": "the administrator creates a 72-hour invitation",
+      "then": [
+        "a single-display activation path is returned",
+        "only a SHA-256 digest is persisted",
+        "subsequent list output contains no secret"
+      ]
+    },
+    {
+      "id": "INV-ADMIN-AUTH-02",
+      "given": "an ordinary member, anonymous caller, or broken sole-admin invariant",
+      "when": "an admin invitation endpoint is called",
+      "then": [
+        "the request fails closed",
+        "no invitation row or audit success is committed"
+      ]
+    },
+    {
+      "id": "INV-CAPACITY-03",
+      "given": "active accounts plus pending invitations equal 20",
+      "when": "an invitation is created or activated",
+      "then": [
+        "capacity is enforced server-side",
+        "the invitation is not consumed on activation failure"
+      ]
+    },
+    {
+      "id": "INV-INSPECT-04",
+      "given": "a valid pending token",
+      "when": "the public inspect endpoint is called",
+      "then": [
+        "only expiry and the current Chinese notice are returned",
+        "issuer recipient label groups account counts and health data are absent"
+      ]
+    },
+    {
+      "id": "INV-ACTIVATE-05",
+      "given": "valid synthetic profile data and current notice acceptance",
+      "when": "activation succeeds",
+      "then": [
+        "exactly one ordinary user is created",
+        "exactly one owned self subject is created and selected",
+        "one current privacy acceptance is recorded",
+        "the invitation is terminal",
+        "no session is issued"
+      ]
+    },
+    {
+      "id": "INV-REPLAY-08",
+      "given": "one invitation token submitted twice or concurrently",
+      "when": "both activation attempts execute",
+      "then": [
+        "at most one succeeds",
+        "only one user subject and acceptance exist"
+      ]
+    },
+    {
+      "id": "INV-TERMINAL-09",
+      "given": "expired declined cancelled activated and unknown tokens",
+      "when": "inspect or activate is attempted",
+      "then": [
+        "all use the same public unavailable error",
+        "no account is created"
+      ]
+    },
+    {
+      "id": "INV-ROLLBACK-10",
+      "given": "a forced failure after user creation but before final commit",
+      "when": "activation aborts",
+      "then": [
+        "user subject consent invitation consumption and audit are all rolled back",
+        "the invitation remains retryable"
+      ]
+    },
+    {
+      "id": "INV-NO-SIDE-EFFECT-14",
+      "given": "successful activation",
+      "when": "database and network effects are inspected",
+      "then": [
+        "no archive-circle membership is created",
+        "no external request is sent",
+        "no real health data is read or written"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1396 @@
+{
+  "x-healthbox-modification-notice": "Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.",
+  "actions": {
+    "delete": "Delete",
+    "view": "View"
+  },
+  "allergies": {
+    "messages": {
+      "loading": "Ładowanie alergii..."
+    }
+  },
+  "buttons": {
+    "addNew": "Dodaj nowy",
+    "back": "Wstecz",
+    "cancelSelection": "Anuluj wybór",
+    "clear": "Clear",
+    "create": "Utwórz",
+    "delete": "Usuń",
+    "done": "Gotowe",
+    "link": "Połącz",
+    "linkCondition": "Połącz schorzenie",
+    "linkConditions": "Połącz schorzenia",
+    "linkEquipment": "Połącz sprzęt",
+    "linkLabResult": "Połącz wynik badania",
+    "linkMedication": "Połącz lek",
+    "linkMedications": "Połącz leki",
+    "linkProcedure": "Link Procedure",
+    "linkTreatment": "Link Treatment",
+    "linkVisit": "Połącz wizytę",
+    "print": "Drukuj",
+    "refresh": "Odśwież",
+    "restore": "Przywróć",
+    "save": "Zapisz",
+    "saveChanges": "Zapisz zmiany",
+    "search": "Szukaj",
+    "share": "Udostępnij",
+    "showLess": "Pokaż mniej",
+    "showMore": "Pokaż więcej",
+    "tryAgain": "Spróbuj ponownie",
+    "update": "Aktualizuj",
+    "view": "Zobacz"
+  },
+  "conditions": {
+    "addNew": "Dodaj nowe schorzenie",
+    "addTitle": "Dodaj nowe schorzenie",
+    "card": {
+      "durationEnded": "{{duration}} (zakończone)",
+      "durationOngoing": "{{duration}} (trwające)"
+    },
+    "editTitle": "Edytuj schorzenie",
+    "form": {
+      "createCondition": "Utwórz schorzenie",
+      "descriptions": {
+        "codeDescription": "Czytelny opis kodów medycznych",
+        "conditionName": "Opcjonalna alternatywna nazwa",
+        "diagnosis": "Główna diagnoza lub schorzenie",
+        "endDate": "Kiedy schorzenie się skończyło (jeśli dotyczy)",
+        "icd10Code": "Kod Międzynarodowej Klasyfikacji Chorób",
+        "notes": "Dodatkowe informacje o tym schorzeniu",
+        "onsetDate": "Kiedy schorzenie się rozpoczęło",
+        "practitioner": "Powiązany pracownik ochrony zdrowia",
+        "snomedCode": "Kod SNOMED CT",
+        "tags": "Dodaj tagi, aby kategoryzować i organizować schorzenia"
+      },
+      "labResultsDescription": "Link lab results that relate to or monitor this condition.",
+      "medicationsDescription": "Połącz leki stosowane w leczeniu lub kontrolowaniu tego schorzenia.",
+      "placeholders": {
+        "codeDescription": "Opis kodu medycznego",
+        "conditionName": "Wprowadź nazwę schorzenia",
+        "diagnosis": "Wprowadź diagnozę",
+        "icd10Code": "np. E11.9",
+        "notes": "Wprowadź notatki kliniczne, obserwacje lub dodatkowe szczegóły",
+        "severity": "Wybierz nasilenie",
+        "snomedCode": "np. 44054006"
+      },
+      "saveFirstToLinkLabResults": "Save the condition first, then return to edit mode to link lab results.",
+      "saving": "Zapisywanie schorzenia...",
+      "severity": {
+        "lifeThreatening": "Zagrażający życiu",
+        "mild": "Łagodne",
+        "moderate": "Umiarkowane",
+        "severe": "Ciężkie"
+      },
+      "status": {
+        "chronic": "Przewlekłe"
+      },
+      "updateCondition": "Aktualizuj schorzenie"
+    },
+    "getStarted": "Kliknij \"Dodaj nowe schorzenie\", aby rozpocząć.",
+    "loading": "Ładowanie schorzeń...",
+    "modal": {
+      "labels": {
+        "endDate": "Koniec",
+        "onsetDate": "Początek"
+      },
+      "noNotesAvailable": "Brak dostępnych notatek klinicznych",
+      "sections": {
+        "medicalCodes": "Kody medyczne"
+      },
+      "title": "Szczegóły schorzenia"
+    },
+    "noResults": "Nie znaleziono schorzeń",
+    "notifications": {
+      "medicationLinkFailed": "Schorzenie zostało utworzone, ale nie udało się połączyć niektórych leków. Możesz połączyć je ręcznie, edytując schorzenie.",
+      "medicationLinkWarning": "Problem z połączeniem leków"
+    },
+    "table": {
+      "icd10": "ICD-10"
+    }
+  },
+  "emergencyContacts": {
+    "actions": {
+      "addNew": "Dodaj kontakt alarmowy"
+    },
+    "card": {
+      "address": "Adres:",
+      "email": "E-mail:",
+      "notes": "📝 Notatki",
+      "phone": "Telefon:",
+      "primary": "PODSTAWOWY",
+      "relationship": "Pokrewieństwo:",
+      "secondaryPhone": "Drugi telefon:"
+    },
+    "form": {
+      "addTitle": "Dodaj kontakt alarmowy",
+      "editTitle": "Edytuj kontakt alarmowy"
+    },
+    "page": {
+      "loading": "Ładowanie kontaktów alarmowych...",
+      "noContacts": "Nie znaleziono kontaktów alarmowych",
+      "noContactsDescription": "Ważne jest posiadanie kontaktów alarmowych dostępnych w przypadku nagłych sytuacji medycznych."
+    },
+    "table": {
+      "primary": "Podstawowy"
+    },
+    "viewModal": {
+      "contactInfo": "📞 Informacje kontaktowe",
+      "editContact": "Edytuj kontakt",
+      "icon": "🚨",
+      "notes": "📝 Notatki",
+      "primaryPhone": "Telefon główny",
+      "secondaryPhone": "Drugi telefon",
+      "title": "Szczegóły kontaktu alarmowego"
+    }
+  },
+  "equipment": {
+    "addEquipment": "Dodaj sprzęt",
+    "addFirstEquipment": "Dodaj swój pierwszy sprzęt",
+    "editEquipment": "Edytuj sprzęt",
+    "fields": {
+      "modelNumber": "Model",
+      "nextService": "Następny serwis",
+      "prescribedDate": "Przepisano",
+      "serialNumber": "Nr seryjny"
+    },
+    "form": {
+      "create": "Utwórz sprzęt",
+      "lastService": "Data ostatniego serwisu",
+      "manufacturerPlaceholder": "np. ResMed, Philips",
+      "modelNumber": "Numer modelu",
+      "modelPlaceholder": "np. AirSense 11",
+      "namePlaceholder": "np. ResMed AirSense 11",
+      "nextService": "Data następnego serwisu",
+      "notesPlaceholder": "Dodatkowe uwagi dotyczące tego sprzętu",
+      "practitioner": "Przepisany przez",
+      "prescribedDate": "Data przepisania",
+      "saving": "Zapisywanie sprzętu...",
+      "serialPlaceholder": "Numer seryjny sprzętu",
+      "supplierPlaceholder": "Dostawca sprzętu",
+      "type": "Typ sprzętu",
+      "update": "Zaktualizuj sprzęt",
+      "usageInstructions": "Instrukcja użytkowania",
+      "usagePlaceholder": "Jak używać tego sprzętu"
+    },
+    "loading": "Ładowanie sprzętu...",
+    "noEquipmentFound": "Nie znaleziono sprzętu",
+    "startAdding": "Zacznij od dodania pierwszego sprzętu medycznego.",
+    "viewModal": {
+      "dates": "Ważne daty",
+      "lastService": "Ostatni serwis",
+      "manufacturerDetails": "Dane producenta",
+      "modelNumber": "Numer modelu",
+      "nextService": "Następny serwis",
+      "prescribedBy": "Przepisany przez",
+      "prescribedDate": "Data przepisania",
+      "title": "Szczegóły sprzętu",
+      "type": "Typ sprzętu",
+      "usageInstructions": "Instrukcja użytkowania"
+    }
+  },
+  "errors": {
+    "invalidPhone": "Wprowadź prawidłowy numer telefonu",
+    "loadFailed": "Ładowanie nie powiodło się"
+  },
+  "familyHistory": {
+    "addFamilyMember": "Dodaj członka rodziny",
+    "card": {
+      "addCondition": "Dodaj schorzenie",
+      "age": "Wiek",
+      "birthYear": "Rok urodzenia",
+      "cannotEditSharedMember": "Nie można edytować udostępnionego członka rodziny",
+      "conditions": "schorzenia",
+      "deathYear": "Rok śmierci",
+      "deceased": "Zmarły(-a)",
+      "diagnosedAtAge": "Zdiagnozowano w wieku {{age}} lat",
+      "noConditionsRecorded": "Nie zarejestrowano schorzeń",
+      "notSelectable": "Nie można wybrać",
+      "selected": "Zaznaczone",
+      "sharedBy": "Udostępnione przez",
+      "subtitle": "Członek rodziny",
+      "years": "lat"
+    },
+    "conditionCountAcrossMembers": "{{conditionCount}} schorzenie(-ń) wśród {{memberCount}} członka(-ów) rodziny",
+    "confirmations": {
+      "deleteCondition": "Czy na pewno chcesz usunąć to schorzenie?",
+      "deleteMember": "Czy na pewno chcesz usunąć tego członka rodziny?"
+    },
+    "emptyState": {
+      "addFirstMember": "Dodaj swojego pierwszego członka rodziny",
+      "noFamilyMembers": "Brak członków rodziny",
+      "startBuilding": "Zacznij budować historię chorób w rodzinie, dodając pierwszego członka rodziny."
+    },
+    "endSharingMode": "Zakończ tryb udostępniania",
+    "errors": {
+      "createdButFailedRefresh": "Członek rodziny został utworzony pomyślnie, ale nie udało się odświeżyć listy. Przeładuj stronę, aby zobaczyć zmiany.",
+      "failedToDeleteCondition": "Nie udało się usunąć schorzenia",
+      "failedToSaveCondition": "Nie udało się zapisać schorzenia",
+      "familyMemberNotAvailable": "Informacje o członku rodziny są niedostępne",
+      "updatedButFailedRefresh": "Członek rodziny został zaktualizowany pomyślnie, ale nie udało się odświeżyć listy. Przeładuj stronę, aby zobaczyć zmiany."
+    },
+    "form": {
+      "addConditionForMember": "Dodaj schorzenie dla {{name}}",
+      "addMemberTitle": "Dodaj członka rodziny",
+      "editConditionForMember": "Edytuj schorzenie dla {{name}}",
+      "editMemberTitle": "Edytuj członka rodziny"
+    },
+    "loadingFamilyHistory": "Ładowanie historii rodzinnej...",
+    "manageInvitations": "Zarządzaj zaproszeniami",
+    "notifications": {
+      "cannotDelete": "Nie można usunąć",
+      "cannotDeleteShared": "Nie możesz usuwać udostępnionych zapisów historii rodzinnej",
+      "cannotEdit": "Nie można edytować",
+      "cannotEditShared": "Nie możesz edytować udostępnionych zapisów historii rodzinnej"
+    },
+    "pageTitle": "Historia chorób w rodzinie",
+    "sharedConditionCountAcrossMembers": "{{conditionCount}} schorzenie(-ń) wśród {{memberCount}} udostępnionego(-ych) członka(-ów) rodziny",
+    "sharedMemberCount": "{{filteredCount}} z {{totalCount}} członka(-ów) rodziny udostępniono Tobie",
+    "sharedMembersCannotBeSelected": "Udostępniani członkowie rodziny nie mogą być wybrani do dodatkowego udostępniania.",
+    "sharedTableName": "Historia rodzinna udostępniona",
+    "sharingMode": "Tryb udostępniania",
+    "sharingModeActive": "Tryb udostępniania aktywny",
+    "table": {
+      "diagnosisAge": "Wiek diagnozy",
+      "familyMember": "Członek rodziny",
+      "noConditions": "Brak schorzeń",
+      "sharedBy": "Udostępnione przez",
+      "yearsOld": "{{age}} lat"
+    },
+    "tabs": {
+      "myFamily": "Moja rodzina",
+      "sharedWithMe": "Udostępnione mi"
+    },
+    "viewModal": {
+      "addCondition": "Dodaj schorzenie",
+      "cannotAddConditionsShared": "Nie można dodawać schorzeń do udostępnionego członka rodziny",
+      "cannotDeleteConditionsShared": "Nie można usuwać schorzeń udostępnionego członka rodziny",
+      "cannotEditConditionsShared": "Nie można edytować schorzeń udostępnionego członka rodziny",
+      "cannotEditShared": "Nie można edytować udostępnionego członka rodziny",
+      "deleteCondition": "Usuń schorzenie",
+      "editCondition": "Edytuj schorzenie",
+      "editFamilyMember": "Edytuj członka rodziny",
+      "editMember": "Edytuj członka rodziny",
+      "memberDetails": "Dane członka rodziny",
+      "modalTitle": "Historia medyczna rodziny",
+      "sharedAt": "Udostępnione",
+      "sharingNote": "Notatka udostępniania"
+    }
+  },
+  "fields": {
+    "endDate": {
+      "description": "Kiedy to się skończyło (jeśli dotyczy)",
+      "label": "Data zakończenia",
+      "placeholder": "Wybierz datę zakończenia"
+    },
+    "notes": {
+      "description": "Wszelkie dodatkowe szczegóły lub notatki",
+      "placeholder": "Dodatkowe informacje..."
+    },
+    "startDate": {
+      "description": "Kiedy to się zaczęło",
+      "label": "Data rozpoczęcia",
+      "placeholder": "Wybierz datę rozpoczęcia"
+    },
+    "status": {
+      "description": "Bieżący status"
+    },
+    "tags": {
+      "description": "Dodaj tagi, aby ułatwić organizację i wyszukiwanie tego rekordu w przyszłości",
+      "placeholder": "Dodaj tagi, aby uporządkować i znaleźć ten rekord"
+    }
+  },
+  "filters": {
+    "clear": "Wyczyść",
+    "itemCount": "{{filtered}} z {{total}} elementów",
+    "title": "Filtry i wyszukiwanie",
+    "toggle": "Toggle filters"
+  },
+  "immunizations": {
+    "addImmunization": "Dodaj nowe szczepienie",
+    "addNewImmunization": "Dodaj nowe szczepienie",
+    "card": {
+      "practitionerId": "ID: {{id}}"
+    },
+    "clickToGetStarted": "Kliknij \"Dodaj nowe szczepienie\", aby rozpocząć.",
+    "editImmunization": "Edytuj szczepienie",
+    "form": {
+      "adminRoute": "Droga podania",
+      "adminRouteDesc": "Sposób podania",
+      "adminRoutePlaceholder": "Wybierz drogę podania",
+      "adminSiteDesc": "Gdzie szczepionka została podana",
+      "adminSitePlaceholder": "Wybierz miejsce podania",
+      "clinicalNotesDesc": "Dodatkowe informacje o tym szczepieniu",
+      "clinicalNotesPlaceholder": "Wprowadź notatki kliniczne, reakcje lub dodatkowe szczegóły",
+      "createImmunization": "Utwórz szczepienie",
+      "dateAdministeredDesc": "Kiedy szczepionka została podana",
+      "doseNumberDesc": "Która dawka w schemacie",
+      "doseNumberPlaceholder": "Wprowadź numer dawki",
+      "expirationDateDesc": "Kiedy szczepionka wygasa",
+      "location": "Lokalizacja/placówka",
+      "locationDesc": "Gdzie szczepionka została podana",
+      "locationPlaceholder": "np. Apteka CVS, Szpital, Klinika",
+      "lotNumberDesc": "Numer serii szczepionki",
+      "lotNumberPlaceholder": "Wprowadź numer serii",
+      "manufacturerDesc": "Producent szczepionki",
+      "manufacturerPlaceholder": "Wprowadź producenta",
+      "ndcNumberDesc": "Krajowy kod leków",
+      "ndcNumberPlaceholder": "np. 12345-6789-01",
+      "practitionerDesc": "Pracownik ochrony zdrowia, który podał szczepionkę",
+      "practitionerPlaceholder": "Wybierz pracownika podającego szczepionkę",
+      "routeID": "Śródskórne (ID)",
+      "routeIM": "Domięśniowe (IM)",
+      "routeIV": "Dożylne (IV)",
+      "routeSC": "Podskórne (SC)",
+      "savingImmunization": "Zapisywanie szczepienia...",
+      "siteLeftArm": "Lewe ramię",
+      "siteLeftDeltoid": "Lewy deltoid",
+      "siteLeftThigh": "Lewe udo",
+      "siteRightArm": "Prawe ramię",
+      "siteRightDeltoid": "Prawy deltoid",
+      "siteRightThigh": "Prawe udo",
+      "tagsDesc": "Dodaj tagi do kategoryzowania i organizacji szczepień",
+      "tradeName": "Nazwa formalna/handlowa",
+      "tradeNameDesc": "Pełna formalna nazwa z dokumentacji szczepionki",
+      "tradeNamePlaceholder": "np. Flublok TRIV 2025-2026 PFS",
+      "updateImmunization": "Aktualizuj szczepienie",
+      "vaccineNameDesc": "Popularna nazwa szczepionki",
+      "vaccineNamePlaceholder": "np. Szczepionka na grypę, COVID-19, Tdap"
+    },
+    "history": {
+      "noPatient": "Wybierz pacjenta, aby zobaczyć historię."
+    },
+    "loadingImmunizations": "Ładowanie szczepień...",
+    "noImmunizationsFound": "Nie znaleziono szczepień",
+    "table": {
+      "site": "Miejsce"
+    },
+    "tabs": {
+      "history": "Historia",
+      "records": "Wpisy"
+    },
+    "viewModal": {
+      "adminDetails": "Szczegóły podania",
+      "doseHash": "Dawka #{{number}}",
+      "locationFacility": "Lokalizacja/placówka",
+      "title": "Szczegóły szczepienia",
+      "tradeName": "Nazwa handlowa",
+      "vaccineInfo": "Informacje o szczepionce"
+    }
+  },
+  "insurance": {
+    "actions": {
+      "addNew": "+ Dodaj nowe ubezpieczenie"
+    },
+    "card": {
+      "annualMax": "Maks. roczny",
+      "basic": "Podstawowe",
+      "bin": "BIN",
+      "deductible": "Udział własny",
+      "effective": "Ważne od",
+      "examCopay": "Opłata za badanie",
+      "expires": "Wygasa",
+      "frameAllowance": "Limit na oprawki",
+      "group": "Grupa",
+      "holder": "Posiadacz",
+      "member": "Członek",
+      "memberId": "ID członka",
+      "pcn": "PCN",
+      "pcpCopay": "Opłata do lekarza POZ",
+      "plan": "Plan",
+      "preventive": "Profilaktyczne",
+      "primary": "Podstawowe",
+      "specialistCopay": "Opłata do specjalisty"
+    },
+    "description": "Zarządzaj informacjami ubezpieczeniowymi i kartami cyfrowymi",
+    "empty": {
+      "addFirst": "Dodaj pierwsze ubezpieczenie",
+      "noData": "Zacznij od dodania pierwszego ubezpieczenia.",
+      "title": "Nie znaleziono ubezpieczenia"
+    },
+    "form": {
+      "addTitle": "Dodaj nowe ubezpieczenie",
+      "editTitle": "Edytuj ubezpieczenie"
+    },
+    "loading": "Ładowanie rekordów ubezpieczeniowych...",
+    "viewModal": {
+      "additionalDetails": "Dodatkowe szczegóły ochrony ubezpieczeniowej",
+      "attachedDocuments": "Załączone dokumenty",
+      "claimsAddress": "Adres do zgłaszania roszczeń",
+      "claimsPhone": "Telefon do zgłaszania roszczeń",
+      "coinsurance": "Współubezpieczenie",
+      "copay": "Współpłatność",
+      "coverageDetails": "Szczegóły ochrony ubezpieczeniowej",
+      "coveragePeriod": "Okres ubezpieczenia",
+      "customerServicePhone": "Telefon obsługi klienta",
+      "deductible": "Udział własny",
+      "dentalCoverage": "Ubezpieczenie dentystyczne",
+      "effectiveDate": "Data wejścia w życie",
+      "employerGroup": "Pracodawca/sponsor grupy",
+      "memberInfo": "Informacje o członku",
+      "memberName": "Nazwisko członka",
+      "mentalHealthCoverage": "Ubezpieczenie zdrowia psychicznego",
+      "outOfPocketMax": "Maksymalny wydatek własny",
+      "pharmacyNetworkInfo": "Informacje o sieci aptek",
+      "policyHolder": "Posiadacz polisy",
+      "prescriptionCoverage": "Ubezpieczenie leków na receptę",
+      "printCard": "Drukuj kartę",
+      "sameAsMember": "Taki sam jak członek",
+      "tabs": {
+        "contact": "Kontakt",
+        "coverage": "Ochrona ubezpieczeniowa"
+      },
+      "title": "Szczegóły ubezpieczenia",
+      "visionCoverage": "Ubezpieczenie okulistyczne"
+    }
+  },
+  "invitations": {
+    "from": "Od"
+  },
+  "key": "Domyślny {{var}}",
+  "labels": {
+    "addCustom": "+ Dodaj \"{{value}}\"",
+    "cancelEdit": "Cancel edit",
+    "conditionsAvailableToLink": "Dostępne do połączenia: {{count}} schorzeń",
+    "deleteRelationship": "Delete relationship",
+    "editRelationship": "Edit relationship",
+    "expectedFrequency": "Expected frequency",
+    "labResultsAvailableToLink_one": "{{count}} lab results available to link",
+    "labResultsAvailableToLink_other": "{{count}} lab results available to link",
+    "linkedLabResults": "Powiązane wyniki badań",
+    "linkedMedications": "Powiązane leki",
+    "loading": "Ładowanie...",
+    "loadingLabResults": "Ładowanie wyników badań...",
+    "loadingOption": "Ładowanie {{option}}...",
+    "loadingRelatedConditions": "Ładowanie powiązanych schorzeń...",
+    "medicationsAvailableToLink": "Dostępne do połączenia: {{count}} leków",
+    "new": "Nowy",
+    "no": "Nie",
+    "noConditionsLinked": "Brak schorzeń powiązanych z tym wynikiem laboratoryjnym",
+    "noConditionsLinkedToMedication": "Brak schorzeń powiązanych z tym lekiem",
+    "noDate": "No date",
+    "noEncountersLinked": "Brak wizyt połączonych z tym leczeniem",
+    "noEquipmentLinked": "Brak sprzętu połączonego z tym leczeniem",
+    "noLabResultsLinked": "Brak wyników badań połączonych z tą wizytą",
+    "noLabResultsLinkedToCondition": "Brak wyników badań powiązanych z tym schorzeniem",
+    "noMedicationsLinked": "Brak leków powiązanych z tym schorzeniem",
+    "noMedicationsLinkedToLabResult": "No medications linked to this lab result",
+    "none": "Brak",
+    "noProceduresLinked": "No procedures linked to this lab result",
+    "noRating": "Brak oceny",
+    "notAvailable": "N/D",
+    "notCompleted": "Nie ukończono",
+    "noTreatmentsLinked": "No treatments linked to this lab result",
+    "noVisitsLinked": "Brak wizyt połączonych z tym wynikiem badania",
+    "ordered": "Zlecono",
+    "phoneNumber": "Numer telefonu",
+    "ratingStars": "{{count}}/5 gwiazdek",
+    "ratingStars_one": "{{count}}/5 gwiazdki",
+    "ratingStars_other": "{{count}}/5 gwiazdek",
+    "saveRelationship": "Save relationship",
+    "selectPurpose": "Wybierz cel",
+    "viewDetails": "Zobacz szczegóły",
+    "viewPharmacyDetails": "Zobacz szczegóły apteki",
+    "visitDate": "Data wizyty",
+    "visitWebsite": "Odwiedź stronę ↗",
+    "yes": "Tak"
+  },
+  "labResults": {
+    "emptyLabResultMessage": "Utworzono wynik badania, ale nie dodano żadnych składników testu. Czy chcesz usunąć ten wynik badania?",
+    "emptyLabResultWarning": "Utworzony wynik badania jest pusty",
+    "form": {
+      "linkedVisits": "Powiązane wizyty",
+      "linkVisitsDescription": "Powiąż ten wynik badania z wizytami, podczas których został zlecony lub przeanalizowany.",
+      "linkVisitsTitle": "Powiąż z wizytami"
+    },
+    "labResultCreated": "Utworzono wynik badania \"{{testName}}\". Teraz możesz przesłać i przeanalizować plik PDF.",
+    "quickFormInstructions": "Wprowadź nazwę tego wyniku badania, a następnie będziesz mógł przesłać i przeanalizować plik PDF.",
+    "quickImportModalTitle": "Szybki import PDF - Krok {{step}} z 2",
+    "quickImportSuccess": "Pomyślnie zaimportowano wynik badania i składniki testu",
+    "testNameDescription": "To jedyne wymagane pole - możesz dodać więcej szczegółów później",
+    "testNamePlaceholder": "Badania endokrynologiczne krwi itp.",
+    "unsavedDataInstructions": "Kliknij \"Dodaj składniki\" w zakładce Podgląd, aby zapisać przeanalizowane dane przed zamknięciem.",
+    "unsavedDataMessage_one": "Masz {{count}} przeanalizowany składnik testu, który nie został jeszcze dodany. Jeśli zamkniesz teraz, utracisz te przeanalizowane dane.",
+    "unsavedDataMessage_other": "Masz {{count}} przeanalizowanych składników testów, które nie zostały jeszcze dodane. Jeśli zamkniesz teraz, utracisz te przeanalizowane dane.",
+    "unsavedDataWarning": "Niezapisane przeanalizowane dane"
+  },
+  "medications": {
+    "addNew": "Dodaj nowy lek",
+    "allTypes": "Wszystkie typy",
+    "clickToStart": "Kliknij \"Dodaj nowy lek\", aby rozpocząć.",
+    "fields": {
+      "noIndication": "Nie określono wskazania",
+      "prescriber": "Lekarz przepisujący"
+    },
+    "loading": "Ładowanie leków...",
+    "modal": {
+      "editMedication": "Edytuj lek",
+      "labels": {
+        "alternativeName": "Nazwa alternatywna",
+        "form": "Forma",
+        "purposeIndication": "Cel/Wskazanie"
+      },
+      "noSideEffects": "Nie zgłoszono skutków ubocznych",
+      "sections": {
+        "dosageInfo": "Informacje o dawkowaniu",
+        "prescriberPharmacy": "Lekarz przepisujący i apteka",
+        "usedInTreatments": "Stosowane w leczeniu"
+      },
+      "tabs": {
+        "dosageRefills": "Dawkowanie i uzupełnienia"
+      }
+    },
+    "noMedications": "Nie znaleziono leków ani suplementów",
+    "quickFilter": "Szybki filtr",
+    "treatments": {
+      "empty": "Ten lek nie jest stosowany w żadnym leczeniu.",
+      "loadError": "Nie udało się załadować planów leczenia",
+      "loading": "Ładowanie planów leczenia...",
+      "overrideFrequency": "Częst."
+    },
+    "types": {
+      "herbal": "Ziołowe/Naturalne",
+      "otc": "Bez recepty",
+      "prescription": "Na receptę",
+      "supplement": "Suplement/Witamina"
+    }
+  },
+  "messages": {
+    "checkBackSoon": "Sprawdź ponownie wkrótce, aby uzyskać aktualizacje!",
+    "clearAll": "Wyczyść wszystko",
+    "confirmRemoveConditionRelationship": "Czy na pewno chcesz usunąć to powiązanie ze schorzeniem?",
+    "confirmRemoveEquipmentRelationship": "Czy na pewno chcesz usunąć to połączenie ze sprzętem?",
+    "confirmRemoveLabResultLink": "Usunąć to połączenie z wynikiem badania?",
+    "confirmRemoveLabResultRelationship": "Remove this lab result link?",
+    "confirmRemoveMedicationLink": "Remove this medication link?",
+    "confirmRemoveMedicationRelationship": "Czy na pewno chcesz usunąć to powiązanie z lekiem?",
+    "confirmRemoveProcedureLink": "Remove this procedure link?",
+    "confirmRemoveTreatmentLink": "Remove this treatment link?",
+    "confirmRemoveVisitLink": "Usunąć to połączenie z wizytą?",
+    "displayError": "Nie można wyświetlić tego elementu. Spróbuj odświeżyć stronę.",
+    "doNotClose": "Proszę nie zamykać tego okna ani nie nawigować do innej strony",
+    "failedToLinkLabResult": "Nie udało się połączyć wyniku badania",
+    "failedToLinkMedication": "Failed to link medication",
+    "failedToLinkProcedure": "Failed to link procedure",
+    "failedToLinkTreatment": "Failed to link treatment",
+    "failedToLinkVisit": "Nie udało się połączyć wizyty",
+    "failedToUnlinkLabResult": "Nie udało się odłączyć wyniku badania",
+    "failedToUnlinkMedication": "Failed to unlink medication",
+    "failedToUnlinkProcedure": "Failed to unlink procedure",
+    "failedToUnlinkTreatment": "Failed to unlink treatment",
+    "failedToUnlinkVisit": "Nie udało się odłączyć wizyty",
+    "failedToUpdateRelationship": "Nie udało się zaktualizować powiązania",
+    "processing": "Przetwarzanie...",
+    "selectLabResult": "Proszę wybrać wynik badania",
+    "selectMedication": "Please select a medication",
+    "selectProcedure": "Please select a procedure",
+    "selectTreatment": "Please select a treatment",
+    "selectVisit": "Proszę wybrać wizytę",
+    "underDevelopment": "Ta sekcja jest obecnie w trakcie rozwoju.",
+    "updateSuccess": "Zaktualizowano pomyślnie"
+  },
+  "modals": {
+    "chooseConditionsToLink": "Wybierz schorzenia do połączenia",
+    "chooseConditionToLink": "Wybierz schorzenie do połączenia",
+    "chooseLabResultsToLink": "Choose lab results to link",
+    "chooseLabResultToLink": "Wybierz wynik badania do połączenia",
+    "chooseMedicationToLink": "Wybierz leki do połączenia",
+    "chooseOneMedicationToLink": "Choose a medication to link",
+    "chooseProcedureToLink": "Choose a procedure to link",
+    "chooseTreatmentToLink": "Choose a treatment to link",
+    "chooseVisitToLink": "Wybierz wizytę do połączenia",
+    "describeConditionRelevance": "Opisz, jak to schorzenie odnosi się do wyniku laboratoryjnego (opcjonalnie)",
+    "describeConditionRelevanceMedication": "Opisz, jak to schorzenie odnosi się do leku",
+    "describeLabResultRelevance": "Opisz, jak ten wynik badania odnosi się do tej wizyty",
+    "describeMedicationLabResultRelevance": "Describe how this medication relates to this lab result",
+    "describeMedicationRelevance": "Opisz, jak ten lek odnosi się do schorzenia",
+    "describeProcedureRelevance": "Describe how this procedure relates to this lab result",
+    "describeTreatmentRelevance": "Describe how this treatment relates to this lab result",
+    "describeVisitRelevance": "Opisz, jak ta wizyta odnosi się do tego wyniku badania",
+    "expectedFrequencyPlaceholder": "e.g. Monthly, Every 3 months",
+    "linkConditionsToMedication": "Połącz schorzenia z lekiem",
+    "linkConditionToLabResult": "Połącz schorzenie z wynikiem laboratoryjnym",
+    "linkLabResultsToCondition": "Link Lab Results to Condition",
+    "linkLabResultToVisit": "Połącz wynik badania z wizytą",
+    "linkMedicationsToCondition": "Połącz leki ze schorzeniem",
+    "linkMedicationToLabResult": "Link Medication to Lab Result",
+    "linkProcedureToLabResult": "Link Procedure to Lab Result",
+    "linkTreatmentToLabResult": "Link Treatment to Lab Result",
+    "linkVisitToLabResult": "Połącz wizytę z wynikiem badania",
+    "noRelevanceNoteProvided": "Nie podano notatki o znaczeniu",
+    "purpose": "Cel",
+    "relevanceNote": "Notatka o znaczeniu",
+    "relevanceNoteOptional": "Notatka o znaczeniu (opcjonalnie)",
+    "selectCondition": "Wybierz schorzenie",
+    "selectConditions": "Wybierz schorzenia",
+    "selectLabResult": "Wybierz wynik badania",
+    "selectLabResults": "Select Lab Results",
+    "selectMedication": "Select Medication",
+    "selectMedications": "Wybierz leki",
+    "selectProcedure": "Select Procedure",
+    "selectPurpose": "Wybierz cel",
+    "selectTreatment": "Select Treatment",
+    "selectVisit": "Wybierz wizytę"
+  },
+  "noResults": "Nie znaleziono lekarzy",
+  "pagination": {
+    "itemsPerPage": "Elementów na stronę",
+    "next": "Następna",
+    "pageOf": "Strona {{page}} z {{total}}",
+    "previous": "Poprzednia",
+    "showingRange": "Wyświetlanie od {{start}} do {{end}} z {{total}} wyników"
+  },
+  "patientInfo": {
+    "createProfile": "Utwórz profil",
+    "createPrompt": "Utwórz profil pacjenta, aby rozpocząć.",
+    "createTitle": "Utwórz profil pacjenta",
+    "editProfile": "Edytuj profil",
+    "editTitle": "Edytuj informacje pacjenta",
+    "fields": {
+      "birthDate": "Data urodzenia",
+      "patientId": "ID pacjenta",
+      "physician": "Lekarz podstawowej opieki zdrowotnej"
+    },
+    "loading": "Ładowanie informacji o pacjencie...",
+    "noProfile": "Nie znaleziono profilu pacjenta",
+    "notAssigned": "Nie przypisano",
+    "notProvided": "Nie podano",
+    "personalInfo": "Informacje osobiste",
+    "welcome": {
+      "message": "Twoje konto zostało pomyślnie utworzone. Uzupełnij poniżej swój profil pacjenta, aby rozpocząć zarządzanie swoimi dokumentami medycznymi.",
+      "title": "Witaj w HealthBox!"
+    }
+  },
+  "patients": {
+    "form": {
+      "address": {
+        "label": "Adres",
+        "placeholder": "Wprowadź adres"
+      },
+      "birthDate": {
+        "label": "Data urodzenia"
+      },
+      "bloodType": {
+        "placeholder": "Wybierz grupę krwi"
+      },
+      "buttons": {
+        "createPatient": "Utwórz pacjenta",
+        "saveChanges": "Zapisz zmiany"
+      },
+      "createTitle": "Dodaj nowego pacjenta",
+      "editTitle": "Edytuj pacjenta",
+      "firstName": {
+        "placeholder": "Wprowadź imię"
+      },
+      "gender": {
+        "options": {
+          "preferNotToSay": "Wolę nie podawać"
+        }
+      },
+      "lastName": {
+        "placeholder": "Wprowadź nazwisko"
+      },
+      "messages": {
+        "createSuccess": "Pomyślnie utworzono {{firstName}} {{lastName}}",
+        "updateSuccess": "Pomyślnie zaktualizowano {{firstName}} {{lastName}}"
+      },
+      "physician": {
+        "label": "Lekarz podstawowej opieki zdrowotnej",
+        "placeholder": "Wybierz lekarza (opcjonalnie)"
+      },
+      "relationship": {
+        "description": "Jaki jest stosunek tej osoby do Ciebie?",
+        "label": "Relacja z Tobą",
+        "options": {
+          "brother": "Brat",
+          "child": "Dziecko",
+          "daughter": "Córka",
+          "father": "Ojciec",
+          "friend": "Przyjaciel/Przyjaciółka",
+          "grandchild": "Wnuk/Wnuczka",
+          "grandparent": "Dziadek/Babcia",
+          "mother": "Matka",
+          "otherFamily": "Inna rodzina",
+          "parent": "Rodzic",
+          "partner": "Partner/Partnerka",
+          "select": "Wybierz relację (opcjonalnie)",
+          "sibling": "Rodzeństwo",
+          "sister": "Siostra",
+          "son": "Syn",
+          "spouse": "Małżonek/Małżonka"
+        },
+        "placeholder": "Wybierz relację (opcjonalnie)"
+      },
+      "saveFirstMessage": "Najpierw zapisz dane pacjenta, a następnie możesz dodać zdjęcie",
+      "selfRecord": {
+        "description": "Zaznacz, jeśli tworzysz rekord dla siebie",
+        "label": "To jest moja własna dokumentacja medyczna"
+      }
+    },
+    "photoFormat": "JPEG, PNG, GIF lub BMP -- Maks. 15MB",
+    "removePhoto": "Usuń zdjęcie"
+  },
+  "patientSelector": {
+    "buttons": {
+      "addNew": "Dodaj nowego pacjenta",
+      "deletePatient": "Usuń pacjenta",
+      "editPatient": "Edytuj pacjenta",
+      "removeAccess": "Usuń dostęp",
+      "sharePatient": "Udostępnij pacjenta"
+    },
+    "errors": {
+      "loadFailed": "Nie udało się załadować pacjentów",
+      "noPatients": "Nie znaleziono pacjentów"
+    },
+    "labels": {
+      "born": "Urodzony(-a)",
+      "currentlyViewing": "Aktualnie przeglądasz:",
+      "patientActions": "Akcje pacjenta",
+      "switching": "Przełączanie pacjenta...",
+      "switchTo": "Przełącz na innego pacjenta:"
+    },
+    "messages": {
+      "noAccess": "Nie masz jeszcze dostępu do żadnych pacjentów. Utwórz nowego pacjenta, aby rozpocząć."
+    },
+    "modals": {
+      "createTitle": "Utwórz nowego pacjenta",
+      "editTitle": "Edytuj pacjenta"
+    },
+    "placeholders": {
+      "loading": "Ładowanie...",
+      "select": "Wybierz pacjenta, aby przełączyć..."
+    },
+    "stats": {
+      "owned": "Własne",
+      "total": "Łącznie"
+    },
+    "title": "Wybór pacjenta",
+    "tooltips": {
+      "addNew": "Dodaj nowego pacjenta",
+      "expand": "Rozwiń wybór pacjenta",
+      "minimize": "Minimalizuj do jednej linii",
+      "refresh": "Odśwież listę pacjentów",
+      "switchPatient": "Przełącz pacjenta"
+    }
+  },
+  "pharmacies": {
+    "actions": {
+      "addNew": "Dodaj nową aptekę"
+    },
+    "card": {
+      "storeNumber": "Numer sklepu"
+    },
+    "empty": {
+      "noData": "Kliknij \"Dodaj nową aptekę\", aby rozpocząć.",
+      "title": "Nie znaleziono aptek"
+    },
+    "errors": {
+      "loadFailed": "Nie udało się załadować aptek. Spróbuj ponownie."
+    },
+    "form": {
+      "addTitle": "Dodaj nową aptekę",
+      "editTitle": "Edytuj aptekę"
+    },
+    "loading": "Ładowanie aptek...",
+    "viewModal": {
+      "contact": "INFORMACJE KONTAKTOWE",
+      "editButton": "Edytuj aptekę",
+      "location": "LOKALIZACJA",
+      "storeNumber": "Sklep nr",
+      "title": "Szczegóły apteki"
+    }
+  },
+  "practitioners": {
+    "actions": {
+      "addNew": "Dodaj nowego lekarza"
+    },
+    "card": {
+      "subtitle": "Pracownik ochrony zdrowia"
+    },
+    "createInline": {
+      "buttonTooltip": "Nowy lekarz",
+      "createError": "Nie udało się utworzyć lekarza. Spróbuj ponownie.",
+      "nameRequired": "Imię i nazwisko jest wymagane",
+      "specialtyRequired": "Specjalność medyczna jest wymagana",
+      "successMessage": "Lekarz utworzony i wybrany"
+    },
+    "createPracticeError": "Nie udało się utworzyć praktyki. Spróbuj ponownie.",
+    "editPracticeError": "Nie udało się załadować praktyki do edycji",
+    "empty": {
+      "noData": "Kliknij \"Dodaj nowego lekarza\", aby rozpocząć.",
+      "title": "Nie znaleziono pracowników ochrony zdrowia"
+    },
+    "errors": {
+      "generic": "Wystąpił błąd. Spróbuj ponownie.",
+      "loadFailed": "Nie udało się załadować pracowników ochrony zdrowia. Spróbuj ponownie."
+    },
+    "form": {
+      "addTitle": "Dodaj nowego lekarza",
+      "editTitle": "Edytuj lekarza"
+    },
+    "groupByPractice": "Grupuj według praktyki",
+    "loading": "Ładowanie pracowników ochrony zdrowia...",
+    "practices": {
+      "addNew": "Dodaj praktykę",
+      "cannotDelete": "Nie można usunąć - ma przypisanych pracowników",
+      "createSuccess": "Praktyka została utworzona pomyślnie",
+      "createTitle": "Dodaj praktykę",
+      "deleteConfirm": "Czy na pewno chcesz usunąć \"{{name}}\"? Tej akcji nie można cofnąć.",
+      "deleteError": "Nie udało się usunąć praktyki",
+      "deleteSuccess": "Praktyka została usunięta pomyślnie",
+      "emptyNoData": "Kliknij \"Dodaj praktykę\", aby ją utworzyć, lub są tworzone automatycznie podczas dodawania pracowników.",
+      "emptyTitle": "Nie znaleziono praktyk",
+      "searchPlaceholder": "Szukaj praktyk...",
+      "totalCount": "{{count}} praktyk łącznie",
+      "totalCount_one": "{{count}} praktyka łącznie",
+      "totalCount_other": "{{count}} praktyk łącznie",
+      "unusedCount": "{{count}} nieużywanych",
+      "unusedCount_one": "{{count}} nieużywana",
+      "unusedCount_other": "{{count}} nieużywanych"
+    },
+    "tabs": {
+      "practices": "Praktyki"
+    },
+    "ungroupedTitle": "Niezależni lekarze",
+    "viewModal": {
+      "editButton": "Edytuj lekarza",
+      "editPractice": "Edytuj praktykę",
+      "practiceDetails": "SZCZEGÓŁY PRAKTYKI",
+      "practiceFax": "Faks",
+      "practiceLoadError": "Nie udało się załadować szczegółów praktyki",
+      "practiceLocations": "Lokalizacje",
+      "practicePortal": "Portal pacjenta",
+      "practiceUpdateError": "Nie udało się zaktualizować praktyki",
+      "practiceUpdateSuccess": "Praktyka została zaktualizowana pomyślnie",
+      "practitionerContact": "KONTAKT LEKARZA",
+      "savePractice": "Zapisz praktykę",
+      "title": "Szczegóły lekarza"
+    }
+  },
+  "procedures": {
+    "addFirstProcedure": "Dodaj swoją pierwszą procedurę",
+    "addNewProcedure": "Dodaj nową procedurę",
+    "addProcedure": "+ Dodaj procedurę",
+    "editProcedure": "Edytuj procedurę",
+    "form": {
+      "anesthesiaNotesDesc": "Dodatkowe informacje o znieczuleniu",
+      "anesthesiaNotesPlaceholder": "Wprowadź szczegóły i notatki dotyczące znieczulenia",
+      "anesthesiaTypeDesc": "Typ zastosowanego znieczulenia",
+      "anesthesiaTypePlaceholder": "np. Ogólne, Miejscowe, Regionalne",
+      "clinicalNotesDesc": "Dodatkowe informacje o tej procedurze",
+      "clinicalNotesPlaceholder": "Wprowadź notatki kliniczne, obserwacje lub dodatkowe szczegóły",
+      "complicationsDesc": "Wszelkie problemy lub powikłania, które wystąpiły",
+      "complicationsPlaceholder": "Dokumentuj wszelkie powikłania",
+      "createProcedure": "Utwórz procedurę",
+      "descriptionDesc": "Krótki opis procedury",
+      "descriptionPlaceholder": "Opisz procedurę",
+      "durationDesc": "Jak długo trwała procedura",
+      "durationPlaceholder": "Wprowadź czas trwania",
+      "facilityDesc": "Placówka medyczna",
+      "facilityPlaceholder": "np. Nazwa szpitala",
+      "outcomeAbnormal": "Nieprawidłowy",
+      "outcomeDesc": "Wynik lub rezultat procedury",
+      "outcomeInconclusive": "Niekonkluzywny",
+      "outcomePlaceholder": "Wybierz wynik",
+      "outcomeSuccessful": "Pomyślny",
+      "practitionerDesc": "Pracownik ochrony zdrowia przeprowadzający procedurę",
+      "procedureCodeDesc": "Kod medyczny do celów rozliczeniowych",
+      "procedureCodePlaceholder": "np. kod CPT",
+      "procedureDate": "Data procedury",
+      "procedureDateDesc": "Kiedy procedura została przeprowadzona",
+      "procedureNameDesc": "Nazwa procedury",
+      "procedureNamePlaceholder": "Wprowadź nazwę procedury",
+      "procedureTypeDesc": "Typ lub kategoria procedury",
+      "procedureTypePlaceholder": "np. Chirurgiczna, Diagnostyczna",
+      "savingProcedure": "Zapisywanie procedury...",
+      "settingDesc": "Gdzie procedura została przeprowadzona",
+      "settingPlaceholder": "np. Stacjonarnie, Ambulatoryjnie",
+      "statusDesc": "Aktualny status procedury",
+      "statusInProgress": "W trakcie",
+      "statusPostponed": "Odłożona",
+      "statusScheduled": "Zaplanowana",
+      "tagsDesc": "Dodaj tagi do kategoryzowania i organizacji procedur",
+      "updateProcedure": "Aktualizuj procedurę"
+    },
+    "loadingProcedures": "Ładowanie procedur...",
+    "noProceduresFound": "Nie znaleziono procedur",
+    "processing": "Przetwarzanie...",
+    "startAdding": "Zacznij od dodania pierwszej procedury.",
+    "table": {
+      "code": "Kod"
+    },
+    "viewModal": {
+      "anesthesiaInfo": "Informacje o znieczuleniu",
+      "noAnesthesiaNotes": "Brak notatek dotyczących znieczulenia",
+      "noClinicalNotes": "Brak dostępnych notatek klinicznych",
+      "noComplications": "Nie zgłoszono powikłań",
+      "noDescription": "Brak dostępnego opisu",
+      "title": "Szczegóły procedury"
+    }
+  },
+  "search": {
+    "activeFilterCount": "{{count}} aktywnych filtrów",
+    "activeFilterCount_one": "{{count}} aktywny filtr",
+    "activeFilterCount_other": "{{count}} aktywnych filtrów",
+    "activeFilters": "Aktywne filtry",
+    "addMoreTags": "Dodaj więcej tagów",
+    "advancedFilters": "Filtry zaawansowane",
+    "allTags": "Wszystkie tagi",
+    "allTime": "Cały czas",
+    "anyTag": "Dowolny tag",
+    "collapseFilters": "Zwiń filtry",
+    "columnType": "Typ rekordu",
+    "dateLabels": {
+      "diagnosed": "Zdiagnozowano",
+      "given": "Podano",
+      "identified": "Zidentyfikowano",
+      "performed": "Wykonano",
+      "recorded": "Zarejestrowano",
+      "started": "Rozpoczęto",
+      "tested": "Badano",
+      "visited": "Odwiedzono"
+    },
+    "datePresets": "Szybkie ustawienia",
+    "dateRange": "Zakres dat",
+    "dateRangePlaceholder": "Wybierz zakres dat...",
+    "expandFilters": "Rozwiń filtry",
+    "fallbacks": {
+      "allergy": "Alergia",
+      "encounter": "Wizyta",
+      "immunization": "Szczepienie",
+      "medication": "Lek",
+      "procedure": "Procedura",
+      "record": "Rekord"
+    },
+    "filterByTag": "Filtruj według tagu: {{tag}}",
+    "filtered": "(przefiltrowano)",
+    "filters": "Filtry",
+    "forQuery": "dla \"{{query}}\"",
+    "last30Days": "Ostatnie 30 dni",
+    "last6Months": "Ostatnie 6 miesięcy",
+    "last7Days": "Ostatnie 7 dni",
+    "lastYear": "Ostatni rok",
+    "loadingTags": "Ładowanie tagów...",
+    "matchAll": "Dopasuj wszystkie",
+    "matchAllDesc": "Pokaż elementy, które mają wszystkie wybrane tagi",
+    "matchAny": "Dopasuj DOWOLNE z wybranych tagów",
+    "matchAnyDesc": "Pokaż elementy, które mają co najmniej jeden wybrany tag",
+    "noPatientMessage": "Wybierz pacjenta z pulpitu nawigacyjnego, aby przeszukiwać dokumentację medyczną.",
+    "noPatientTitle": "Nie wybrano pacjenta",
+    "noResults": "Nie znaleziono wyników",
+    "noResultsFiltered": "Spróbuj dostosować filtry, tagi lub terminy wyszukiwania",
+    "noResultsGeneral": "Spróbuj innych terminów wyszukiwania lub sprawdź pisownię",
+    "openFullRecord": "Otwórz pełny rekord",
+    "page": "strona",
+    "perPage": "Elementów na stronę",
+    "placeholder": "Przeszukuj dokumentację medyczną...",
+    "popularTags": "Popularne tagi",
+    "previewRecord": "Podgląd rekordu",
+    "recordTypes": "Typy rekordów",
+    "removeTypeFilter": "Usuń filtr {{type}}",
+    "resultCount": "{{count}} wyników",
+    "resultCount_one": "{{count}} wynik",
+    "resultCount_other": "{{count}} wyników",
+    "resultsFound": "Znaleziono {{count}} wyników",
+    "resultsFound_one": "Znaleziono {{count}} wyników",
+    "resultsFound_other": "Znaleziono {{count}} wyników",
+    "searchFailed": "Wyszukiwanie nieudane. Spróbuj ponownie.",
+    "searching": "Wyszukiwanie...",
+    "seeAll": "Zobacz wszystkie",
+    "selectTags": "Wybierz tagi...",
+    "sortBy": "Sortuj według",
+    "sortDateNewest": "Data (najnowsze pierwsze)",
+    "sortDateOldest": "Data (najstarsze pierwsze)",
+    "sortRelevance": "Trafność",
+    "sortTitle": "Tytuł",
+    "subtitle": "Przeszukuj całą dokumentację medyczną",
+    "subtitles": {
+      "result": "Wynik: {{value}}"
+    },
+    "tagResultCount_other": "{{count}} wyników tagów",
+    "tagSearchFailed": "Wyszukiwanie tagów nieudane. Spróbuj ponownie.",
+    "textResultCount_other": "{{count}} wyników tekstowych",
+    "title": "Wyniki wyszukiwania",
+    "types": {
+      "encounters": "Wizyty",
+      "vitals": "Parametry życiowe"
+    },
+    "viewCards": "Widok kart",
+    "viewTable": "Widok tabeli"
+  },
+  "searchPlaceholders": {
+    "allergies": "Szukaj alergii, reakcji, tagów...",
+    "conditions": "Szukaj schorzeń, notatek, tagów...",
+    "emergencyContacts": "Szukaj kontaktów, relacji, telefonu, e-maila...",
+    "familyHistory": "Szukaj członków rodziny, schorzeń, notatek...",
+    "generic": "Szukaj...",
+    "immunizations": "Szukaj szczepień, szczepionek, tagów...",
+    "injuries": "Szukaj urazów, części ciała, notatek, tagów...",
+    "insurance": "Szukaj firm ubezpieczeniowych, nazwisk członków...",
+    "labResults": "Szukaj wyników laboratoryjnych, kodów testów, placówek, lekarzy, tagów...",
+    "medications": "Szukaj leków, wskazań, dawek, tagów...",
+    "pharmacies": "Szukaj aptek...",
+    "practitioners": "Szukaj lekarzy...",
+    "procedures": "Szukaj procedur, notatek, tagów...",
+    "symptoms": "Szukaj objawów, opisów, tagów...",
+    "treatments": "Szukaj leczenia, notatek, tagów...",
+    "visits": "Szukaj wizyt, powodów, notatek, tagów...",
+    "vitals": "Szukaj notatek o parametrach życiowych..."
+  },
+  "severity": {
+    "critical": "Krytyczny - Zagrażający życiu",
+    "lifeThreatening": "Zagrażający życiu - Ryzyko wstrząsu anafilaktycznego",
+    "mild": "Łagodny - Niewielki dyskomfort",
+    "mildImpact": "Łagodny - Niewielki wpływ",
+    "moderate": "Umiarkowany - Zauważalne objawy",
+    "moderateImpact": "Umiarkowany - Zauważalny wpływ",
+    "severe": "Ciężki - Znacząca reakcja",
+    "severeImpact": "Ciężki - Znaczący wpływ"
+  },
+  "status": {
+    "completed": "Ukończony",
+    "expired": "Wygasły",
+    "onHold": "Wstrzymany",
+    "planned": "Zaplanowany",
+    "stopped": "Zatrzymany"
+  },
+  "statusDescriptions": {
+    "activeAllergic": "Aktywny - Obecnie uczulony",
+    "activeCondition": "Aktywny - Trwające schorzenie",
+    "activeExperiencing": "Aktywny - Obecnie doświadcza",
+    "chronicCondition": "Przewlekły - Długotrwałe schorzenie",
+    "inactiveAllergic": "Nieaktywny - Już nie uczulony",
+    "recurring": "Nawracający - Pojawia się i ustępuje",
+    "resolvedAllergy": "Rozwiązany - Wyrósł z alergii",
+    "resolvedCondition": "Rozwiązany - Już nie występuje",
+    "resolvedExperiencing": "Rozwiązany - Już nie doświadcza"
+  },
+  "symptoms": {
+    "addSymptom": "Dodaj objaw",
+    "addSymptomTitle": "Dodaj nowy objaw",
+    "calendar": {
+      "episodesOn": "Epizody objawów w dniu {{date}}",
+      "noEpisodes": "Brak zarejestrowanych epizodów objawów w tym miesiącu",
+      "noOccurrences": "Nie znaleziono wystąpień dla tej daty",
+      "occurrenceId": "ID wystąpienia",
+      "pain": "Ból",
+      "title": "Kalendarz objawów",
+      "viewSymptom": "Zobacz objaw",
+      "weekDays": {
+        "fri": "Pt",
+        "mon": "Pn",
+        "sat": "Sb",
+        "sun": "Nd",
+        "thu": "Cz",
+        "tue": "Wt",
+        "wed": "Śr"
+      }
+    },
+    "chronic": "Przewlekły",
+    "commonTriggers": "Częste czynniki wyzwalające",
+    "confirmDeleteSymptom": "Czy na pewno chcesz usunąć ten objaw i wszystkie jego wystąpienia?",
+    "editEpisodeTitle": "Edytuj epizod",
+    "editSymptomTitle": "Edytuj objaw",
+    "episode": "epizod",
+    "episodes": "epizody",
+    "first": "Pierwszy",
+    "last": "Ostatni",
+    "loading": "Ładowanie objawów...",
+    "logEpisode": "Zarejestruj epizod",
+    "logEpisodeTitle": "Zarejestruj epizod",
+    "noPatientSelected": "Nie wybrano pacjenta",
+    "noRecords": "Nie zarejestrowano jeszcze żadnych objawów",
+    "noRecordsPrompt": "Kliknij \"Dodaj objaw\", aby rozpocząć śledzenie nowego objawu",
+    "selectPatientPrompt": "Proszę wybrać lub utworzyć pacjenta, aby śledzić objawy.",
+    "tabs": {
+      "calendar": "Kalendarz",
+      "list": "Lista"
+    },
+    "timeline": {
+      "filters": {
+        "allDates": "Wszystkie daty",
+        "last3Months": "Ostatnie 3 miesiące",
+        "lastMonth": "Ostatni miesiąc",
+        "lastWeek": "Ostatni tydzień",
+        "lastYear": "Ostatni rok"
+      },
+      "noEpisodes": "Brak zarejestrowanych epizodów objawów w tym okresie",
+      "recorded": "zarejestrowano",
+      "title": "Oś czasu objawów"
+    },
+    "title": "Objawy",
+    "viewModal": {
+      "acute": "Ostry",
+      "confirmDeleteEpisode": "Czy na pewno chcesz usunąć ten epizod?",
+      "deleteSymptom": "Usuń objaw",
+      "editSymptom": "Edytuj objaw",
+      "episodeHistory": "Historia epizodów",
+      "generalNotes": "Notatki ogólne",
+      "impact": "Wpływ",
+      "logFirstEpisode": "Zapisz pierwszy epizod",
+      "logNewEpisode": "Zarejestruj nowy epizod",
+      "noEpisodesLogged": "Nie zarejestrowano epizodów",
+      "noEpisodesYet": "Nie zarejestrowano jeszcze żadnych epizodów",
+      "noNotesProvided": "Nie podano notatek",
+      "relief": "Ulga",
+      "title": "{{name}} - Szczegóły",
+      "totalEpisodes": "Łączna liczba epizodów",
+      "triggers": "Czynniki wyzwalające"
+    }
+  },
+  "tagManagement": {
+    "allTags": "Wszystkie tagi",
+    "createModal": {
+      "placeholder": "Wprowadź nazwę tagu...",
+      "submit": "Utwórz tag",
+      "title": "Utwórz nowy tag"
+    },
+    "createTag": "Utwórz tag",
+    "deleteModal": {
+      "description": "Spowoduje to usunięcie tagu ze wszystkich {{count}} rekordów. Tej akcji nie można cofnąć.",
+      "description_one": "Spowoduje to usunięcie tagu z {{count}} rekordu. Tej akcji nie można cofnąć.",
+      "description_other": "Spowoduje to usunięcie tagu ze wszystkich {{count}} rekordów. Tej akcji nie można cofnąć.",
+      "message": "Czy na pewno chcesz usunąć tag \"{{tag}}\"?"
+    },
+    "editModal": {
+      "colorLabel": "Kolor tagu",
+      "description": "Spowoduje to zmianę nazwy tagu we wszystkich {{count}} rekordach.",
+      "description_one": "Spowoduje to zmianę nazwy tagu w {{count}} rekordzie.",
+      "description_other": "Spowoduje to zmianę nazwy tagu we wszystkich {{count}} rekordach.",
+      "placeholder": "Wprowadź nową nazwę tagu...",
+      "submit": "Zapisz",
+      "title": "Edytuj tag"
+    },
+    "errors": {
+      "createFailed": "Nie udało się utworzyć tagu",
+      "deleteFailed": "Nie udało się usunąć tagu",
+      "editFailed": "Nie udało się zaktualizować tagu",
+      "loadFailed": "Nie udało się załadować tagów",
+      "replaceFailed": "Nie udało się zastąpić tagu"
+    },
+    "icon": "🏷️",
+    "loading": "Ładowanie tagów...",
+    "menu": {
+      "replace": "Zastąp przez..."
+    },
+    "noTags": "Nie znaleziono tagów",
+    "noTagsDescription": "Zacznij używać tagów w swojej dokumentacji medycznej, aby je tutaj zobaczyć.",
+    "noTagsSearch": "Brak tagów pasujących do wyszukiwania.",
+    "pressEnterToAdd": "Naciśnij Enter, aby dodać tag",
+    "replaceModal": {
+      "description": "Spowoduje to zastąpienie \"{{oldTag}}\" przez \"{{newTag}}\" we wszystkich {{count}} rekordach.",
+      "description_one": "Spowoduje to zastąpienie \"{{oldTag}}\" przez \"{{newTag}}\" w {{count}} rekordzie.",
+      "description_other": "Spowoduje to zastąpienie \"{{oldTag}}\" przez \"{{newTag}}\" we wszystkich {{count}} rekordach.",
+      "label": "Zastąp przez",
+      "placeholder": "Wprowadź nazwę zastępczego tagu...",
+      "submit": "Zastąp tag",
+      "title": "Zastąp tag"
+    },
+    "searchPlaceholder": "Szukaj tagów...",
+    "success": {
+      "created": "Pomyślnie utworzono tag \"{{tag}}\"",
+      "deleted": "Pomyślnie usunięto tag \"{{tag}}\"",
+      "renamed": "Pomyślnie zmieniono nazwę \"{{oldTag}}\" na \"{{newTag}}\"",
+      "replaced": "Pomyślnie zastąpiono \"{{oldTag}}\" przez \"{{newTag}}\"",
+      "updated": "Pomyślnie zaktualizowano tag \"{{tag}}\""
+    },
+    "table": {
+      "usageCount": "Liczba użyć",
+      "usedIn": "Używany w"
+    },
+    "title": "Zarządzanie tagami"
+  },
+  "time": {
+    "day": "dzień",
+    "days": "dni",
+    "ended": "zakończone",
+    "month": "miesiąc",
+    "months": "miesiące",
+    "ongoing": "trwające",
+    "year": "rok",
+    "years": "lata"
+  },
+  "trash": {
+    "fileCount_one": "{{count}} plik"
+  },
+  "treatments": {
+    "addFirstTreatment": "Dodaj swoje pierwsze leczenie",
+    "addTreatment": "+ Dodaj leczenie",
+    "card": {
+      "conditionId": "Schorzenie #{{id}}"
+    },
+    "clickToExpand": "Kliknij, aby rozwinąć i dodać szczegóły (opcjonalnie)",
+    "conditionsLoadingError": "Błąd ładowania schorzeń",
+    "createNew": "Utwórz nowe",
+    "form": {
+      "createTreatment": "Utwórz leczenie",
+      "createWithLinks": "Tworzenie planu leczenia i łączenie elementów...",
+      "creatingWithLinks": "Tworzenie leczenia i łączenie elementów...",
+      "descriptionDesc": "Krótki opis leczenia",
+      "descriptionPlaceholder": "Opisz leczenie",
+      "dosageAmount": "Dawka/ilość",
+      "dosageDesc": "Ilość lub dawka na leczenie",
+      "dosagePlaceholder": "np. 10mg, 1 sesja",
+      "endDateDesc": "Kiedy leczenie się kończy (jeśli dotyczy)",
+      "enterTreatmentName": "Wprowadź nazwę leczenia",
+      "frequencyDesc": "Jak często leczenie jest przeprowadzane",
+      "frequencyPlaceholder": "np. Codziennie, Dwa razy w tygodniu",
+      "linkingPartialFailure": "Nie udało się połączyć niektórych elementów",
+      "linkingPartialFailureMessage": "Leczenie zostało utworzone, ale niektóre elementy nie mogły zostać powiązane. Możesz powiązać je ręcznie, edytując leczenie.",
+      "notesDesc": "Dodatkowe informacje o tym leczeniu",
+      "notesPlaceholder": "Wprowadź notatki dotyczące leczenia, obserwacje lub dodatkowe szczegóły",
+      "practitionerDesc": "Pracownik ochrony zdrowia przeprowadzający leczenie",
+      "relatedConditionDesc": "Powiąż to leczenie ze schorzeniem",
+      "savingTreatment": "Zapisywanie leczenia...",
+      "selectCondition": "Wybierz schorzenie",
+      "startDateDesc": "Kiedy leczenie się rozpoczyna",
+      "statusDesc": "Aktualny status leczenia",
+      "statusOnHold": "Wstrzymane",
+      "statusPlanned": "Zaplanowane",
+      "tabs": {
+        "scheduleDosage": "Harmonogram i dawka"
+      },
+      "tagsDesc": "Dodaj tagi do kategoryzowania i organizacji leczenia",
+      "treatmentNameDesc": "Nazwa leczenia",
+      "treatmentNotes": "Notatki dotyczące leczenia",
+      "treatmentTypeDesc": "Typ lub kategoria leczenia",
+      "treatmentTypePlaceholder": "np. Fizjoterapia, Chirurgia",
+      "updateTreatment": "Aktualizuj leczenie"
+    },
+    "linkExisting": "Powiąż istniejące",
+    "loadingTreatments": "Ładowanie leczenia...",
+    "medications": {
+      "default": "(z leku)",
+      "empty": "Brak leków powiązanych z tym planem leczenia.",
+      "loadError": "Nie udało się załadować leków",
+      "loading": "Ładowanie leków...",
+      "prescriber": "Wystawiający receptę",
+      "timing": "Harmonogram"
+    },
+    "mode": {
+      "advancedDescription": "Plan skoncentrowany na lekach z możliwością nadpisania dla każdego leku",
+      "label": "Tryb leczenia",
+      "simple": "Prosty",
+      "simpleDescription": "Podstawowe śledzenie z harmonogramem i dawkowaniem"
+    },
+    "noEquipmentLinkedDescription": "Wyszukaj i powiąż sprzęt medyczny używany w tym leczeniu.",
+    "noTreatmentsFound": "Nie znaleziono leczenia",
+    "startAdding": "Zacznij od dodania pierwszego leczenia.",
+    "timingLabel": "Harmonogram:",
+    "viewModal": {
+      "amountDosage": "Ilość/dawka",
+      "conditionId": "Schorzenie #{{id}}",
+      "conditionStatus": "Status schorzenia",
+      "dosageFrequency": "Dawka i częstotliwość",
+      "noConditionLinked": "Brak powiązanego schorzenia",
+      "practitionerId": "Lekarz #{{id}}",
+      "schedule": "Harmonogram",
+      "tabs": {
+        "equipment": "Sprzęt",
+        "labs": "Badania",
+        "schedule": "Harmonogram i dawka"
+      },
+      "title": "Szczegóły leczenia",
+      "treatmentNotes": "Notatki dotyczące leczenia"
+    }
+  },
+  "validation": {
+    "fieldRequired": "{{field}} is required",
+    "noPatientSelected": "No patient selected. Please select a patient first."
+  },
+  "viewToggle": {
+    "cards": "Karty",
+    "components": "Wyniki testów",
+    "label": "Tryb widoku",
+    "labwork": "Badania",
+    "stacked": "Skumulowane",
+    "table": "Tabela"
+  },
+  "visits": {
+    "addNewVisit": "Dodaj nową wizytę",
+    "addVisit": "Dodaj nową wizytę",
+    "card": {
+      "generalVisit": "Wizyta ogólna"
+    },
+    "clickToGetStarted": "Kliknij \"Dodaj nową wizytę\", aby rozpocząć.",
+    "editVisit": "Edytuj wizytę",
+    "form": {
+      "addVisit": "Dodaj wizytę",
+      "chooseLabResultsToLink": "Choose lab results to link",
+      "labResultsDescription": "Link lab results relevant to this visit. You can set purpose and notes after creating the visit.",
+      "savingVisit": "Zapisywanie wizyty...",
+      "selectLabResults": "Select Lab Results",
+      "tabs": {
+        "clinical": "Kliniczne",
+        "visitInfo": "Informacje o wizycie"
+      },
+      "updateVisit": "Aktualizuj wizytę"
+    },
+    "loadingVisits": "Ładowanie wizyt...",
+    "notifications": {
+      "labResultLinkFailed": "Visit was created, but some lab results could not be linked. You can link them manually by editing the visit.",
+      "labResultLinkWarning": "Lab Result Linking Issue"
+    },
+    "noVisitsFound": "Nie znaleziono wizyt medycznych",
+    "table": {
+      "visitDate": "Data wizyty",
+      "visitType": "Typ wizyty"
+    },
+    "title": "Wizyty medyczne",
+    "viewModal": {
+      "chiefComplaint": "Główna dolegliwość",
+      "clinicalInformation": "Informacje kliniczne",
+      "editVisit": "Edytuj wizytę",
+      "followUpInstructions": "Instrukcje kontrolne",
+      "generalVisit": "Wizyta ogólna",
+      "location": "Lokalizacja",
+      "priority": "Priorytet",
+      "tabs": {
+        "clinical": "Kliniczne",
+        "visitInfo": "Informacje o wizycie"
+      },
+      "title": "Wizyta - {{date}}",
+      "treatmentPlan": "Plan leczenia",
+      "visitInformation": "Informacje o wizycie"
+    }
+  },
+  "vitals": {
+    "form": {
+      "dateTimePlaceholder": "Wybierz datę i godzinę",
+      "devicePlaceholder": "np. Monitor ciśnienia cyfrowy, Model termometru...",
+      "heightNotSet": "Wzrost nie ustawiony w profilu pacjenta - obliczanie BMI niedostępne",
+      "locationPlaceholder": "Gdzie wykonano te pomiary?",
+      "lockedByImport": "Zarządzane przez średnią importu z urządzenia",
+      "missingPatientInfo": "Brak informacji o pacjencie",
+      "notesPlaceholder": "Dodatkowe notatki dotyczące pomiaru parametrów życiowych...",
+      "pasteDateTimeDescription": "Wprowadź lub wklej datę/godzinę lub kliknij kalendarz, aby wybrać",
+      "patientHeight": "Wzrost pacjenta: {{height}} cali (z profilu)",
+      "validation": {
+        "a1cMax": "HbA1c nie może przekraczać 20%",
+        "a1cMin": "HbA1c musi wynosić co najmniej 0%",
+        "bloodGlucoseMax": "Poziom glukozy we krwi nie może przekraczać 800 mg/dl",
+        "bloodGlucoseMin": "Poziom glukozy we krwi musi wynosić co najmniej 20 mg/dl",
+        "dateInFuture": "Data nie może być w przyszłości",
+        "dateRequired": "Data i godzina pomiaru są wymagane",
+        "deviceMaxLength": "Nazwa urządzenia nie może przekraczać 100 znaków",
+        "diastolicMax": "Ciśnienie rozkurczowe nie może przekraczać 200 mmHg",
+        "diastolicMin": "Ciśnienie rozkurczowe musi wynosić co najmniej 30 mmHg",
+        "heartRateMax": "Tętno nie może przekraczać 250 uderzeń na minutę",
+        "heartRateMin": "Tętno musi wynosić co najmniej 30 uderzeń na minutę",
+        "notesMaxLength": "Notatki nie mogą przekraczać 5000 znaków",
+        "oxygenMax": "Saturacja tlenem nie może przekraczać 100%",
+        "oxygenMin": "Saturacja tlenem musi wynosić co najmniej 50%",
+        "painScaleMax": "Skala bólu nie może przekraczać 10",
+        "painScaleMin": "Skala bólu musi wynosić co najmniej 0",
+        "respiratoryRateMax": "Częstość oddechów nie może przekraczać 100/min",
+        "respiratoryRateMin": "Częstość oddechów musi wynosić co najmniej 5/min",
+        "systolicMax": "Ciśnienie skurczowe nie może przekraczać 300 mmHg",
+        "systolicMin": "Ciśnienie skurczowe musi wynosić co najmniej 50 mmHg",
+        "temperatureMax": "Temperatura nie może przekraczać {{max}}{{unit}}",
+        "temperatureMin": "Temperatura musi wynosić co najmniej {{min}}{{unit}}",
+        "weightMax": "Waga nie może przekraczać {{max}} {{unit}}",
+        "weightMin": "Waga musi wynosić co najmniej {{min}} {{unit}}"
+      }
+    }
+  },
+  "warning": "Ostrzeżenie"
+}

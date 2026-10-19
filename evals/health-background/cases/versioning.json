@@ -1,0 +1,10 @@
+{
+  "fixture_policy": "synthetic_only",
+  "cases": [
+    {"id": "CASE-BG-001", "action": "create", "expected_version": 1},
+    {"id": "CASE-BG-002", "action": "revise", "expected_version": 2},
+    {"id": "CASE-BG-003", "action": "revise_stale", "expected_status": 409},
+    {"id": "CASE-BG-004", "action": "void", "expected_default_visibility": false},
+    {"id": "CASE-BG-005", "action": "cross_patient_source", "expected_status": 422}
+  ]
+}

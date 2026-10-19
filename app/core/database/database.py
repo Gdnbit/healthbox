@@ -1,0 +1,409 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+from typing import Generator
+
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.engine import make_url
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app.core.config import Settings
+from app.core.logging.config import get_logger, log_security_event
+from app.models.models import Base
+
+# Initialize logger
+logger = get_logger(__name__, "app")
+
+# Initialize settings
+settings = Settings()
+
+
+class DatabaseConfig:
+    def __init__(self):
+        self.database_url = self._get_database_url()
+        self.engine_kwargs = self._get_engine_kwargs()
+
+    def _get_database_url(self) -> str:
+        """Get database URL from settings configuration or Windows path"""
+        # Check if running as Windows EXE (uses SQLite in AppData)
+        try:
+            from app.core.platform.windows_config import (
+                get_database_path,
+                is_windows_exe,
+            )
+
+            if is_windows_exe():
+                db_path = get_database_path()
+                database_url = f"sqlite:///{db_path}"
+                logger.info(
+                    f"Using Windows EXE SQLite database: {db_path}",
+                    extra={"category": "app", "event": "database_url_windows_exe"},
+                )
+                return database_url
+        except ImportError:
+            pass
+
+        # Fall back to settings DATABASE_URL for development/production
+        if not settings.DATABASE_URL:
+            raise ValueError(
+                "DATABASE_URL is not set in the settings. Please configure it."
+            )
+        return settings.DATABASE_URL
+
+    def _get_engine_kwargs(self) -> dict:
+        """Get engine configuration based on database type"""
+        if self.database_url.startswith("sqlite"):
+            sqlite_kwargs = {
+                "connect_args": {
+                    "check_same_thread": False,
+                    "timeout": 30,  # Increased timeout for busy database
+                    "isolation_level": None,  # Enable autocommit mode
+                },
+                "echo": False,
+            }
+            # StaticPool intentionally shares one connection. That is required
+            # for an in-memory database, but file-backed SQLite receives parallel
+            # browser/API requests and must use SQLAlchemy's normal pool so one
+            # DB-API connection is not used concurrently by multiple threads.
+            if make_url(self.database_url).database in (None, "", ":memory:"):
+                sqlite_kwargs["poolclass"] = StaticPool
+            return sqlite_kwargs
+        if self.database_url.startswith("postgresql"):
+            return {
+                "pool_pre_ping": True,
+                "pool_recycle": 1800,
+                "pool_size": 10,
+                "max_overflow": 20,
+                "echo": False,
+            }
+        return {"pool_pre_ping": True, "pool_recycle": 300, "echo": False}
+
+
+# Initialize database configuration
+db_config = DatabaseConfig()
+
+# Create engine
+engine = create_engine(db_config.database_url, **db_config.engine_kwargs)
+
+# For SQLite databases, set up WAL mode and other optimizations
+if db_config.database_url.startswith("sqlite"):
+
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, _connection_record):
+        """Set SQLite pragmas for better concurrency"""
+        cursor = dbapi_connection.cursor()
+        # Enable WAL mode for better concurrent access
+        cursor.execute("PRAGMA journal_mode=WAL")
+        # Set busy timeout (30 seconds)
+        cursor.execute("PRAGMA busy_timeout=30000")
+        # Enable foreign key constraints
+        cursor.execute("PRAGMA foreign_keys=ON")
+        # Optimize SQLite performance
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA temp_store=memory")
+        cursor.execute("PRAGMA mmap_size=268435456")  # 256MB
+        cursor.close()
+
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def create_tables() -> None:
+    """Create all tables in the database"""
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info(
+            "Database tables created successfully",
+            extra={"category": "app", "event": "database_tables_created"},
+        )
+    except Exception as e:
+        logger.error(
+            f"Failed to create database tables: {e}",
+            extra={
+                "category": "app",
+                "event": "database_tables_creation_failed",
+                "error": str(e),
+            },
+        )
+        raise
+
+
+def drop_tables():
+    """Drop all tables in the database"""
+    Base.metadata.drop_all(bind=engine)
+
+
+def get_db() -> Generator[Session, None, None]:
+    """Get a new database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def check_database_connection():
+    """Check if the database connection is valid"""
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        logger.info(
+            "Database connection check successful",
+            extra={"category": "app", "event": "database_connection_check_success"},
+        )
+        return True
+    except Exception as e:
+        # Driver exceptions can contain credentials, DSNs, or private paths.
+        # Use the exception type and generic troubleshooting hints only.
+        error_type = type(e).__name__
+        error_details = f"Database connection check failed ({error_type})"
+
+        # Add database-specific troubleshooting hints
+        if (
+            "could not connect to server" in str(e).lower()
+            or "connection refused" in str(e).lower()
+        ):
+            error_details += (
+                "\n   🔍 This typically means the database server is not running"
+            )
+        elif (
+            "authentication failed" in str(e).lower()
+            or "password authentication failed" in str(e).lower()
+        ):
+            error_details += "\n   🔍 This indicates incorrect database credentials"
+        elif "database" in str(e).lower() and "does not exist" in str(e).lower():
+            error_details += "\n   🔍 The specified database does not exist"
+        elif "timeout" in str(e).lower():
+            error_details += "\n   🔍 Database connection timeout - server may be slow or unreachable"
+
+        logger.error(
+            error_details,
+            extra={
+                "category": "app",
+                "event": "database_connection_check_failed",
+                "error_type": error_type,
+            },
+        )
+        return False
+
+
+def create_default_user():
+    """
+    Create a default admin user on fresh installs, or warn (without auto-healing)
+    when no admin users exist but users are present.
+
+    Fresh install (zero users) → creates the configured bootstrap account with
+    must_change_password=True.
+
+    No admins but users exist → logs a loud WARNING-level security event with
+    the household recovery path. Does NOT auto-promote any existing user. The
+    versioned recovery command can restore only the configured owner account;
+    if that row is missing, recovery must use a verified backup or the
+    transaction-based SQL break-glass runbook.
+    """
+    from app.crud.user import user
+    from app.services.auth import AuthService
+
+    db = SessionLocal()
+    try:
+        admin_count = user.get_admin_count(db)
+
+        if admin_count > 0:
+            logger.info(
+                f"Admin users already exist ({admin_count} found) - skipping default user creation",
+                extra={
+                    "category": "app",
+                    "event": "admin_users_exist",
+                    "admin_count": admin_count,
+                },
+            )
+            return
+
+        # No admins exist. Branch on whether this is a fresh install.
+        total_users = user.get_total_count(db)
+
+        if total_users == 0:
+            # Fresh install - create the configured bootstrap admin.
+            default_username = settings.ADMIN_DEFAULT_USERNAME.strip().lower()
+            default_password = settings.ADMIN_DEFAULT_PASSWORD
+            AuthService.create_bootstrap_admin(
+                db,
+                username=default_username,
+                password=default_password,
+            )
+            logger.info(
+                "Fresh installation detected - Default admin user created",
+                extra={
+                    "category": "app",
+                    "event": "default_admin_created",
+                    "username": default_username,
+                },
+            )
+            logger.warning(
+                "Initial administrator created - password change is required at first login",
+                extra={
+                    "category": "security",
+                    "event": "default_password_warning",
+                },
+            )
+            return
+
+        # Users exist but no admins. Detect whether the configured owner row is
+        # demoted (most common case) or missing entirely, and warn loudly.
+        configured_owner_username = settings.ADMIN_DEFAULT_USERNAME.strip().lower()
+        existing_admin_row = user.get_by_username(
+            db,
+            username=configured_owner_username,
+        )
+
+        if existing_admin_row is not None:
+            log_security_event(
+                logger,
+                event="admin_user_demoted_no_other_admins",
+                user_id=existing_admin_row.id,
+                ip_address="startup",
+                message=(
+                    f"Startup detected zero admin users but configured owner "
+                    f"username '{configured_owner_username}' exists "
+                    f"with role='{existing_admin_row.role}'. The system will NOT "
+                    f"auto-promote this user because the demotion may be intentional. "
+                    f"Inspect first with: docker exec <container> python -m "
+                    f"app.scripts.household_admin_recovery inspect --username "
+                    f"{configured_owner_username}. Then run the versioned recover "
+                    f"command with --restore-admin-role, --expected-owner-username "
+                    f"{configured_owner_username}, the inspected user ID, operator "
+                    f"and reason."
+                ),
+                existing_role=existing_admin_row.role,
+                total_users=total_users,
+            )
+        else:
+            log_security_event(
+                logger,
+                event="no_admin_users_detected",
+                ip_address="startup",
+                message=(
+                    f"Startup detected zero admin users but {total_users} non-admin "
+                    f"user(s) exist and the configured owner account "
+                    f"'{configured_owner_username}' is missing. The system will NOT "
+                    f"auto-create or promote an arbitrary user. Restore a verified "
+                    f"backup or follow the transaction-based SQL break-glass runbook."
+                ),
+                total_users=total_users,
+                configured_owner_username=configured_owner_username,
+            )
+    finally:
+        db.close()
+
+
+async def check_sequences_on_startup() -> None:
+    """Check and fix sequence synchronization on application startup"""
+    if not getattr(settings, "SEQUENCE_CHECK_ON_STARTUP", False):
+        return
+
+    try:
+        from app.scripts.sequence_monitor import SequenceMonitor
+
+        monitor = SequenceMonitor()
+
+        logger.info("Checking database sequences on startup")
+        results = monitor.monitor_all_sequences(
+            auto_fix=getattr(settings, "SEQUENCE_AUTO_FIX", False)
+        )
+
+        if results.get("out_of_sync_tables"):
+            if getattr(settings, "SEQUENCE_AUTO_FIX", False):
+                logger.info(
+                    f"✅ Auto-fixed {len(results.get('fixed_tables', []))} sequence issues"
+                )
+            else:
+                logger.warning(
+                    f"⚠️  Found {len(results['out_of_sync_tables'])} sequence issues"
+                )
+        else:
+            logger.info("✅ All database sequences are synchronized")
+
+    except ImportError:
+        logger.info("SequenceMonitor not available - skipping sequence check")
+    except Exception as e:
+        logger.error(f"❌ Failed to check sequences on startup: {e}")
+
+
+def database_migrations() -> bool:
+    """Run database migrations using Alembic"""
+    try:
+        import sys
+
+        logger.info("🔄 Running database migrations...")
+
+        # Check if running as Windows EXE
+        try:
+            from app.core.platform.windows_config import is_windows_exe
+
+            is_exe = is_windows_exe()
+        except ImportError:
+            is_exe = False
+
+        if is_exe:
+            # Windows EXE mode: Skip Alembic and use create_all()
+            # This is simpler and more reliable for frozen applications
+            logger.info(
+                "Windows EXE mode: Using SQLAlchemy create_all() instead of Alembic"
+            )
+            try:
+                # Create all tables if they don't exist
+                Base.metadata.create_all(bind=engine)
+                logger.info("✅ Database tables created/verified successfully")
+                return True
+
+            except Exception as e:
+                logger.error(f"❌ Failed to create database tables: {e}")
+                import traceback
+
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                return False
+        else:
+            # Development mode: Use subprocess
+            import subprocess
+            from pathlib import Path
+
+            # Get project root directory (go up 3 parent directories from app/core/database/database.py)
+            project_root = Path(__file__).parents[3]
+
+            # Use the current Python executable (from virtual environment)
+            python_executable = sys.executable
+
+            result = subprocess.run(
+                [
+                    python_executable,
+                    "-m",
+                    "alembic",
+                    "-c",
+                    "alembic/alembic.ini",
+                    "upgrade",
+                    "head",
+                ],
+                cwd=project_root,  # Project root
+                capture_output=True,
+                text=True,
+            )
+
+            if result.returncode == 0:
+                logger.info("✅ Database migrations completed successfully")
+                if result.stdout:
+                    logger.debug(f"Migration output: {result.stdout}")
+                return True
+            logger.error(f"❌ Migration failed with return code {result.returncode}")
+            logger.error(f"Migration stderr: {result.stderr}")
+            if result.stdout:
+                logger.error(f"Migration stdout: {result.stdout}")
+            return False
+
+    except FileNotFoundError as e:
+        logger.error(f"❌ Alembic not found. Make sure it's installed. Error: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"❌ Failed to run migrations: {e}")
+        import traceback
+
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        return False

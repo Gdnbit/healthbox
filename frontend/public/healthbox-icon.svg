@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">HealthBox</title>
+  <rect width="256" height="256" rx="56" fill="#087f8c"/>
+  <path d="M62 91h132v103H62z" fill="#fff"/>
+  <path d="M58 68h140v30H58z" fill="#c4f1e8"/>
+  <path d="M117 116h22v22h22v22h-22v22h-22v-22H95v-22h22z" fill="#087f8c"/>
+</svg>

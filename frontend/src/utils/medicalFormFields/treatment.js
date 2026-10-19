@@ -1,0 +1,232 @@
+/**
+ * Treatment form field configuration
+ */
+
+import { tagsFieldConfig } from './shared';
+
+export const treatmentFormFields = [
+  {
+    name: 'mode',
+    type: 'select',
+    labelKey: 'medical:treatments.mode.label',
+    descriptionKey: 'medical:treatments.mode.description',
+    gridColumn: 12,
+    options: [
+      { value: 'simple', labelKey: 'medical:treatments.mode.simpleOption' },
+      { value: 'advanced', labelKey: 'medical:treatments.mode.advancedOption' },
+    ],
+  },
+  {
+    name: 'treatment_name',
+    type: 'text',
+    labelKey: 'shared:fields.treatmentName',
+    placeholderKey: 'medical:treatments.treatmentName.placeholder',
+    required: true,
+    descriptionKey: 'medical:treatments.treatmentName.description',
+    gridColumn: 7,
+  },
+  {
+    name: 'treatment_type',
+    type: 'select',
+    labelKey: 'shared:fields.treatmentType',
+    placeholderKey: 'shared:labels.selectType',
+    descriptionKey: 'medical:treatments.treatmentType.description',
+    required: true,
+    gridColumn: 5,
+    searchable: true,
+    options: [
+      {
+        value: 'Surgery',
+        labelKey: 'medical:treatments.treatmentType.options.surgery',
+      },
+      {
+        value: 'Medication',
+        labelKey: 'medical:treatments.treatmentType.options.medication',
+      },
+      {
+        value: 'Physical Therapy',
+        labelKey: 'medical:treatments.treatmentType.options.physicalTherapy',
+      },
+      {
+        value: 'Chemotherapy',
+        labelKey: 'medical:treatments.treatmentType.options.chemotherapy',
+      },
+      {
+        value: 'Radiation',
+        labelKey: 'medical:treatments.treatmentType.options.radiation',
+      },
+      {
+        value: 'Immunotherapy',
+        labelKey: 'medical:treatments.treatmentType.options.immunotherapy',
+      },
+      {
+        value: 'Occupational Therapy',
+        labelKey:
+          'medical:treatments.treatmentType.options.occupationalTherapy',
+      },
+      {
+        value: 'Speech Therapy',
+        labelKey: 'medical:treatments.treatmentType.options.speechTherapy',
+      },
+      {
+        value: 'Behavioral Therapy',
+        labelKey: 'medical:treatments.treatmentType.options.behavioralTherapy',
+      },
+      {
+        value: 'Dialysis',
+        labelKey: 'medical:treatments.treatmentType.options.dialysis',
+      },
+      {
+        value: 'Other',
+        labelKey: 'medical:treatments.treatmentType.options.other',
+      },
+    ],
+  },
+  {
+    name: 'condition_id',
+    type: 'select',
+    labelKey: 'medical:treatments.relatedCondition.label',
+    placeholderKey: 'medical:treatments.relatedCondition.placeholder',
+    descriptionKey: 'medical:treatments.relatedCondition.description',
+    gridColumn: 6,
+    searchable: true,
+    clearable: true,
+    dynamicOptions: 'conditions',
+  },
+  {
+    name: 'practitioner_id',
+    type: 'select',
+    labelKey: 'shared:fields.practitioner',
+    placeholderKey: 'medical:treatments.practitioner.placeholder',
+    descriptionKey: 'medical:treatments.practitioner.description',
+    gridColumn: 6,
+    searchable: true,
+    clearable: true,
+    dynamicOptions: 'practitioners',
+  },
+  {
+    name: 'status',
+    type: 'select',
+    labelKey: 'medical:treatments.treatmentStatus.label',
+    placeholderKey: 'medical:treatments.treatmentStatus.placeholder',
+    descriptionKey: 'medical:treatments.treatmentStatus.description',
+    gridColumn: 12,
+    options: [
+      {
+        value: 'planned',
+        labelKey: 'medical:treatments.treatmentStatus.options.planned',
+      },
+      {
+        value: 'active',
+        labelKey: 'medical:treatments.treatmentStatus.options.active',
+      },
+      {
+        value: 'on-hold',
+        labelKey: 'medical:treatments.treatmentStatus.options.onHold',
+      },
+      {
+        value: 'completed',
+        labelKey: 'medical:treatments.treatmentStatus.options.completed',
+      },
+      {
+        value: 'cancelled',
+        labelKey: 'medical:treatments.treatmentStatus.options.cancelled',
+      },
+    ],
+  },
+  {
+    name: 'start_date',
+    type: 'date',
+    labelKey: 'common:fields.startDate.label',
+    placeholderKey: 'medical:treatments.startDate.placeholder',
+    required: true,
+    descriptionKey: 'medical:treatments.startDate.description',
+    gridColumn: 6,
+  },
+  {
+    name: 'end_date',
+    type: 'date',
+    labelKey: 'common:fields.endDate.label',
+    placeholderKey: 'medical:treatments.endDate.placeholder',
+    descriptionKey: 'medical:treatments.endDate.description',
+    gridColumn: 6,
+  },
+  {
+    name: 'dosage',
+    type: 'text',
+    labelKey: 'medical:treatments.amount.label',
+    placeholderKey: 'medical:treatments.amount.placeholder',
+    descriptionKey: 'medical:treatments.amount.description',
+    gridColumn: 6,
+  },
+  {
+    name: 'frequency',
+    type: 'select',
+    labelKey: 'medical:treatments.frequency.label',
+    placeholderKey: 'medical:treatments.frequency.placeholder',
+    descriptionKey: 'medical:treatments.frequency.description',
+    gridColumn: 6,
+    searchable: true,
+    clearable: true,
+    options: [
+      {
+        value: 'Once daily',
+        labelKey: 'medical:treatments.frequencyOptions.onceDaily',
+      },
+      {
+        value: 'Twice daily',
+        labelKey: 'medical:treatments.frequencyOptions.twiceDaily',
+      },
+      {
+        value: 'Three times daily',
+        labelKey: 'medical:treatments.frequencyOptions.threeTimes',
+      },
+      {
+        value: 'Four times daily',
+        labelKey: 'medical:treatments.frequencyOptions.fourTimes',
+      },
+      { value: 'Weekly', labelKey: 'shared:labels.weekly' },
+      {
+        value: 'Bi-weekly',
+        labelKey: 'medical:treatments.frequencyOptions.biWeekly',
+      },
+      {
+        value: 'Monthly',
+        labelKey: 'medical:treatments.frequencyOptions.monthly',
+      },
+      {
+        value: 'As needed',
+        labelKey: 'medical:treatments.frequencyOptions.asNeeded',
+      },
+      {
+        value: 'One time',
+        labelKey: 'medical:treatments.frequencyOptions.oneTime',
+      },
+      {
+        value: 'Continuous',
+        labelKey: 'medical:treatments.frequencyOptions.continuous',
+      },
+    ],
+  },
+  {
+    name: 'description',
+    type: 'textarea',
+    labelKey: 'medical:treatments.treatmentDescription.label',
+    placeholderKey: 'medical:treatments.treatmentDescription.placeholder',
+    descriptionKey: 'medical:treatments.treatmentDescription.description',
+    gridColumn: 12,
+    minRows: 3,
+    maxRows: 5,
+  },
+  {
+    name: 'notes',
+    type: 'textarea',
+    labelKey: 'shared:fields.additionalNotes',
+    placeholderKey: 'medical:treatments.notes.placeholder',
+    descriptionKey: 'medical:treatments.notes.description',
+    gridColumn: 12,
+    minRows: 3,
+    maxRows: 6,
+  },
+  tagsFieldConfig,
+];

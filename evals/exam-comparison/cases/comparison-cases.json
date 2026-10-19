@@ -1,0 +1,23 @@
+[
+  {
+    "id": "EXC-GOLDEN-001",
+    "description": "same-unit scalar comparison",
+    "baseline": {"episode": "source:101", "metric": "synthetic-a", "value": 10, "unit": "u/L"},
+    "target": {"episode": "source:102", "metric": "synthetic-a", "value": 12, "unit": "u/L"},
+    "expected": {"state": "comparable_numeric", "absolute_delta": 2}
+  },
+  {
+    "id": "EXC-REJECT-001",
+    "description": "missing target is not not-performed",
+    "baseline": {"episode": "source:101", "metric": "synthetic-a", "value": 10, "unit": "u/L"},
+    "target": null,
+    "expected": {"state": "target_missing", "must_not_contain": ["not_performed", "normal"]}
+  },
+  {
+    "id": "EXC-REJECT-002",
+    "description": "unit mismatch has no delta",
+    "baseline": {"episode": "source:101", "metric": "synthetic-a", "value": 10, "unit": "u/L"},
+    "target": {"episode": "source:102", "metric": "synthetic-a", "value": 0.2, "unit": "mmol/L"},
+    "expected": {"state": "incompatible_unit", "absolute_delta": null}
+  }
+]

@@ -1,0 +1,36 @@
+# Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+name: Validate Test Library
+
+on:
+  pull_request:
+    paths:
+      - 'shared/data/test_library.json'
+      - 'app/services/test_library_validator.py'
+      - 'scripts/validate_test_library.py'
+      - '.github/workflows/validate-test-library.yml'
+  push:
+    paths:
+      - 'shared/data/test_library.json'
+      - 'app/services/test_library_validator.py'
+      - 'scripts/validate_test_library.py'
+      - '.github/workflows/validate-test-library.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    name: Check for alias collisions
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+
+      - name: Validate test library
+        run: python scripts/validate_test_library.py

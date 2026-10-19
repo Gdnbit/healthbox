@@ -1,0 +1,452 @@
+// Modified for the HealthBox distribution; differs from MediKeep v0.68.0. See NOTICE and MODIFICATIONS.md.
+import { useState, useEffect } from 'react';
+import {
+  Modal,
+  Tabs,
+  Box,
+  Stack,
+  Group,
+  Button,
+  Grid,
+  TextInput,
+  Select,
+  Textarea,
+  NumberInput,
+  Text,
+  MultiSelect,
+} from '@mantine/core';
+import { DateInput } from '../adapters/DateInput';
+import {
+  IconInfoCircle,
+  IconStethoscope,
+  IconNotes,
+  IconFileText,
+  IconFlask,
+} from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
+import { visitFormFields } from '../../utils/medicalFormFields';
+import { useFormHandlers } from '../../hooks/useFormHandlers';
+import { formatDateInputChange, parseDateInput } from '../../utils/dateUtils';
+import { translateField } from '../../utils/translateField';
+import { useDateFormat } from '../../hooks/useDateFormat';
+import FormLoadingOverlay from '../shared/FormLoadingOverlay';
+import DocumentManagerWithProgress from '../shared/DocumentManagerWithProgress';
+import EncounterLabResultRelationships from './visits/EncounterLabResultRelationships';
+import { TagInput } from '../common/TagInput';
+import logger from '../../services/logger';
+import PractitionerSelectWithCreate from './practitioners/PractitionerSelectWithCreate';
+
+const MantineVisitForm = ({
+  isOpen,
+  onClose,
+  title,
+  formData,
+  onInputChange,
+  onSubmit,
+  practitioners = [],
+  conditionsOptions = [],
+  conditionsLoading: _conditionsLoading = false,
+  editingVisit = null,
+  isLoading = false,
+  statusMessage: _statusMessage,
+  labResults = [],
+  encounterLabResults = {},
+  fetchEncounterLabResults,
+  navigate,
+  onDocumentManagerRef,
+  onFileUploadComplete,
+  onDocumentError,
+  children,
+}) => {
+  // Translation hooks - medical for field translations, common for UI elements
+  const { t } = useTranslation(['medical', 'common', 'shared']);
+  const { dateInputFormat, dateParser } = useDateFormat();
+
+  // Tab state management
+  const [activeTab, setActiveTab] = useState('info');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form handlers
+  const { handleTextInputChange } = useFormHandlers(onInputChange);
+
+  // Reset tab when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab('info');
+    }
+    if (!isOpen) {
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
+
+  // Convert conditions to options
+  const conditionOptions = conditionsOptions.map(cond => ({
+    value: cond.id.toString(),
+    label: cond.diagnosis,
+  }));
+
+  // Handle form submission
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit(e);
+      setIsSubmitting(false);
+    } catch (error) {
+      logger.error('visit_form_submission_error', {
+        message: 'Error in visit form submission',
+        error: error.message,
+        component: 'MantineVisitForm',
+      });
+      setIsSubmitting(false);
+    }
+  };
+
+  // Render a single field
+  const renderField = field => {
+    if (field.type === 'divider') {
+      return null; // Skip dividers in tabbed layout
+    }
+
+    // Translate the field configuration
+    const translatedField = translateField(field, t);
+
+    const commonProps = {
+      key: translatedField.name,
+      label: translatedField.label,
+      placeholder: translatedField.placeholder,
+      required: translatedField.required,
+      description: translatedField.description,
+      error: null,
+    };
+
+    if (translatedField.name === 'practitioner_id') {
+      return (
+        <PractitionerSelectWithCreate
+          value={
+            formData.practitioner_id ? String(formData.practitioner_id) : null
+          }
+          onChange={value =>
+            onInputChange({
+              target: { name: 'practitioner_id', value: value || '' },
+            })
+          }
+          practitioners={practitioners}
+          label={translatedField.label}
+          placeholder={translatedField.placeholder}
+          description={translatedField.description}
+        />
+      );
+    }
+
+    // Get dynamic options
+    let options = translatedField.options;
+    if (translatedField.dynamicOptions === 'conditions') {
+      options = conditionOptions;
+    }
+
+    switch (translatedField.type) {
+      case 'text':
+        return (
+          <TextInput
+            {...commonProps}
+            value={formData[translatedField.name] || ''}
+            onChange={handleTextInputChange(translatedField.name)}
+            maxLength={translatedField.maxLength}
+          />
+        );
+
+      case 'select':
+        return (
+          <Select
+            {...commonProps}
+            value={formData[translatedField.name] || null}
+            data={options || []}
+            onChange={value => {
+              onInputChange({
+                target: { name: translatedField.name, value: value || '' },
+              });
+            }}
+            searchable={translatedField.searchable}
+            clearable={translatedField.clearable}
+            comboboxProps={{ withinPortal: true, zIndex: 3000 }}
+          />
+        );
+
+      case 'date':
+        return (
+          <DateInput
+            {...commonProps}
+            placeholder={dateInputFormat}
+            value={parseDateInput(formData[translatedField.name])}
+            onChange={date => {
+              const formattedDate = formatDateInputChange(date);
+              onInputChange({
+                target: { name: translatedField.name, value: formattedDate },
+              });
+            }}
+            valueFormat={dateInputFormat}
+            dateParser={dateParser}
+            maxDate={
+              translatedField.maxDate &&
+              typeof translatedField.maxDate === 'function'
+                ? translatedField.maxDate()
+                : translatedField.maxDate
+            }
+            popoverProps={{ withinPortal: true, zIndex: 3000 }}
+          />
+        );
+
+      case 'number':
+        return (
+          <NumberInput
+            {...commonProps}
+            value={formData[translatedField.name] || ''}
+            onChange={value =>
+              onInputChange({ target: { name: translatedField.name, value } })
+            }
+            min={translatedField.min}
+            max={translatedField.max}
+            step={translatedField.step}
+          />
+        );
+
+      case 'textarea':
+        return (
+          <Textarea
+            {...commonProps}
+            value={formData[translatedField.name] || ''}
+            onChange={handleTextInputChange(translatedField.name)}
+            minRows={translatedField.minRows || 3}
+            maxRows={translatedField.maxRows || 6}
+          />
+        );
+
+      case 'custom':
+        if (translatedField.component === 'TagInput') {
+          return (
+            <Box key={translatedField.name}>
+              <Text size="sm" fw={500} mb="xs">
+                {translatedField.label}
+                {translatedField.required && (
+                  <span style={{ color: 'red' }}> *</span>
+                )}
+              </Text>
+              {translatedField.description && (
+                <Text size="xs" c="dimmed" mb="xs">
+                  {translatedField.description}
+                </Text>
+              )}
+              <TagInput
+                value={formData[translatedField.name] || []}
+                onChange={tags => {
+                  onInputChange({
+                    target: { name: translatedField.name, value: tags },
+                  });
+                }}
+                placeholder={translatedField.placeholder}
+                maxTags={translatedField.maxTags}
+              />
+            </Box>
+          );
+        }
+        return null;
+
+      default:
+        return null;
+    }
+  };
+
+  // Group fields by section for tabs
+  const infoFields = visitFormFields.filter(f =>
+    [
+      'reason',
+      'date',
+      'practitioner_id',
+      'visit_type',
+      'priority',
+      'condition_id',
+      'chief_complaint',
+      'duration_minutes',
+      'location',
+      'tags',
+    ].includes(f.name)
+  );
+
+  const clinicalFields = visitFormFields.filter(f =>
+    ['diagnosis', 'treatment_plan', 'follow_up_instructions'].includes(f.name)
+  );
+
+  const notesField = visitFormFields.filter(f => f.name === 'notes');
+
+  return (
+    <Modal
+      opened={isOpen}
+      onClose={onClose}
+      title={title}
+      size="xl"
+      centered
+      zIndex={2000}
+      styles={{
+        body: {
+          maxHeight: 'calc(100vh - 200px)',
+          overflowY: 'auto',
+        },
+      }}
+    >
+      <FormLoadingOverlay
+        visible={isSubmitting || isLoading}
+        message={t('common:visits.form.savingVisit', 'Saving visit...')}
+      />
+
+      <form onSubmit={handleSubmit}>
+        <Stack gap="lg">
+          {/* Tabbed Content */}
+          <Tabs value={activeTab} onChange={setActiveTab}>
+            <Tabs.List>
+              <Tabs.Tab value="info" leftSection={<IconInfoCircle size={16} />}>
+                {t('common:visits.form.tabs.visitInfo', 'Visit Info')}
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="clinical"
+                leftSection={<IconStethoscope size={16} />}
+              >
+                {t('common:visits.form.tabs.clinical', 'Clinical')}
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="documents"
+                leftSection={<IconFileText size={16} />}
+              >
+                {editingVisit
+                  ? t('shared:tabs.documents', 'Documents')
+                  : t('shared:tabs.addFiles', 'Add Files')}
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="lab-results"
+                leftSection={<IconFlask size={16} />}
+              >
+                {t('shared:categories.lab_results', 'Lab Results')}
+              </Tabs.Tab>
+              <Tabs.Tab value="notes" leftSection={<IconNotes size={16} />}>
+                {t('shared:tabs.notes', 'Notes')}
+              </Tabs.Tab>
+            </Tabs.List>
+
+            {/* Visit Info Tab */}
+            <Tabs.Panel value="info">
+              <Box mt="md">
+                <Grid>
+                  {infoFields.map(field => (
+                    <Grid.Col
+                      span={{ base: 12, sm: field.gridColumn || 6 }}
+                      key={field.name}
+                    >
+                      {renderField(field)}
+                    </Grid.Col>
+                  ))}
+                </Grid>
+              </Box>
+            </Tabs.Panel>
+
+            {/* Clinical Tab */}
+            <Tabs.Panel value="clinical">
+              <Box mt="md">
+                <Stack gap="md">
+                  {clinicalFields.map(field => renderField(field))}
+                </Stack>
+              </Box>
+            </Tabs.Panel>
+
+            {/* Documents Tab */}
+            <Tabs.Panel value="documents">
+              <Box mt="md">
+                <DocumentManagerWithProgress
+                  entityType="visit"
+                  entityId={editingVisit?.id || null}
+                  mode={editingVisit ? 'edit' : 'create'}
+                  onUploadPendingFiles={onDocumentManagerRef}
+                  showProgressModal={true}
+                  onUploadComplete={onFileUploadComplete}
+                  onError={onDocumentError}
+                />
+              </Box>
+            </Tabs.Panel>
+
+            {/* Lab Results Tab */}
+            <Tabs.Panel value="lab-results">
+              <Box mt="md">
+                {editingVisit && fetchEncounterLabResults ? (
+                  <EncounterLabResultRelationships
+                    encounterId={editingVisit.id}
+                    encounterLabResults={encounterLabResults}
+                    labResults={labResults}
+                    fetchEncounterLabResults={fetchEncounterLabResults}
+                    navigate={navigate}
+                  />
+                ) : (
+                  <MultiSelect
+                    label={t(
+                      'common:visits.form.selectLabResults',
+                      'Select Lab Results'
+                    )}
+                    placeholder={t(
+                      'common:visits.form.chooseLabResultsToLink',
+                      'Choose lab results to link'
+                    )}
+                    description={t(
+                      'common:visits.form.labResultsDescription',
+                      'Link lab results relevant to this visit. You can set purpose and notes after creating the visit.'
+                    )}
+                    data={(labResults || []).map(lr => ({
+                      value: lr.id.toString(),
+                      label: `${lr.test_name}${lr.ordered_date ? ` (${lr.ordered_date})` : ''}${lr.status ? ` - ${lr.status}` : ''}`,
+                    }))}
+                    value={formData.pending_lab_result_ids || []}
+                    onChange={values => {
+                      onInputChange({
+                        target: {
+                          name: 'pending_lab_result_ids',
+                          value: values,
+                        },
+                      });
+                    }}
+                    searchable
+                    clearable
+                    comboboxProps={{ withinPortal: true, zIndex: 3000 }}
+                  />
+                )}
+              </Box>
+            </Tabs.Panel>
+
+            {/* Notes Tab */}
+            <Tabs.Panel value="notes">
+              <Box mt="md">{notesField.map(field => renderField(field))}</Box>
+            </Tabs.Panel>
+          </Tabs>
+
+          {/* Custom children content */}
+          {children}
+
+          {/* Action Buttons */}
+          <Group justify="flex-end" mt="md">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting || isLoading}
+            >
+              {t('shared:fields.cancel', 'Cancel')}
+            </Button>
+            <Button type="submit" disabled={isSubmitting || isLoading}>
+              {editingVisit
+                ? t('common:visits.form.updateVisit', 'Update Visit')
+                : t('common:visits.form.addVisit', 'Add Visit')}
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  );
+};
+
+export default MantineVisitForm;

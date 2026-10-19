@@ -1,0 +1,249 @@
+/* ModelEdit.css - Styles for the record edit page */
+
+.model-edit {
+  padding: 2rem;
+  max-width: 100%;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.model-edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--color-border-light);
+}
+
+.edit-title h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.875rem;
+  font-weight: 600;
+}
+
+.edit-title p {
+  margin: 0.5rem 0 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.edit-form {
+  background: var(--color-bg-primary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border-light);
+  padding: 2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+}
+
+.pk-badge,
+.fk-badge {
+  font-size: 0.625rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.pk-badge {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-dark);
+}
+
+.fk-badge {
+  background-color: var(--color-purple-light);
+  color: var(--color-purple-dark);
+}
+
+.required {
+  color: var(--color-danger);
+  font-weight: bold;
+}
+
+.field-input {
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-medium);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.field-input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.field-input.error {
+  border-color: var(--color-danger);
+  background-color: var(--color-danger-light);
+}
+
+.field-input.error:focus-visible {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.field-input:disabled {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.field-value.readonly {
+  padding: 0.75rem;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: 0.375rem;
+  color: var(--color-text-muted);
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo,
+    monospace;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.field-value.readonly.password-field {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.password-display {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.1em;
+  background-color: var(--color-bg-secondary);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.password-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.password-field .field-note {
+  margin: 0;
+  flex: 1;
+}
+
+/* Password field for creation */
+.password-field-create {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.password-field-create .field-input {
+  width: 100%;
+}
+
+.password-field-create .field-note {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--color-info-light);
+  border: 1px solid var(--color-info-light);
+  border-radius: 0.25rem;
+}
+
+.field-note {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+textarea.field-input {
+  resize: vertical;
+  min-height: 6rem;
+  font-family: inherit;
+}
+
+select.field-input {
+  cursor: pointer;
+}
+
+.field-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.error-message {
+  color: var(--color-danger);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.field-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.model-edit-error {
+  padding: 2rem;
+  text-align: center;
+}
+
+.model-edit-error h2 {
+  color: var(--color-danger);
+  margin-bottom: 1rem;
+}
+
+.model-edit-error p {
+  color: var(--color-text-muted);
+  margin-bottom: 2rem;
+}
+
+/* Admin Page Loading - Centered within admin content area */
+.admin-page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 140px); /* Account for header and padding */
+  width: 100%;
+}

@@ -1,0 +1,73 @@
+{
+  "contract_id": "household-screening-education-nav@1.0.0",
+  "scope": {
+    "task_id": "MVP-GUIDANCE-EDUCATION-NAV-01",
+    "purpose": "education_and_source_navigation",
+    "medical_review_confirmed": false,
+    "personalized_screening_available": false,
+    "personalized_unavailable_reason": "medical_review_required"
+  },
+  "entry": {
+    "primary_navigation_item": false,
+    "parent_page": "more",
+    "label": "身体与筛查资料"
+  },
+  "navigation": {
+    "anatomy_layers": ["female", "male", "shared", "systemic"],
+    "orientations": ["front", "back"],
+    "hotspots_are_navigation_only": true,
+    "equivalent_keyboard_and_screen_reader_list": true,
+    "colors_encode_personal_risk": false
+  },
+  "topic_contract": {
+    "catalog_is_versioned": true,
+    "required_fields": [
+      "topic_id",
+      "title_zh",
+      "summary_zh",
+      "anatomy_layers",
+      "region_ids",
+      "content_version",
+      "evidence_category",
+      "sources"
+    ],
+    "source_required_fields": [
+      "source_id",
+      "institution",
+      "region",
+      "title",
+      "url",
+      "published_at",
+      "retrieved_at",
+      "source_status",
+      "review_status"
+    ],
+    "allowed_evidence_categories": ["education_only"],
+    "allowed_review_statuses": ["source_link_verified_medical_review_pending"],
+    "allowed_source_statuses": ["current", "update_in_progress"]
+  },
+  "required_messages": [
+    "人体图仅用于查找资料，不代表患病风险",
+    "当前未启用个性化筛查计划",
+    "筛查不是诊断，正常或未到期也不代表没有疾病"
+  ],
+  "forbidden_outputs": [
+    "personalized_due_date",
+    "screening_interval",
+    "eligibility_decision",
+    "disease_probability",
+    "health_score",
+    "risk_heatmap",
+    "safe_or_healthy_claim",
+    "automatic_shortest_guideline",
+    "ai_generated_screening_state"
+  ],
+  "sharing": {
+    "knowledge_navigation_may_be_visible_for_shared_subject": true,
+    "shared_subject_personalized_state_visible": false
+  },
+  "ai": {
+    "screening_question_enabled": false,
+    "knowledge_catalog_sent_to_model": false
+  }
+}

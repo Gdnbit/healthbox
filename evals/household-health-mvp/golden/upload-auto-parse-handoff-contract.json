@@ -1,0 +1,60 @@
+{
+  "contract_id": "household-upload-auto-parse-handoff@1.0.0",
+  "task_id": "MVP-UPLOAD-AUTO-PARSE-HANDOFF-01",
+  "case_ids": [
+    "CASE-MVP-UPLOAD-AUTO-PARSE-HANDOFF",
+    "CASE-MVP-UPLOAD-BATCH-LIFECYCLE",
+    "CASE-MVP-PARSE-PROVENANCE",
+    "CASE-MVP-REPORT-PROCESSING-STATUS"
+  ],
+  "scope": "owner_only_saved_original_to_local_parse_task",
+  "defaults": {
+    "enabled_for_owner": true,
+    "eligible_document_types": ["checkup", "laboratory"],
+    "delegated_upload_enabled": false,
+    "external_model_used": false
+  },
+  "sequence": [
+    "persist_original",
+    "obtain_source_document_id",
+    "create_local_parse_task",
+    "show_per_file_parse_handoff_status",
+    "refresh_report_processing_snapshot"
+  ],
+  "failure_semantics": {
+    "upload_failure_starts_parse": false,
+    "missing_source_document_id_starts_parse": false,
+    "parse_start_failure_changes_saved_original": false,
+    "parse_start_failure_can_retry_without_reupload": true,
+    "parse_start_failure_writes_formal_metrics": false,
+    "one_file_parse_failure_blocks_other_originals": false
+  },
+  "review_boundary": {
+    "parse_output_destination": "review_candidates",
+    "automatic_candidate_acceptance": false,
+    "automatic_formal_commit": false,
+    "automatic_trend_write": false,
+    "subject_mismatch_confirmation_preserved": true
+  },
+  "ui": {
+    "chinese_first": true,
+    "default_checkbox_label": "保存后自动开始本地解析",
+    "explains_review_only_boundary": true,
+    "per_file_states": [
+      "原件已保存 · 正在安排解析",
+      "原件已保存 · 解析已排队",
+      "原件已保存 · 解析启动失败"
+    ],
+    "parse_retry_does_not_reupload": true,
+    "minimum_mobile_target_px": 44
+  },
+  "forbidden": [
+    "parse_before_original_persisted",
+    "auto_parse_delegated_upload",
+    "auto_accept_candidates",
+    "auto_commit_formal_metrics",
+    "delete_original_when_parse_start_fails",
+    "reupload_original_to_retry_parse",
+    "call_external_model"
+  ]
+}
