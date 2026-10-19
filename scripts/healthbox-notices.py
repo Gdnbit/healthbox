@@ -19,10 +19,9 @@ def annotate(path, content):
     eol = b"\r\n" if b"\r\n" in body else b"\n"
     suffix = Path(path).suffix.lower()
     if path == "LICENSE":
-        block = (b"HealthBox distribution notice (not part of the license terms):" + eol
-                 + b"The upstream short license reference was replaced with the complete," + eol
-                 + b"unmodified Apache-2.0 license text below. Attribution is retained in NOTICE." + eol + eol)
-        offset = 0
+        # Keep the canonical license machine-readable; its replacement notice
+        # and upstream attribution live in NOTICE and the modification index.
+        return content, b""
     elif suffix == ".json" and Path(path).name not in {"tsconfig.json", "jsconfig.json"}:
         data = json.loads(body)
         if not isinstance(data, dict):
@@ -83,7 +82,7 @@ def render_modifications(entries, provenance):
         "Applicable upstream copyright and attribution remain in source and NOTICE.",
         "Changed inherited files carry format-appropriate in-file notices.",
         "JSON notices are an additional top-level metadata string; existing data is not rewritten.",
-        "LICENSE carries a separate distribution note before the unmodified license terms.",
+        "LICENSE contains the unmodified Apache-2.0 text; its replacement notice is in NOTICE.",
         "Line-ending-only differences are excluded from the content-change classification.", "",
         "Public starter catalogs replace inherited reference payloads; they contain no standard codes.",
         "Generated/added HealthBox files are listed separately. This index contains no private",

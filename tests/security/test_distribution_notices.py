@@ -78,8 +78,12 @@ class NoticeTests(unittest.TestCase):
 
     def test_license_body_is_unchanged(self):
         source = b"Apache License\nVersion 2.0\n"
-        output = self.check_preserved("LICENSE", source)
-        self.assertTrue(output.endswith(source))
+        output, inserted = notices.annotate("LICENSE", source)
+        self.assertEqual(output, source)
+        self.assertEqual(inserted, b"")
+        self.assertEqual(notices.annotate("LICENSE", output), (source, b""))
+        self.assertTrue((ROOT / "LICENSE").read_bytes().startswith(b"Apache License"))
+        self.assertIn("upstream short license reference", (ROOT / "NOTICE").read_text(encoding="utf-8"))
 
     def test_conflicting_json_notice_is_not_overwritten(self):
         with self.assertRaises(ValueError):

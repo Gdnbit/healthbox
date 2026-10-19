@@ -5,6 +5,9 @@ https://github.com/afairgiant/MediKeep
 Copyright 2025 Alex Fair
 Licensed under the Apache License, Version 2.0.
 
+The upstream short license reference in LICENSE was replaced with the complete,
+unmodified Apache-2.0 license text. This distribution note is not a license term.
+
 HealthBox modifications include household sharing, source preservation,
 reviewed imports, revision tracking, Chinese interfaces, scoped read-only AI
 contracts, and local release hardening. These modifications do not imply

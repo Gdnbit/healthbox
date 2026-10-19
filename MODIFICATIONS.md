@@ -7,7 +7,7 @@ This is a derivative distribution, not a claim of sole authorship.
 Applicable upstream copyright and attribution remain in source and NOTICE.
 Changed inherited files carry format-appropriate in-file notices.
 JSON notices are an additional top-level metadata string; existing data is not rewritten.
-LICENSE carries a separate distribution note before the unmodified license terms.
+LICENSE contains the unmodified Apache-2.0 text; its replacement notice is in NOTICE.
 Line-ending-only differences are excluded from the content-change classification.
 
 Public starter catalogs replace inherited reference payloads; they contain no standard codes.
