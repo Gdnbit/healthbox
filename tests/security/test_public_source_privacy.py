@@ -32,6 +32,16 @@ class SourcePrivacyTests(unittest.TestCase):
         self.write(".env.example", b"SECRET_KEY=\n")
         self.assertTrue(gate.scan(self.root)["passed"])
 
+    def test_chinese_and_english_readmes_are_in_source_allowlist(self):
+        package_script = Path(__file__).resolve().parents[2] / "scripts" / "healthbox-package.py"
+        spec = importlib.util.spec_from_file_location("healthbox_package", package_script)
+        packager = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(packager)
+        for name in ("README.md", "README.zh-CN.md", "README_EN.md"):
+            with self.subTest(name=name):
+                self.assertTrue(packager.approved(Path(name)))
+        self.assertFalse(packager.approved(Path("README_private.md")))
+
     def test_runtime_files_and_secrets_are_blocked(self):
         for name in (".env", ".env.production", "records.db", "report.pdf", ".coverage", "bundle.js.map"):
             with self.subTest(name=name):

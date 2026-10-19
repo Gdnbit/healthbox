@@ -13,7 +13,7 @@ import subprocess
 
 ROOT_FILES = {
     ".dockerignore", ".gitattributes", ".gitignore", ".env.example",
-    "LICENSE", "NOTICE", "ACKNOWLEDGEMENTS.md", "README.md", "README.zh-CN.md",
+    "LICENSE", "NOTICE", "ACKNOWLEDGEMENTS.md", "README.md", "README_EN.md", "README.zh-CN.md",
     "SECURITY.md", "CONTRIBUTING.md", "PUBLIC_RELEASE_CHECKLIST.md",
     "ROADMAP.md", "CHANGELOG.md", "CODE_OF_CONDUCT.md", "SUPPORT.md",
     "MODIFICATIONS.md", "UPSTREAM_PROVENANCE.json",

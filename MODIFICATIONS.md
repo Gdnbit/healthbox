@@ -530,7 +530,7 @@ commit history, Git author identity, filesystem locations or runtime data.
 - tests/unit/test_lab_test_component_schema.py
 - tests/utils/data.py
 
-## Added distribution files (471)
+## Added distribution files (472)
 
 - .env.example
 - ACKNOWLEDGEMENTS.md
@@ -541,6 +541,7 @@ commit history, Git author identity, filesystem locations or runtime data.
 - NOTICE
 - PUBLIC_RELEASE_CHECKLIST.md
 - README.zh-CN.md
+- README_EN.md
 - ROADMAP.md
 - SECURITY.md
 - SUPPORT.md
