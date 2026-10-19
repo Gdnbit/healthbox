@@ -1,9 +1,9 @@
 # Public release checklist
 
 Status: **experimental source Alpha; production NO-GO**.
-This source distribution is prepared for publication with a new Git history;
-no inherited private Git history or production container images are included.
-Public availability and release assets must be verified on the repository itself.
+The reviewed source distribution is now visible as a separate public repository
+with a new Git history; inherited private history and production container images
+were not published. Source visibility does not authorize real-data deployment.
 
 Local checkpoint (2026-10-18): frontend tests/lint/build and a synthetic browser
 flow passed; the candidate Docker image built. The latest backend full run had
@@ -19,7 +19,8 @@ These results are not clinical validation or a public-deployment approval.
 - [x] Confirm the public Git author/committer uses the owner's verified GitHub account and GitHub-provided noreply address, not a personal email address.
 - [x] Obtain the owner's explicit approval to create a separate public repository with new history; never expose old history.
 - [x] Preserve upstream notice and publish source only, not a production deployment or bundled container distribution.
-- [ ] Verify the public repository, root commit, release assets and remote CI results after publication.
+- [x] Verify the public repository and separately initialized history; original private development history was not mirrored.
+- [ ] Complete remote CI and dependency/security gates and any applicable release-asset review before claiming a production-ready release.
 
 The checked items describe the reviewed source-distribution policy, not a
 guarantee for future edits. Re-run local privacy checks and manifest validation
