@@ -1,5 +1,3 @@
-# HealthBox · Personal & Family Health Records
-
 <div align="center">
   <img src="frontend/public/healthbox-icon.svg" width="80" alt="HealthBox icon" />
   <h1>HealthBox</h1>
@@ -11,6 +9,13 @@
     <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-64748b" /></a>
     <img alt="Self-hosted" src="https://img.shields.io/badge/deployment-self--hosted-087f8c" />
     <img alt="Personal and family" src="https://img.shields.io/badge/focus-personal%20%26%20family-64748b" />
+  </p>
+  <p>
+    <a href="#why-healthbox">Why</a> ·
+    <a href="#product-philosophy">Philosophy</a> ·
+    <a href="#what-healthbox-brings-together">Features</a> ·
+    <a href="#how-information-becomes-a-trusted-record">Architecture</a> ·
+    <a href="#quick-start">Quick start</a>
   </p>
 </div>
 
